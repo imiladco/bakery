@@ -62,3 +62,32 @@
 	margin: 0;
 	min-width: 0;
 }
+
+/*
+ * ویجت price: یک فلکس‌ردیف ساده با سه فرزند مستقل (فعلی/پیشین/واحد پول).
+ * ترتیب واقعی نمایش‌شان با کنترل «ترتیب نمایش» هر کدام (CSS order) از
+ * تب چیدمان تعیین می‌شود، نه با ترتیب مارک‌آپ — پس هر توالی‌ای ممکن است.
+ */
+.bkw-price {
+	display: flex;
+	flex-direction: row;
+	align-items: baseline;
+	gap: 8px;
+}
+
+.bkw-price__now,
+.bkw-price__old,
+.bkw-price__currency {
+	margin: 0;
+}
+
+.bkw-price__old {
+	text-decoration: line-through;
+}
+
+.bkw-price__notice {
+	padding: 16px;
+	border: 1px dashed #c00;
+	color: #c00;
+	font-size: 13px;
+}

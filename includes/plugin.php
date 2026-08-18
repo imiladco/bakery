@@ -69,8 +69,10 @@ final class Plugin {
      */
     public function register_widgets($widgets_manager): void {
         require_once BAKERY_WIDGETS_PATH . 'includes/widgets/icon-box.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/widgets/price.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
+        $widgets_manager->register(new Widgets\Price());
     }
 
     /**

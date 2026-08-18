@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Bakery Elementor Widgets
  * Description:       ویجت‌های اختصاصی المنتور برای بیکری عظام
- * Version:           1.2.0
+ * Version:           1.3.0
  * Author:            Claude
  * Text Domain:       bakery-widgets
  * Requires PHP:      7.4
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BAKERY_WIDGETS_VERSION', '1.2.0');
+define('BAKERY_WIDGETS_VERSION', '1.3.0');
 define('BAKERY_WIDGETS_FILE', __FILE__);
 define('BAKERY_WIDGETS_PATH', plugin_dir_path(__FILE__));
 define('BAKERY_WIDGETS_URL', plugin_dir_url(__FILE__));
