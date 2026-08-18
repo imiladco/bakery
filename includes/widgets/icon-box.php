@@ -83,6 +83,17 @@ class Icon_Box extends Widget_Base {
             'description' => __('تصویر یا SVG انتخاب کنید. SVG به‌صورت inline رندر می‌شود و رنگش از تب استایل قابل تغییر است.', 'bakery-widgets'),
         ]);
 
+        $this->add_control('icon_position', [
+            'label'       => __('جایگاه آیکون', 'bakery-widgets'),
+            'type'        => Controls_Manager::SELECT,
+            'default'     => 'title',
+            'options'     => [
+                'title'       => __('کنار عنوان', 'bakery-widgets'),
+                'description' => __('کنار توضیحات', 'bakery-widgets'),
+            ],
+            'condition'   => ['icon_image[url]!' => ''],
+        ]);
+
         $this->add_control('heading_title', [
             'label'     => __('عنوان', 'bakery-widgets'),
             'type'      => Controls_Manager::HEADING,
@@ -175,12 +186,14 @@ class Icon_Box extends Widget_Base {
         ]);
 
         $this->add_responsive_control('box_align', [
-            'label'     => __('تراز عمودی آیکون و عنوان', 'bakery-widgets'),
+            'label'     => __('تراز عمودی آیکون با متن', 'bakery-widgets'),
             'type'      => Controls_Manager::CHOOSE,
             'default'   => 'center',
             'options'   => $this->align_options(),
             'selectors' => [
-                '{{WRAPPER}} .bkw-icon-box__header' => 'align-items: {{VALUE}};',
+                // همزمان روی هر دو سطر اعمال می‌شود؛ فقط سطری که آیکون واقعاً
+                // در آن است (بسته به «جایگاه آیکون») یک آیکون برای تراز کردن دارد.
+                '{{WRAPPER}} .bkw-icon-box__header, {{WRAPPER}} .bkw-icon-box__description-row' => 'align-items: {{VALUE}};',
             ],
         ]);
 
@@ -195,7 +208,7 @@ class Icon_Box extends Widget_Base {
         ]);
 
         $this->add_responsive_control('box_gap', [
-            'label'      => __('فاصله آیکون تا عنوان', 'bakery-widgets'),
+            'label'      => __('فاصله آیکون تا متن', 'bakery-widgets'),
             'type'       => Controls_Manager::SLIDER,
             'size_units' => ['px', 'em', 'rem'],
             'range'      => ['px' => ['min' => 0, 'max' => 100]],
@@ -203,7 +216,7 @@ class Icon_Box extends Widget_Base {
             'selectors'  => [
                 // متغیر CSS هم برای «هم‌تراز کردن توضیحات» (پایین‌تر) استفاده می‌شود
                 '{{WRAPPER}} .bkw-icon-box' => '--bkw-box-gap: {{SIZE}}{{UNIT}};',
-                '{{WRAPPER}} .bkw-icon-box__header' => 'gap: {{SIZE}}{{UNIT}};',
+                '{{WRAPPER}} .bkw-icon-box__header, {{WRAPPER}} .bkw-icon-box__description-row' => 'gap: {{SIZE}}{{UNIT}};',
             ],
         ]);
 
@@ -251,15 +264,13 @@ class Icon_Box extends Widget_Base {
             'label'        => __('هم‌تراز کردن توضیحات زیر عنوان', 'bakery-widgets'),
             'type'         => Controls_Manager::SWITCHER,
             'default'      => 'yes',
-            'description'  => __('روشن: توضیحات دقیقاً از زیر عنوان شروع می‌شود (به‌اندازه عرض آیکون + فاصله، از راست/چپ عقب می‌رود). خاموش: توضیحات از همان لبهٔ آیکون شروع می‌شود (تمام‌عرض).', 'bakery-widgets'),
-            'condition'    => ['box_direction' => 'row'],
-            'selectors_dictionary' => [
-                'yes' => 'calc(var(--bkw-icon-size, 0px) + var(--bkw-box-gap, 0px))',
-                ''    => '0px',
-            ],
-            'selectors'    => [
-                '{{WRAPPER}} .bkw-icon-box__description' => 'margin-inline-start: {{VALUE}};',
-            ],
+            'description'  => __('روشن: توضیحات دقیقاً از زیر عنوان شروع می‌شود (به‌اندازه عرض آیکون + فاصله، از راست/چپ عقب می‌رود). خاموش: توضیحات از همان لبهٔ سطر اول شروع می‌شود (تمام‌عرض).', 'bakery-widgets'),
+            // فقط وقتی معنا دارد که آیکون واقعاً کنار عنوان باشد؛ اگر آیکون
+            // کنار توضیحات است یا اصلاً آیکونی نیست، هر دو سطر از همان ابتدا
+            // هم‌تراز هستند و عقب بردن توضیحات غلط از آب درمی‌آید. محاسبهٔ
+            // نهایی در render() انجام می‌شود، نه اینجا — چون به وجود واقعی
+            // آیکون هم نیاز دارد، نه فقط مقدار این کنترل.
+            'condition'    => ['box_direction' => 'row', 'icon_position' => 'title'],
         ]);
 
         $this->end_controls_section();
@@ -706,6 +717,10 @@ class Icon_Box extends Widget_Base {
             return;
         }
 
+        // آیکون یکی است؛ فقط کنار عنوان یا کنار توضیحات نشان داده می‌شود، نه هر دو.
+        $icon_at_title       = $has_icon && 'title' === ($settings['icon_position'] ?? 'title');
+        $icon_at_description = $has_icon && 'description' === ($settings['icon_position'] ?? 'title');
+
         $scope = $settings['link_scope'];
         $link  = !empty($settings['link']['url']) ? $settings['link'] : null;
 
@@ -719,12 +734,29 @@ class Icon_Box extends Widget_Base {
         $title_tag       = Utils::validate_html_tag($settings['title_tag']);
         $description_tag = Utils::validate_html_tag($settings['description_tag']);
 
+        /*
+         * توضیحات فقط وقتی زیر عنوان هم‌تراز می‌شود که: آیکون واقعاً کنار
+         * عنوان باشد (نه کنار توضیحات، نه غایب)، سطر اول جهت سطری داشته
+         * باشد، و کاربر از تب چیدمان این را روشن نگه داشته باشد. محاسبه
+         * اینجا و نه با یک selector ثابت انجام می‌شود چون به وجود واقعی
+         * آیکون نیاز دارد — وگرنه بدون هیچ آیکونی هم یک فاصلهٔ ناخواسته
+         * (بر اساس اندازهٔ پیش‌فرض آیکون در CSS) به توضیحات اضافه می‌شد.
+         */
+        $offset_description = $icon_at_title
+            && 'row' === ($settings['box_direction'] ?? 'row')
+            && 'yes' === $settings['description_offset'];
+
+        $this->add_render_attribute('description-row', 'class', 'bkw-icon-box__description-row');
+        if ($offset_description) {
+            $this->add_render_attribute('description-row', 'style', 'margin-inline-start: calc(var(--bkw-icon-size) + var(--bkw-box-gap));');
+        }
+
         ?>
         <<?php echo $box_tag; // phpcs:ignore ?> <?php $this->print_render_attribute_string('box'); ?>>
 
-            <?php if ($has_icon || $has_title) : ?>
+            <?php if ($icon_at_title || $has_title) : ?>
                 <div class="bkw-icon-box__header">
-                    <?php if ($has_icon) : ?>
+                    <?php if ($icon_at_title) : ?>
                         <span class="bkw-icon-box__icon"><?php $this->render_icon($settings); ?></span>
                     <?php endif; ?>
 
@@ -741,10 +773,18 @@ class Icon_Box extends Widget_Base {
                 </div>
             <?php endif; ?>
 
-            <?php if ($has_description) : ?>
-                <<?php echo $description_tag; // phpcs:ignore ?> class="bkw-icon-box__description">
-                    <?php echo esc_html($settings['description']); ?>
-                </<?php echo $description_tag; // phpcs:ignore ?>>
+            <?php if ($icon_at_description || $has_description) : ?>
+                <div <?php $this->print_render_attribute_string('description-row'); ?>>
+                    <?php if ($icon_at_description) : ?>
+                        <span class="bkw-icon-box__icon"><?php $this->render_icon($settings); ?></span>
+                    <?php endif; ?>
+
+                    <?php if ($has_description) : ?>
+                        <<?php echo $description_tag; // phpcs:ignore ?> class="bkw-icon-box__description">
+                            <?php echo esc_html($settings['description']); ?>
+                        </<?php echo $description_tag; // phpcs:ignore ?>>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
 
         </<?php echo $box_tag; // phpcs:ignore ?>>
