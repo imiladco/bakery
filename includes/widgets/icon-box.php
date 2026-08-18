@@ -153,23 +153,34 @@ class Icon_Box extends Widget_Base {
             'tab'   => Controls_Manager::TAB_CONTENT,
         ]);
 
+        /*
+         * ساختار ویجت دو‌سطری است: سطر اول = آیکون + عنوان (کنار هم)،
+         * سطر دوم = توضیحات (زیر سطر اول). این دو بخش عمداً جدا از هم
+         * کنترل می‌شوند تا آیکون هیچ‌وقت با ارتفاعش وارد سطر توضیحات
+         * نشود و همیشه فقط با عنوان هم‌تراز بماند.
+         */
+        $this->add_control('heading_header_layout', [
+            'label' => __('سطر آیکون و عنوان', 'bakery-widgets'),
+            'type'  => Controls_Manager::HEADING,
+        ]);
+
         $this->add_responsive_control('box_direction', [
-            'label'     => __('جهت (آیکون نسبت به متن)', 'bakery-widgets'),
+            'label'     => __('جهت', 'bakery-widgets'),
             'type'      => Controls_Manager::CHOOSE,
             'default'   => 'row',
             'options'   => $this->direction_options(),
             'selectors' => [
-                '{{WRAPPER}} .bkw-icon-box' => 'flex-direction: {{VALUE}};',
+                '{{WRAPPER}} .bkw-icon-box__header' => 'flex-direction: {{VALUE}};',
             ],
         ]);
 
         $this->add_responsive_control('box_align', [
-            'label'     => __('تراز عمودی', 'bakery-widgets'),
+            'label'     => __('تراز عمودی آیکون و عنوان', 'bakery-widgets'),
             'type'      => Controls_Manager::CHOOSE,
-            'default'   => 'flex-start',
+            'default'   => 'center',
             'options'   => $this->align_options(),
             'selectors' => [
-                '{{WRAPPER}} .bkw-icon-box' => 'align-items: {{VALUE}};',
+                '{{WRAPPER}} .bkw-icon-box__header' => 'align-items: {{VALUE}};',
             ],
         ]);
 
@@ -179,18 +190,20 @@ class Icon_Box extends Widget_Base {
             'label_block' => true,
             'options'     => $this->justify_options(),
             'selectors'   => [
-                '{{WRAPPER}} .bkw-icon-box' => 'justify-content: {{VALUE}};',
+                '{{WRAPPER}} .bkw-icon-box__header' => 'justify-content: {{VALUE}};',
             ],
         ]);
 
         $this->add_responsive_control('box_gap', [
-            'label'      => __('فاصله آیکون تا متن', 'bakery-widgets'),
+            'label'      => __('فاصله آیکون تا عنوان', 'bakery-widgets'),
             'type'       => Controls_Manager::SLIDER,
             'size_units' => ['px', 'em', 'rem'],
             'range'      => ['px' => ['min' => 0, 'max' => 100]],
             'default'    => ['size' => 16, 'unit' => 'px'],
             'selectors'  => [
-                '{{WRAPPER}} .bkw-icon-box' => 'gap: {{SIZE}}{{UNIT}};',
+                // متغیر CSS هم برای «هم‌تراز کردن توضیحات» (پایین‌تر) استفاده می‌شود
+                '{{WRAPPER}} .bkw-icon-box' => '--bkw-box-gap: {{SIZE}}{{UNIT}};',
+                '{{WRAPPER}} .bkw-icon-box__header' => 'gap: {{SIZE}}{{UNIT}};',
             ],
         ]);
 
@@ -200,12 +213,12 @@ class Icon_Box extends Widget_Base {
             'options'   => $this->wrap_options(),
             'default'   => 'wrap',
             'selectors' => [
-                '{{WRAPPER}} .bkw-icon-box' => 'flex-wrap: {{VALUE}};',
+                '{{WRAPPER}} .bkw-icon-box__header' => 'flex-wrap: {{VALUE}};',
             ],
         ]);
 
         $this->add_control('heading_content_layout', [
-            'label'     => __('چیدمان عنوان و توضیحات', 'bakery-widgets'),
+            'label'     => __('چیدمان کلی', 'bakery-widgets'),
             'type'      => Controls_Manager::HEADING,
             'separator' => 'before',
         ]);
@@ -219,18 +232,33 @@ class Icon_Box extends Widget_Base {
                 'left'   => ['title' => __('چپ', 'bakery-widgets'), 'icon' => 'eicon-text-align-left'],
             ],
             'selectors' => [
-                '{{WRAPPER}} .bkw-icon-box__content' => 'text-align: {{VALUE}};',
+                '{{WRAPPER}} .bkw-icon-box' => 'text-align: {{VALUE}};',
             ],
         ]);
 
         $this->add_responsive_control('content_gap', [
-            'label'      => __('فاصله عنوان تا توضیحات', 'bakery-widgets'),
+            'label'      => __('فاصله سطر آیکون/عنوان تا توضیحات', 'bakery-widgets'),
             'type'       => Controls_Manager::SLIDER,
             'size_units' => ['px', 'em', 'rem'],
             'range'      => ['px' => ['min' => 0, 'max' => 80]],
             'default'    => ['size' => 8, 'unit' => 'px'],
             'selectors'  => [
-                '{{WRAPPER}} .bkw-icon-box__content' => 'gap: {{SIZE}}{{UNIT}};',
+                '{{WRAPPER}} .bkw-icon-box' => 'row-gap: {{SIZE}}{{UNIT}};',
+            ],
+        ]);
+
+        $this->add_control('description_offset', [
+            'label'        => __('هم‌تراز کردن توضیحات زیر عنوان', 'bakery-widgets'),
+            'type'         => Controls_Manager::SWITCHER,
+            'default'      => 'yes',
+            'description'  => __('روشن: توضیحات دقیقاً از زیر عنوان شروع می‌شود (به‌اندازه عرض آیکون + فاصله، از راست/چپ عقب می‌رود). خاموش: توضیحات از همان لبهٔ آیکون شروع می‌شود (تمام‌عرض).', 'bakery-widgets'),
+            'condition'    => ['box_direction' => 'row'],
+            'selectors_dictionary' => [
+                'yes' => 'calc(var(--bkw-icon-size, 0px) + var(--bkw-box-gap, 0px))',
+                ''    => '0px',
+            ],
+            'selectors'    => [
+                '{{WRAPPER}} .bkw-icon-box__description' => 'margin-inline-start: {{VALUE}};',
             ],
         ]);
 
@@ -694,12 +722,12 @@ class Icon_Box extends Widget_Base {
         ?>
         <<?php echo $box_tag; // phpcs:ignore ?> <?php $this->print_render_attribute_string('box'); ?>>
 
-            <?php if ($has_icon) : ?>
-                <span class="bkw-icon-box__icon"><?php $this->render_icon($settings); ?></span>
-            <?php endif; ?>
+            <?php if ($has_icon || $has_title) : ?>
+                <div class="bkw-icon-box__header">
+                    <?php if ($has_icon) : ?>
+                        <span class="bkw-icon-box__icon"><?php $this->render_icon($settings); ?></span>
+                    <?php endif; ?>
 
-            <?php if ($has_title || $has_description) : ?>
-                <div class="bkw-icon-box__content">
                     <?php if ($has_title) : ?>
                         <<?php echo $title_tag; // phpcs:ignore ?> class="bkw-icon-box__title">
                             <?php if ('title' === $scope && $link) : ?>
@@ -710,13 +738,13 @@ class Icon_Box extends Widget_Base {
                             <?php endif; ?>
                         </<?php echo $title_tag; // phpcs:ignore ?>>
                     <?php endif; ?>
-
-                    <?php if ($has_description) : ?>
-                        <<?php echo $description_tag; // phpcs:ignore ?> class="bkw-icon-box__description">
-                            <?php echo esc_html($settings['description']); ?>
-                        </<?php echo $description_tag; // phpcs:ignore ?>>
-                    <?php endif; ?>
                 </div>
+            <?php endif; ?>
+
+            <?php if ($has_description) : ?>
+                <<?php echo $description_tag; // phpcs:ignore ?> class="bkw-icon-box__description">
+                    <?php echo esc_html($settings['description']); ?>
+                </<?php echo $description_tag; // phpcs:ignore ?>>
             <?php endif; ?>
 
         </<?php echo $box_tag; // phpcs:ignore ?>>

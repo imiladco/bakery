@@ -3,19 +3,33 @@
  * فقط چیدمان و مقادیر پیش‌فرض اینجا تعریف می‌شود؛ رنگ، تایپوگرافی و
  * فاصله‌های قابل‌تنظیم همگی از کنترل‌های تب استایل المنتور (selectors)
  * به‌صورت inline روی هر ویجت اعمال می‌شوند.
+ *
+ * ساختار ویجت icon-box عمداً دو‌سطری است:
+ *   سطر ۱ (.bkw-icon-box__header): آیکون + عنوان، کنار هم.
+ *   سطر ۲ (.bkw-icon-box__description): توضیحات، زیر سطر اول.
+ * این جدایی تضمین می‌کند آیکون هیچ‌وقت با ارتفاعش وارد سطر توضیحات
+ * نشود و فقط با عنوان هم‌تراز بماند؛ توضیحات هم با margin-inline-start
+ * محاسبه‌شده (کنترل «هم‌تراز کردن توضیحات») دقیقاً زیر عنوان می‌نشیند.
  */
 
 .bkw-icon-box {
 	--bkw-icon-size: 40px;
+	--bkw-box-gap: 16px;
 	display: flex;
-	flex-direction: row;
-	align-items: flex-start;
-	gap: 16px;
+	flex-direction: column;
+	row-gap: 8px;
 }
 
 .bkw-icon-box a {
 	color: inherit;
 	text-decoration: none;
+}
+
+.bkw-icon-box__header {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: var(--bkw-box-gap);
 }
 
 .bkw-icon-box__icon {
@@ -38,14 +52,8 @@
 	display: block;
 }
 
-.bkw-icon-box__content {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	min-width: 0;
-}
-
 .bkw-icon-box__title,
 .bkw-icon-box__description {
 	margin: 0;
+	min-width: 0;
 }
