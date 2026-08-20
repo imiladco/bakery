@@ -356,14 +356,9 @@ final class Widget extends Widget_Base
             tab_id: 'state_tab_today',
             tab_label: __('امروز', 'weekly-holidays-widget'),
             selector: '{{WRAPPER}} .whw-day--today',
+            // Same on desktop and mobile per the Figma reference — the
+            // "today" card is the solid brown highlight in both layouts.
             defaults: [
-                'bg' => '#ffffff',
-                'border' => '#e6d8c9',
-                'name' => '#2a1e17',
-                'status' => '#2a1e17',
-                'dot' => '#22c55e',
-            ],
-            mobile_defaults: [
                 'bg' => '#8c583a',
                 'border' => '#8c583a',
                 'name' => '#ffffff',
@@ -376,14 +371,9 @@ final class Widget extends Widget_Base
             tab_id: 'state_tab_holiday',
             tab_label: __('تعطیل', 'weekly-holidays-widget'),
             selector: '{{WRAPPER}} .whw-day--holiday',
+            // Same on desktop and mobile per the Figma reference — the
+            // light pink/red-text treatment, not a solid dark red fill.
             defaults: [
-                'bg' => '#a8261a',
-                'border' => '#a8261a',
-                'name' => '#ffffff',
-                'status' => '#ffffff',
-                'dot' => '#ffffff',
-            ],
-            mobile_defaults: [
                 'bg' => '#f3e7e2',
                 'border' => '#e6c7c1',
                 'name' => '#ba291e',
@@ -399,14 +389,12 @@ final class Widget extends Widget_Base
 
     /**
      * @param array{bg: string, border: string, name: string, status: string, dot: string} $defaults
-     * @param array{bg: string, border: string, name: string, status: string, dot: string}|null $mobile_defaults
      */
     private function register_state_style_tab(
         string $tab_id,
         string $tab_label,
         string $selector,
         array $defaults,
-        ?array $mobile_defaults = null,
     ): void {
         $this->start_controls_tab($tab_id, ['label' => $tab_label]);
 
@@ -423,7 +411,6 @@ final class Widget extends Widget_Base
                 'label' => $field['label'],
                 'type' => Controls_Manager::COLOR,
                 'default' => $defaults[$key],
-                'mobile_default' => $mobile_defaults[$key] ?? $defaults[$key],
                 'selectors' => [
                     $selector => "{$field['prop']}: {{VALUE}};",
                 ],
@@ -557,7 +544,11 @@ final class Widget extends Widget_Base
             }
 
             printf(
-                '<div class="%1$s"><div class="whw-day__row"><span class="whw-day__dot" aria-hidden="true"></span><span class="whw-day__status">%2$s</span></div><span class="whw-day__name">%3$s</span><span class="whw-day__abbr">%4$s</span></div>',
+                '<div class="%1$s">'
+                    . '<div class="whw-day__row"><span class="whw-day__dot" aria-hidden="true"></span><span class="whw-day__status">%2$s</span></div>'
+                    . '<span class="whw-day__name">%3$s</span>'
+                    . '<div class="whw-day__mobile"><span class="whw-day__abbr">%4$s</span><span class="whw-day__dot" aria-hidden="true"></span></div>'
+                . '</div>',
                 esc_attr(implode(' ', $classes)),
                 esc_html($statusLabel),
                 esc_html($label),

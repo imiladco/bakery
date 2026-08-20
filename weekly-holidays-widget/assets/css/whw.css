@@ -15,6 +15,10 @@
     flex-direction: column;
     box-sizing: border-box;
     flex-shrink: 0;
+    /* Without this, flexbox's default min-width:auto lets nowrap child
+       text (e.g. "تعطیل") force this item wider than the width the Style
+       tab set, so the holiday card visibly doesn't match its siblings. */
+    min-width: 0;
     background: var(--whw-bg, #ffffff);
     border-style: solid;
     border-color: var(--whw-border, #e6d8c9);
@@ -24,6 +28,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    gap: 6px;
 }
 
 .whw-day__dot {
@@ -44,25 +49,35 @@
 }
 
 .whw-day__abbr {
-    display: none;
     color: var(--whw-name-color, inherit);
 }
 
+.whw-day__mobile {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
 /*
- * Full name vs. single-letter abbreviation is a structural content swap
- * (see the Figma reference — desktop shows the full weekday name, mobile
- * shows one letter), not a style choice, so it is a plain CSS breakpoint
- * rather than an admin-facing control. Intentionally not tied to the
- * site's configured Elementor breakpoints (Style tab spacing/size
- * controls already are, via add_responsive_control) since this one switch
- * is about legibility at narrow widths in general, not a design decision.
+ * Desktop shows [dot + status label] as a row, then the full weekday name
+ * below it. Mobile shows only the abbreviation letter and the dot — the
+ * status label is not shown at all on mobile (see the Figma reference:
+ * the mobile card has no "باز"/"تعطیل" text, only a letter and a dot) —
+ * so this swaps two whole blocks, not just individual pieces. A plain CSS
+ * breakpoint rather than an admin-facing control since it's a structural
+ * content swap, not a style choice; intentionally not tied to the site's
+ * configured Elementor breakpoints (Style tab spacing/size controls
+ * already are, via add_responsive_control) since this is about legibility
+ * at narrow widths in general.
  */
 @media (max-width: 767px) {
+    .whw-day__row,
     .whw-day__name {
         display: none;
     }
 
-    .whw-day__abbr {
-        display: block;
+    .whw-day__mobile {
+        display: flex;
     }
 }
