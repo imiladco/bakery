@@ -1,0 +1,114 @@
+.whw-admin-wrap .whw-admin-override {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.whw-admin-wrap .whw-admin-override h2 {
+    margin: 0 12px 0 0;
+}
+
+.whw-admin-wrap .whw-override-btn.is-active {
+    box-shadow: inset 0 0 0 2px #a8261a;
+}
+
+.whw-admin-wrap .whw-admin-calendar {
+    max-width: 640px;
+}
+
+.whw-admin-wrap .whw-admin-calendar__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.whw-admin-wrap .whw-admin-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+.whw-admin-wrap .whw-admin-day {
+    position: relative;
+    padding: 10px 4px;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.whw-admin-wrap .whw-admin-day.is-friday {
+    background: #f6e9e7;
+}
+
+.whw-admin-wrap .whw-admin-day.is-manual-holiday {
+    background: #a8261a;
+    border-color: #a8261a;
+    color: #fff;
+}
+
+.whw-admin-wrap .whw-admin-day.is-official-holiday::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2271b1;
+}
+
+.whw-admin-wrap .whw-admin-day.is-today {
+    outline: 2px solid #2a1e17;
+    outline-offset: 1px;
+}
+
+.whw-admin-wrap .whw-admin-day.is-busy {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+.whw-admin-wrap .whw-admin-calendar__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 16px;
+    font-size: 12px;
+}
+
+.whw-admin-wrap .whw-legend-item {
+    position: relative;
+    padding-right: 18px;
+}
+
+.whw-admin-wrap .whw-legend-item::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ccc;
+}
+
+.whw-admin-wrap .whw-legend-item.is-friday::before {
+    background: #f6e9e7;
+    border: 1px solid #dcdcde;
+}
+
+.whw-admin-wrap .whw-legend-item.is-manual-holiday::before {
+    background: #a8261a;
+}
+
+.whw-admin-wrap .whw-legend-item.is-official-holiday::before {
+    background: #2271b1;
+}
+
+.whw-admin-wrap .whw-legend-item.is-today::before {
+    background: #fff;
+    border: 2px solid #2a1e17;
+}

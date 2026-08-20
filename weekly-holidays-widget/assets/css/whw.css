@@ -1,0 +1,68 @@
+/*
+ * Structural CSS only — every color, font, spacing and radius value comes
+ * from the Elementor Style tab (see Integration/Widget.php), written as
+ * either direct Elementor-generated rules (defaults on each control) or as
+ * CSS custom properties consumed here. Nothing visual is hardcoded.
+ */
+
+.whw-week {
+    display: flex;
+    align-items: stretch;
+}
+
+.whw-day {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    background: var(--whw-bg, #ffffff);
+    border-style: solid;
+    border-color: var(--whw-border, #e6d8c9);
+}
+
+.whw-day__row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.whw-day__dot {
+    display: inline-block;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--whw-dot-color, currentColor);
+}
+
+.whw-day__status {
+    color: var(--whw-status-color, inherit);
+    white-space: nowrap;
+}
+
+.whw-day__name {
+    color: var(--whw-name-color, inherit);
+    white-space: nowrap;
+}
+
+.whw-day__abbr {
+    display: none;
+    color: var(--whw-name-color, inherit);
+}
+
+/*
+ * Full name vs. single-letter abbreviation is a structural content swap
+ * (see the Figma reference — desktop shows the full weekday name, mobile
+ * shows one letter), not a style choice, so it is a plain CSS breakpoint
+ * rather than an admin-facing control. Intentionally not tied to the
+ * site's configured Elementor breakpoints (Style tab spacing/size
+ * controls already are, via add_responsive_control) since this one switch
+ * is about legibility at narrow widths in general, not a design decision.
+ */
+@media (max-width: 767px) {
+    .whw-day__name {
+        display: none;
+    }
+
+    .whw-day__abbr {
+        display: block;
+    }
+}
