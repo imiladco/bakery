@@ -11,10 +11,10 @@ use WHW\Domain\HolidayStatus;
  * Fixed-order Chain of Responsibility:
  * DailyOverrideRule -> MonthlyHolidayRule -> FridayRule -> DefaultRule.
  */
-final readonly class Chain
+final class Chain
 {
     /** @var list<Rule> */
-    private array $rules;
+    private readonly array $rules;
 
     public function __construct()
     {

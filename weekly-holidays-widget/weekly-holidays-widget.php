@@ -5,14 +5,24 @@
  * Version:           1.0.0
  * Author:            Claude
  * Text Domain:       weekly-holidays-widget
- * Requires PHP:      8.3
+ * Requires PHP:      8.1
  * Requires at least: 6.4
  * Elementor tested up to: 3.35
  *
  * Standalone plugin — deliberately independent of the sibling
  * bakery-widgets plugin, which stays on PHP 7.4 (Architecture V3 §1: this
- * plugin's PHP 8.3 baseline is not shared with, and does not touch, the
+ * plugin's own baseline is not shared with, and does not touch, the
  * existing plugin).
+ *
+ * PHP baseline note: originally targeted PHP 8.3 for Enums, class-level
+ * readonly and typed class constants. Retargeted to PHP 8.1 — the actual
+ * hosting environment's fixed version — which still gives us Enums,
+ * per-property readonly, constructor promotion and first-class callable
+ * syntax; only class-level `readonly class` and typed class constants
+ * (both 8.2+/8.3-only) were dropped, in favor of per-property `readonly`
+ * and plain (untyped) class constants. `#[\Override]` attributes are left
+ * in place — inert on PHP < 8.3, become meaningful if the host ever
+ * upgrades.
  */
 
 if (!defined('ABSPATH')) {
@@ -24,7 +34,7 @@ define('WHW_PLUGIN_FILE', __FILE__);
 define('WHW_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('WHW_PLUGIN_URL', plugin_dir_url(__FILE__));
 
-const WHW_MIN_PHP = '8.3.0';
+const WHW_MIN_PHP = '8.1.0';
 const WHW_MIN_ELEMENTOR = '3.13.0';
 
 spl_autoload_register(static function (string $class): void {

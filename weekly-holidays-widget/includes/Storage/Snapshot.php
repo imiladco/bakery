@@ -18,7 +18,7 @@ use WHW\Domain\HolidayStatus;
  */
 final class Snapshot
 {
-    private const string OPTION = 'whw_today_status_snapshot';
+    private const OPTION = 'whw_today_status_snapshot';
 
     public function write(DateTimeImmutable $date, HolidayStatus $status): void
     {

@@ -14,7 +14,7 @@ use WHW\Domain\OverrideState;
  * rules themselves never touch WP APIs, which is what keeps them testable
  * with plain PHPUnit.
  */
-final readonly class Context
+final class Context
 {
     /**
      * @param int $weekdayIndex Saturday-first: 0=Sat .. 6=Fri.
@@ -22,12 +22,12 @@ final readonly class Context
      *        holiday in this date's Jalali month (from Storage\Holidays).
      */
     public function __construct(
-        public DateTimeImmutable $date,
-        public JalaliDate $jalali,
-        public int $weekdayIndex,
-        public OverrideState $overrideState,
-        public ?DateTimeImmutable $overrideDate,
-        public array $monthlyHolidayDays,
+        public readonly DateTimeImmutable $date,
+        public readonly JalaliDate $jalali,
+        public readonly int $weekdayIndex,
+        public readonly OverrideState $overrideState,
+        public readonly ?DateTimeImmutable $overrideDate,
+        public readonly array $monthlyHolidayDays,
     ) {
     }
 

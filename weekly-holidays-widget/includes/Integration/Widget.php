@@ -29,9 +29,9 @@ if (!defined('ABSPATH')) {
  */
 final class Widget extends Widget_Base
 {
-    private const array WEEKDAY_KEYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
+    private const WEEKDAY_KEYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
 
-    private const array DEFAULT_DAY_LABELS = [
+    private const DEFAULT_DAY_LABELS = [
         'sat' => 'شنبه',
         'sun' => 'یکشنبه',
         'mon' => 'دوشنبه',

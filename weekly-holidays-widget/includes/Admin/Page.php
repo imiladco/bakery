@@ -26,8 +26,8 @@ if (!defined('ABSPATH')) {
  */
 final class Page
 {
-    private const string SLUG = 'whw-weekly-holidays';
-    private const string CAPABILITY = 'manage_options';
+    private const SLUG = 'whw-weekly-holidays';
+    private const CAPABILITY = 'manage_options';
 
     public function __construct(
         private readonly Holidays $holidays,

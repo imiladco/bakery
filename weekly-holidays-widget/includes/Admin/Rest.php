@@ -30,8 +30,8 @@ if (!defined('ABSPATH')) {
  */
 final class Rest
 {
-    private const string NAMESPACE = 'whw/v1';
-    private const string CAPABILITY = 'manage_options';
+    private const NAMESPACE = 'whw/v1';
+    private const CAPABILITY = 'manage_options';
 
     public function __construct(
         private readonly Holidays $holidays,

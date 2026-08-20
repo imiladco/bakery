@@ -58,7 +58,9 @@ vendor/bin/phpunit
 
 ## نیازمندی‌ها
 
-- PHP 8.3+
+- PHP 8.1+ (Enum و per-property readonly کافی‌اند؛ عمداً به class-level
+  `readonly class` و typed class constants که 8.2/8.3 می‌خواهند وابسته
+  نشدیم، چون هاست هدف فعلی PHP 8.1.25 است)
 - WordPress 6.4+
 - Elementor 3.13+ (رایگان کافی است؛ در صورت وجود Elementor Pro، تداخلی رخ
   نمی‌دهد — Visibility Condition مستقل از پرو کار می‌کند)

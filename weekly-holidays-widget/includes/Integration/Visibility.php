@@ -40,17 +40,17 @@ if (!defined('ABSPATH')) {
  */
 final class Visibility
 {
-    private const string CONTROL_NAME = 'whw_visibility';
+    private const CONTROL_NAME = 'whw_visibility';
 
     /** @var array<string, string> stack name => the Advanced-tab section id to attach to */
-    private const array INJECTION_POINTS = [
+    private const INJECTION_POINTS = [
         'common' => '_section_style',   // every Widget_Base (shared common controls)
         'section' => 'section_advanced',
         'column' => 'section_advanced',
         'container' => 'section_layout',
     ];
 
-    private const array RENDER_TYPES = ['widget', 'section', 'column', 'container'];
+    private const RENDER_TYPES = ['widget', 'section', 'column', 'container'];
 
     private ?HolidayStatus $todayCache = null;
 

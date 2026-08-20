@@ -17,7 +17,7 @@ use WHW\Domain\OverrideState;
  */
 final class Override implements OverrideSource
 {
-    private const string OPTION = 'whw_daily_override';
+    private const OPTION = 'whw_daily_override';
 
     /** @var array{state: OverrideState, date: ?DateTimeImmutable}|null */
     private ?array $cache = null;

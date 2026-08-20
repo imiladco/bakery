@@ -25,20 +25,18 @@ use InvalidArgumentException;
  * Valid for Jalali years -61..3177 (the range the break-point table below
  * covers) — vastly more than this plugin will ever need.
  */
-final readonly class JalaliDate
+final class JalaliDate
 {
     /** @var array<int, int> Cycle break points for the 33-year leap rule. */
-    private const array BREAKS = [
+    private const BREAKS = [
         -61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210,
         1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178,
     ];
 
-    private const array GREGORIAN_MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
     public function __construct(
-        public int $year,
-        public int $month,
-        public int $day,
+        public readonly int $year,
+        public readonly int $month,
+        public readonly int $day,
     ) {
         if ($month < 1 || $month > 12) {
             throw new InvalidArgumentException("Invalid Jalali month: $month");

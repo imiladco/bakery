@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) {
  */
 final class Cron
 {
-    public const string HOOK = 'whw_daily_status_job';
+    public const HOOK = 'whw_daily_status_job';
 
     public function __construct(
         private readonly Holidays $holidays,

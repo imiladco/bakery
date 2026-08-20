@@ -12,14 +12,14 @@ use DateTimeImmutable;
  * admin calendar and month-option lookups need. `weekdayIndex` is
  * Saturday-first (0=Sat .. 6=Fri) to match the widget's display order.
  */
-final readonly class Day
+final class Day
 {
     public function __construct(
-        public DateTimeImmutable $gregorian,
-        public JalaliDate $jalali,
-        public int $weekdayIndex,
-        public HolidayStatus $status,
-        public bool $isToday,
+        public readonly DateTimeImmutable $gregorian,
+        public readonly JalaliDate $jalali,
+        public readonly int $weekdayIndex,
+        public readonly HolidayStatus $status,
+        public readonly bool $isToday,
     ) {
     }
 
