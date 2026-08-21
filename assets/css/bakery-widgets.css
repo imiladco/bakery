@@ -170,3 +170,23 @@ a.bkw-account-bar__item {
 	white-space: nowrap;
 	line-height: 1.4;
 }
+
+/*
+ * ویجت section-title: پیش‌عنوان + عنوان + خط تزئینی اختیاری، ستونی.
+ * تفاوت رفرنس دسکتاپ/موبایل فیگما (وسط‌چین بدون خط ↔ راست‌چین با خط)
+ * هر دو با مقدار پیش‌فرض جداگانهٔ کنترل‌های ریسپانسیو در تب استایل
+ * پوشش داده می‌شود؛ این‌جا فقط ساختار پایه است.
+ */
+.bkw-section-title {
+	display: flex;
+	flex-direction: column;
+}
+
+.bkw-section-title__eyebrow,
+.bkw-section-title__title {
+	margin: 0;
+}
+
+.bkw-section-title__line {
+	flex-shrink: 0;
+}

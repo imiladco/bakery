@@ -76,10 +76,12 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/icon-box.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/price.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/account-bar.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/section-title.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
         $widgets_manager->register(new Widgets\Price());
         $widgets_manager->register(new Widgets\Account_Bar());
+        $widgets_manager->register(new Widgets\Section_Title());
     }
 
     /**
