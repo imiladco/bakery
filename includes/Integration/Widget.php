@@ -280,15 +280,26 @@ final class Widget extends Widget_Base
             ],
         ]);
 
+        /**
+         * Values are swapped relative to their labels on purpose: `.whw-day`
+         * is a `flex-direction: column` container inside an RTL context, and
+         * for a *column* flex container the cross axis is the inline axis —
+         * so `align-items: flex-end` resolves to the physical LEFT under
+         * `direction: rtl`, not the right (this is the reverse of what
+         * `justify-content: flex-end` would do on a *row* container, which
+         * is the more familiar case). `flex-start` is what actually renders
+         * flush-right here. Confirmed against the CSS Flexbox spec's
+         * cross-axis definition, not guessed.
+         */
         $this->add_responsive_control('card_align_items', [
             'label' => __('تراز محتوای کارت', 'weekly-holidays-widget'),
             'type' => Controls_Manager::CHOOSE,
             'options' => [
-                'flex-end' => ['title' => __('راست', 'weekly-holidays-widget'), 'icon' => 'eicon-align-end-h'],
+                'flex-start' => ['title' => __('راست', 'weekly-holidays-widget'), 'icon' => 'eicon-align-end-h'],
                 'center' => ['title' => __('وسط', 'weekly-holidays-widget'), 'icon' => 'eicon-align-center-h'],
-                'flex-start' => ['title' => __('چپ', 'weekly-holidays-widget'), 'icon' => 'eicon-align-start-h'],
+                'flex-end' => ['title' => __('چپ', 'weekly-holidays-widget'), 'icon' => 'eicon-align-start-h'],
             ],
-            'default' => 'flex-end',
+            'default' => 'flex-start',
             'mobile_default' => 'center',
             'selectors' => [
                 '{{WRAPPER}} .whw-day' => 'align-items: {{VALUE}};',
@@ -508,6 +519,19 @@ final class Widget extends Widget_Base
             'mobile_default' => ['unit' => 'px', 'size' => 6],
             'selectors' => [
                 '{{WRAPPER}} .whw-day__dot' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+            ],
+        ]);
+
+        $this->add_responsive_control('dot_gap', [
+            'label' => __('فاصله نقطه تا وضعیت', 'weekly-holidays-widget'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 24]],
+            'default' => ['unit' => 'px', 'size' => 6],
+            'mobile_default' => ['unit' => 'px', 'size' => 4],
+            'selectors' => [
+                '{{WRAPPER}} .whw-day__row' => 'gap: {{SIZE}}{{UNIT}};',
+                '{{WRAPPER}} .whw-day__mobile' => 'gap: {{SIZE}}{{UNIT}};',
             ],
         ]);
 

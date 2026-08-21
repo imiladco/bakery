@@ -27,8 +27,6 @@
 .whw-day__row {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 6px;
 }
 
 .whw-day__dot {
@@ -56,7 +54,6 @@
     display: none;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
 }
 
 /*
