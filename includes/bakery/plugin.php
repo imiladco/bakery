@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Bakery_Widgets;
 
 if (!defined('ABSPATH')) {
@@ -8,21 +11,20 @@ if (!defined('ABSPATH')) {
 /**
  * کلاس اصلی افزونه: ثبت دسته‌بندی، ویجت‌ها و استایل‌ها
  */
-final class Plugin {
-
+final class Plugin
+{
     /** نسخه‌ای که آخرین بار روی این سایت اجرا شده */
-    const VERSION_OPTION = 'bkw_installed_version';
+    private const VERSION_OPTION = 'bkw_installed_version';
 
-    private static $instance = null;
+    private static ?self $instance = null;
 
-    public static function instance(): Plugin {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
+    public static function instance(): self
+    {
+        return self::$instance ??= new self();
     }
 
-    private function __construct() {
+    private function __construct()
+    {
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/svg.php';
 
         add_action('init', [$this, 'maybe_flush_after_update'], 20);
@@ -42,7 +44,8 @@ final class Plugin {
      * سرو می‌کند. فقط وقتی نسخه واقعاً عوض شده باشد اجرا می‌شود، پس روی
      * بارگذاری‌های عادی هیچ هزینه‌ای ندارد.
      */
-    public function maybe_flush_after_update(): void {
+    public function maybe_flush_after_update(): void
+    {
         if (get_option(self::VERSION_OPTION) === BAKERY_WIDGETS_VERSION) {
             return;
         }
@@ -57,17 +60,19 @@ final class Plugin {
     /**
      * دسته‌بندی اختصاصی «بیکری عظام» در پنل ویجت‌های المنتور
      */
-    public function register_category($elements_manager): void {
+    public function register_category($elements_manager): void
+    {
         $elements_manager->add_category('bakery', [
             'title' => __('بیکری عظام', 'bakery-widgets'),
-            'icon'  => 'eicon-bakery', // در صورت نبود آیکون اختصاصی، المنتور آیکون پیش‌فرض دسته را نشان می‌دهد
+            'icon' => 'eicon-bakery', // در صورت نبود آیکون اختصاصی، المنتور آیکون پیش‌فرض دسته را نشان می‌دهد
         ]);
     }
 
     /**
      * ثبت ویجت‌ها با API جدید المنتور (3.5+)
      */
-    public function register_widgets($widgets_manager): void {
+    public function register_widgets($widgets_manager): void
+    {
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/icon-box.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/price.php';
 
@@ -78,19 +83,21 @@ final class Plugin {
     /**
      * ثبت استایل‌ها؛ ویجت با get_style_depends فقط در صورت استفاده لودشان می‌کند
      */
-    public function register_styles(): void {
+    public function register_styles(): void
+    {
         wp_register_style(
             'bakery-widgets',
             BAKERY_WIDGETS_URL . 'assets/css/bakery-widgets.css',
             [],
-            BAKERY_WIDGETS_VERSION
+            BAKERY_WIDGETS_VERSION,
         );
     }
 
     /**
      * در ادیتور همیشه استایل لود شود تا پیش‌نمایش درست باشد
      */
-    public function enqueue_editor_styles(): void {
+    public function enqueue_editor_styles(): void
+    {
         $this->register_styles();
         wp_enqueue_style('bakery-widgets');
     }

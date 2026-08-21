@@ -1,5 +1,11 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Bakery_Widgets;
+
+use DOMDocument;
+use DOMElement;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -19,8 +25,8 @@ if (!defined('ABSPATH')) {
  * باشد. هر عنصر یا ویژگیِ ناشناخته حذف می‌شود، پس بردار حملهٔ جدید هم
  * به‌طور پیش‌فرض بسته است.
  */
-final class Svg {
-
+final class Svg
+{
     /** عنصرهای مجاز — عمداً فقط شکل و ساختار، بدون هیچ عنصر رفتاری */
     private const ELEMENTS = [
         'svg', 'g', 'defs', 'symbol', 'use', 'title', 'desc',
@@ -59,7 +65,8 @@ final class Svg {
      * خواندن یک فایل پیوست و برگرداندن SVG پاک‌شده.
      * رشتهٔ خالی یعنی فایل نبود، SVG نبود، یا قابل پاک‌سازی نبود.
      */
-    public static function from_attachment(int $attachment_id): string {
+    public static function from_attachment(int $attachment_id): string
+    {
         if ($attachment_id <= 0) {
             return '';
         }
@@ -86,12 +93,13 @@ final class Svg {
     }
 
     /** پاک‌سازی یک رشتهٔ SVG */
-    public static function sanitize(string $svg): string {
+    public static function sanitize(string $svg): string
+    {
         if (false === stripos($svg, '<svg')) {
             return '';
         }
 
-        if (!class_exists('DOMDocument')) {
+        if (!class_exists(DOMDocument::class)) {
             return '';
         }
 
@@ -107,8 +115,8 @@ final class Svg {
             return '';
         }
 
-        $dom                      = new \DOMDocument();
-        $dom->preserveWhiteSpace  = false;
+        $dom = new DOMDocument();
+        $dom->preserveWhiteSpace = false;
         $dom->strictErrorChecking = false;
 
         /*
@@ -121,7 +129,7 @@ final class Svg {
          * می‌ماند و در پاک‌سازی هم حذف می‌شود.
          */
         $previous = libxml_use_internal_errors(true);
-        $loaded   = $dom->loadXML($svg, LIBXML_NONET | LIBXML_NOBLANKS);
+        $loaded = $dom->loadXML($svg, LIBXML_NONET | LIBXML_NOBLANKS);
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
 
@@ -141,10 +149,11 @@ final class Svg {
     }
 
     /** پیمایش بازگشتی و حذف هر چیزی که در فهرست سفید نیست */
-    private static function clean(\DOMElement $element): void {
+    private static function clean(DOMElement $element): void
+    {
         // فرزندان از آخر به اول پیمایش می‌شوند تا حذف، اندیس‌ها را جابه‌جا نکند
         foreach (iterator_to_array($element->childNodes) as $child) {
-            if ($child instanceof \DOMElement) {
+            if ($child instanceof DOMElement) {
                 if (!in_array(strtolower($child->nodeName), self::ELEMENTS, true)) {
                     $element->removeChild($child);
                     continue;
@@ -195,7 +204,8 @@ final class Svg {
      * مقدارهایی که حتی روی ویژگی مجاز هم خطرناک‌اند: هر URL اجراشدنی و
      * ترفندهای CSS مثل expression یا @import داخل style.
      */
-    private static function value_is_safe(string $name, string $value): bool {
+    private static function value_is_safe(string $name, string $value): bool
+    {
         // فاصله‌ها و کاراکترهای کنترلی برای پنهان‌کردن «javascript:» به کار می‌روند
         $normalized = strtolower(preg_replace('/[\s\x00-\x1F\x7F]+/', '', $value) ?? '');
 
