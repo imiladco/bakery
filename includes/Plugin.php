@@ -23,6 +23,11 @@ if (!defined('ABSPATH')) {
  * consumer (Widget render, Visibility, DynamicTag, Admin, Cron) and
  * registers everything with WordPress/Elementor. No business logic lives
  * here — only construction and hook registration.
+ *
+ * The Elementor widget category ("bakery") is registered by
+ * \Bakery_Widgets\Plugin (includes/bakery/plugin.php), not here — this
+ * plugin's widget shares that one category rather than having its own,
+ * since all widgets now ship together as one plugin.
  */
 final class Plugin
 {
@@ -55,7 +60,6 @@ final class Plugin
 
     public function init(): void
     {
-        add_action('elementor/elements/categories_registered', [$this, 'registerCategory']);
         add_action('elementor/widgets/register', [$this, 'registerWidget']);
         add_action('elementor/frontend/after_register_styles', [$this, 'registerStyles']);
         add_action('elementor/editor/after_enqueue_styles', [$this, 'enqueueEditorStyles']);
@@ -66,14 +70,6 @@ final class Plugin
         (new AdminRest($this->holidays, $this->override))->register();
 
         $this->cron->register();
-    }
-
-    public function registerCategory($elementsManager): void
-    {
-        $elementsManager->add_category('whw', [
-            'title' => __('تعطیلات هفته', 'weekly-holidays-widget'),
-            'icon' => 'eicon-calendar',
-        ]);
     }
 
     public function registerWidget($widgetsManager): void

@@ -23,7 +23,7 @@ final class Plugin {
     }
 
     private function __construct() {
-        require_once BAKERY_WIDGETS_PATH . 'includes/svg.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/svg.php';
 
         add_action('init', [$this, 'maybe_flush_after_update'], 20);
 
@@ -68,8 +68,8 @@ final class Plugin {
      * ثبت ویجت‌ها با API جدید المنتور (3.5+)
      */
     public function register_widgets($widgets_manager): void {
-        require_once BAKERY_WIDGETS_PATH . 'includes/widgets/icon-box.php';
-        require_once BAKERY_WIDGETS_PATH . 'includes/widgets/price.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/icon-box.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/price.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
         $widgets_manager->register(new Widgets\Price());

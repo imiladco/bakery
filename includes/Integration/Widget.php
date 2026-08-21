@@ -62,7 +62,9 @@ final class Widget extends Widget_Base
     #[\Override]
     public function get_categories(): array
     {
-        return ['whw'];
+        // Shared with the icon-box/price widgets — see includes/bakery/plugin.php,
+        // which is what actually registers this category.
+        return ['bakery'];
     }
 
     #[\Override]
