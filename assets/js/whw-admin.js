@@ -30,27 +30,48 @@
         });
     }
 
+    function get(path, query) {
+        var url = whwAdmin.restUrl + path + '?' + new URLSearchParams(query).toString();
+
+        return fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-WP-Nonce': whwAdmin.nonce,
+            },
+        }).then(function (response) {
+            if (!response.ok) {
+                throw new Error('request_failed');
+            }
+            return response.json();
+        });
+    }
+
     function setBusy(el, busy) {
         el.disabled = busy;
         el.classList.toggle('is-busy', busy);
     }
 
+    /**
+     * Delegated on document (not the grid node itself) because AJAX month
+     * navigation (initMonthNav) replaces the whole .whw-admin-calendar
+     * fragment on every swap — a listener bound to the old node would be
+     * discarded along with it.
+     */
     function initCalendarGrid() {
-        var grid = document.querySelector('.whw-admin-calendar');
-        if (!grid) {
-            return;
-        }
-
-        var year = parseInt(grid.getAttribute('data-jalali-year'), 10);
-        var month = parseInt(grid.getAttribute('data-jalali-month'), 10);
-        var status = grid.querySelector('.whw-calendar-status');
-
-        grid.addEventListener('click', function (event) {
-            var button = event.target.closest('.whw-admin-day:not(.whw-admin-day--blank)');
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('.whw-admin-day:not(.whw-admin-day--overflow)');
             if (!button || button.disabled) {
                 return;
             }
 
+            var grid = button.closest('.whw-admin-calendar');
+            if (!grid) {
+                return;
+            }
+
+            var year = parseInt(grid.getAttribute('data-jalali-year'), 10);
+            var month = parseInt(grid.getAttribute('data-jalali-month'), 10);
+            var status = grid.querySelector('.whw-calendar-status');
             var day = parseInt(button.getAttribute('data-day'), 10);
 
             setBusy(button, true);
@@ -74,6 +95,54 @@
                 })
                 .finally(function () {
                     setBusy(button, false);
+                });
+        });
+    }
+
+    /**
+     * Intercepts clicks on the calendar's prev/next-month links and swaps
+     * the calendar + official-holidays fragments in place via the REST
+     * `/calendar` route, instead of a full page reload. The `<a href>`
+     * stays intact as a no-JS fallback (progressive enhancement), and the
+     * URL is kept in sync with history.pushState() so back/forward and
+     * page reloads still land on the right month.
+     */
+    function initMonthNav() {
+        document.addEventListener('click', function (event) {
+            var link = event.target.closest('.whw-nav-btn');
+            if (!link || link.classList.contains('is-busy')) {
+                return;
+            }
+
+            var main = document.querySelector('.whw-admin-card--main');
+            var official = document.querySelector('.whw-admin-official');
+            if (!main) {
+                return;
+            }
+
+            event.preventDefault();
+
+            var year = link.getAttribute('data-year');
+            var month = link.getAttribute('data-month');
+
+            setBusy(link, true);
+
+            get('/calendar', { jalali_year: year, jalali_month: month })
+                .then(function (result) {
+                    main.innerHTML = result.calendar_html;
+                    if (official && result.official_html) {
+                        official.outerHTML = result.official_html;
+                    }
+                    if (result.url) {
+                        window.history.pushState({}, '', result.url);
+                    }
+                })
+                .catch(function () {
+                    window.alert(whwAdmin.strings.error);
+                    window.location.href = link.href;
+                })
+                .finally(function () {
+                    setBusy(link, false);
                 });
         });
     }
@@ -123,6 +192,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         initCalendarGrid();
+        initMonthNav();
         initOverrideControls();
     });
 })();

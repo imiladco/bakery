@@ -17,25 +17,21 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * The graphical Jalali monthly calendar (Architecture V3 §20/V4). Month
- * navigation is a plain server-rendered link (?whw_y=&whw_m=) — no JS
- * needed for that. Only the per-day toggle and the Today Override control
- * go through REST + a small vanilla JS layer (assets/js/whw-admin.js);
- * no build step, no React, per the architecture decision (no npm/webpack
- * pipeline exists in this plugin).
+ * The graphical Jalali monthly calendar (Architecture V3 §20/V4).
+ *
+ * Month navigation is AJAX (Admin\Rest::calendar(), fetched by
+ * assets/js/whw-admin.js) with the plain `?whw_y=&whw_m=` links kept as a
+ * no-JS fallback — same markup renders the initial page load and every
+ * AJAX swap, via renderCalendarFragment()/renderOfficialHolidaysFragment()
+ * being public so Admin\Rest can call them directly instead of
+ * duplicating the HTML.
  */
 final class Page
 {
-    private const SLUG = 'whw-weekly-holidays';
+    public const SLUG = 'whw-weekly-holidays';
     private const CAPABILITY = 'manage_options';
 
     private const WEEKDAY_LABELS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
-
-    private const MONTH_NAMES = [
-        1 => 'فروردین', 2 => 'اردیبهشت', 3 => 'خرداد', 4 => 'تیر',
-        5 => 'مرداد', 6 => 'شهریور', 7 => 'مهر', 8 => 'آبان',
-        9 => 'آذر', 10 => 'دی', 11 => 'بهمن', 12 => 'اسفند',
-    ];
 
     public function __construct(
         private readonly Holidays $holidays,
@@ -95,8 +91,30 @@ final class Page
             return;
         }
 
-        $today = Clock::now();
-        $todayJalali = JalaliDate::fromGregorian($today);
+        [$year, $month] = $this->resolveRequestedMonth();
+
+        echo '<div class="wrap whw-admin-wrap">';
+        echo '<h1>' . esc_html__('تعطیلات هفته', 'weekly-holidays-widget') . '</h1>';
+        echo '<p class="whw-admin-intro">' . esc_html__('تقویم زیر تعیین می‌کند ویجت «تعطیلات هفته» هر روز را چه وضعیتی نشان دهد. برای تعطیل‌کردن دستی یک روز، رویش کلیک کنید.', 'weekly-holidays-widget') . '</p>';
+
+        echo '<div class="whw-admin-layout">';
+        echo '<div class="whw-admin-card whw-admin-card--main">';
+        echo $this->renderCalendarFragment($year, $month); // phpcs:ignore WordPress.Security.EscapeOutput -- pre-escaped by the fragment renderer
+        echo '</div>';
+
+        echo '<div class="whw-admin-sidebar">';
+        $this->renderTodayOverride();
+        echo $this->renderOfficialHolidaysFragment($year, $month); // phpcs:ignore WordPress.Security.EscapeOutput -- pre-escaped by the fragment renderer
+        echo '</div>';
+        echo '</div>';
+
+        echo '</div>';
+    }
+
+    /** @return array{0: int, 1: int} [jalaliYear, jalaliMonth] */
+    private function resolveRequestedMonth(): array
+    {
+        $todayJalali = JalaliDate::fromGregorian(Clock::now());
 
         $year = isset($_GET['whw_y']) ? absint($_GET['whw_y']) : $todayJalali->year;
         $month = isset($_GET['whw_m']) ? absint($_GET['whw_m']) : $todayJalali->month;
@@ -109,10 +127,12 @@ final class Page
             $month = $todayJalali->month;
         }
 
-        $daysInMonth = (new JalaliDate($year, $month, 1))->daysInMonth();
-        $manualHolidays = $this->holidays->forMonth($year, $month);
-        $officialHolidays = $this->official->forMonth($year, $month);
+        return [$year, $month];
+    }
 
+    private function renderTodayOverride(): void
+    {
+        $today = Clock::now();
         $overrideState = OverrideState::Unset;
         $stored = $this->override->get();
 
@@ -120,23 +140,6 @@ final class Page
             $overrideState = $stored['state'];
         }
 
-        [$prevYear, $prevMonth] = $month > 1 ? [$year, $month - 1] : [$year - 1, 12];
-        [$nextYear, $nextMonth] = $month < 12 ? [$year, $month + 1] : [$year + 1, 1];
-
-        echo '<div class="wrap whw-admin-wrap">';
-        echo '<h1>' . esc_html__('تعطیلات هفته', 'weekly-holidays-widget') . '</h1>';
-        echo '<p class="whw-admin-intro">' . esc_html__('تقویم زیر تعیین می‌کند ویجت «تعطیلات هفته» هر روز را چه وضعیتی نشان دهد. برای تعطیل‌کردن دستی یک روز، رویش کلیک کنید.', 'weekly-holidays-widget') . '</p>';
-
-        echo '<div class="whw-admin-layout">';
-        $this->renderCalendar($year, $month, $daysInMonth, $manualHolidays, $officialHolidays, $todayJalali, $prevYear, $prevMonth, $nextYear, $nextMonth);
-        $this->renderTodayOverride($overrideState);
-        echo '</div>';
-
-        echo '</div>';
-    }
-
-    private function renderTodayOverride(OverrideState $current): void
-    {
         $options = [
             OverrideState::Unset->value => __('طبق منطق پیش‌فرض', 'weekly-holidays-widget'),
             OverrideState::ForceHoliday->value => __('اجبار به تعطیل', 'weekly-holidays-widget'),
@@ -151,9 +154,9 @@ final class Page
         foreach ($options as $value => $label) {
             printf(
                 '<button type="button" class="whw-override-btn%1$s" data-state="%2$s" aria-pressed="%3$s">%4$s</button>',
-                $current->value === $value ? ' is-active' : '',
+                $overrideState->value === $value ? ' is-active' : '',
                 esc_attr($value),
-                $current->value === $value ? 'true' : 'false',
+                $overrideState->value === $value ? 'true' : 'false',
                 esc_html($label),
             );
         }
@@ -164,35 +167,52 @@ final class Page
     }
 
     /**
-     * @param array<int, true> $manualHolidays
-     * @param array<int, true> $officialHolidays
+     * Self-contained `.whw-admin-calendar` fragment — safe to echo on first
+     * page load or return as a REST response body for AJAX month swaps
+     * (Admin\Rest::calendar()). Every value is escaped internally.
      */
-    private function renderCalendar(
-        int $year,
-        int $month,
-        int $daysInMonth,
-        array $manualHolidays,
-        array $officialHolidays,
-        JalaliDate $todayJalali,
-        int $prevYear,
-        int $prevMonth,
-        int $nextYear,
-        int $nextMonth,
-    ): void {
+    public function renderCalendarFragment(int $year, int $month): string
+    {
+        $todayJalali = JalaliDate::fromGregorian(Clock::now());
+        $daysInMonth = (new JalaliDate($year, $month, 1))->daysInMonth();
+        $manualHolidays = $this->holidays->forMonth($year, $month);
+        $officialHolidays = $this->official->forMonth($year, $month);
+
+        [$prevYear, $prevMonth] = $month > 1 ? [$year, $month - 1] : [$year - 1, 12];
+        [$nextYear, $nextMonth] = $month < 12 ? [$year, $month + 1] : [$year + 1, 1];
+        $prevDaysInMonth = (new JalaliDate($prevYear, $prevMonth, 1))->daysInMonth();
+
         $prevUrl = add_query_arg(['whw_y' => $prevYear, 'whw_m' => $prevMonth]);
         $nextUrl = add_query_arg(['whw_y' => $nextYear, 'whw_m' => $nextMonth]);
 
-        echo '<div class="whw-admin-card whw-admin-card--main">';
-        echo '<div class="whw-admin-calendar" data-jalali-year="' . esc_attr((string) $year) . '" data-jalali-month="' . esc_attr((string) $month) . '">';
+        ob_start();
+
+        printf(
+            '<div class="whw-admin-calendar" data-jalali-year="%s" data-jalali-month="%s">',
+            esc_attr((string) $year),
+            esc_attr((string) $month),
+        );
 
         echo '<div class="whw-admin-calendar__nav">';
-        printf('<a class="whw-nav-btn" href="%s" aria-label="%s">&raquo;</a>', esc_url($prevUrl), esc_attr__('ماه قبل', 'weekly-holidays-widget'));
+        printf(
+            '<a class="whw-nav-btn" href="%s" data-year="%d" data-month="%d"><span aria-hidden="true">&rsaquo;</span> %s</a>',
+            esc_url($prevUrl),
+            $prevYear,
+            $prevMonth,
+            esc_html__('ماه قبل', 'weekly-holidays-widget'),
+        );
         printf(
             '<strong class="whw-admin-calendar__title">%s %s</strong>',
-            esc_html(self::MONTH_NAMES[$month]),
-            esc_html($this->toPersianDigits((string) $year)),
+            esc_html(PersianCalendarFormat::monthName($month)),
+            esc_html(PersianCalendarFormat::digits((string) $year)),
         );
-        printf('<a class="whw-nav-btn" href="%s" aria-label="%s">&laquo;</a>', esc_url($nextUrl), esc_attr__('ماه بعد', 'weekly-holidays-widget'));
+        printf(
+            '<a class="whw-nav-btn" href="%s" data-year="%d" data-month="%d">%s <span aria-hidden="true">&lsaquo;</span></a>',
+            esc_url($nextUrl),
+            $nextYear,
+            $nextMonth,
+            esc_html__('ماه بعد', 'weekly-holidays-widget'),
+        );
         echo '</div>';
 
         echo '<div class="whw-admin-calendar__weekdays">';
@@ -201,16 +221,21 @@ final class Page
         }
         echo '</div>';
 
-        // روز اول ماه لزوماً شنبه نیست؛ همین‌قدر خانهٔ خالی قبل از روز ۱
-        // اضافه می‌شود تا هر روز واقعاً زیر ستون هم‌نامش بنشیند.
+        // روز اول ماه لزوماً شنبه نیست؛ همین‌قدر خانهٔ روز-ماه‌مجاور قبل از
+        // روز ۱ اضافه می‌شود تا هر روز واقعاً زیر ستون هم‌نامش بنشیند و هر
+        // سطر هم یک هفته‌ی کامل و بدون جای خالی دیده شود.
         $firstWeekdayIndex = Week::weekdayIndex((new JalaliDate($year, $month, 1))->toGregorian());
         $totalCells = $firstWeekdayIndex + $daysInMonth;
         $trailingBlanks = (7 - ($totalCells % 7)) % 7;
 
         echo '<div class="whw-admin-calendar__grid">';
 
-        for ($i = 0; $i < $firstWeekdayIndex; $i++) {
-            echo '<span class="whw-admin-day whw-admin-day--blank" aria-hidden="true"></span>';
+        for ($i = $firstWeekdayIndex; $i > 0; $i--) {
+            $overflowDay = $prevDaysInMonth - $i + 1;
+            printf(
+                '<span class="whw-admin-day whw-admin-day--overflow" aria-hidden="true">%s</span>',
+                esc_html(PersianCalendarFormat::digits((string) $overflowDay)),
+            );
         }
 
         for ($day = 1; $day <= $daysInMonth; $day++) {
@@ -236,12 +261,15 @@ final class Page
                 esc_attr(implode(' ', $classes)),
                 $day,
                 isset($manualHolidays[$day]) ? 'true' : 'false',
-                esc_html($this->toPersianDigits((string) $day)),
+                esc_html(PersianCalendarFormat::digits((string) $day)),
             );
         }
 
-        for ($i = 0; $i < $trailingBlanks; $i++) {
-            echo '<span class="whw-admin-day whw-admin-day--blank" aria-hidden="true"></span>';
+        for ($i = 1; $i <= $trailingBlanks; $i++) {
+            printf(
+                '<span class="whw-admin-day whw-admin-day--overflow" aria-hidden="true">%s</span>',
+                esc_html(PersianCalendarFormat::digits((string) $i)),
+            );
         }
 
         echo '</div>';
@@ -256,11 +284,42 @@ final class Page
         echo '<span class="whw-calendar-status whw-visually-hidden" role="status" aria-live="polite"></span>';
 
         echo '</div>';
-        echo '</div>';
+
+        return (string) ob_get_clean();
     }
 
-    private function toPersianDigits(string $value): string
+    /**
+     * Self-contained sidebar card listing the viewed month's official
+     * (national) holidays by name — informational, matches the same
+     * "AJAX-swappable fragment" pattern as renderCalendarFragment().
+     */
+    public function renderOfficialHolidaysFragment(int $year, int $month): string
     {
-        return strtr($value, ['0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴', '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹']);
+        $officialHolidays = $this->official->forMonth($year, $month);
+        ksort($officialHolidays);
+
+        ob_start();
+
+        echo '<div class="whw-admin-card whw-admin-card--side whw-admin-official">';
+        echo '<h2>' . esc_html__('تعطیلات رسمی این ماه', 'weekly-holidays-widget') . '</h2>';
+
+        if ([] === $officialHolidays) {
+            echo '<p class="description">' . esc_html__('برای این ماه تعطیل رسمی ثبت نشده است.', 'weekly-holidays-widget') . '</p>';
+        } else {
+            echo '<ul class="whw-official-list">';
+            foreach ($officialHolidays as $day => $name) {
+                printf(
+                    '<li><span class="whw-official-list__day">%s %s</span><span class="whw-official-list__name">%s</span></li>',
+                    esc_html(PersianCalendarFormat::digits((string) $day)),
+                    esc_html(PersianCalendarFormat::monthName($month)),
+                    esc_html($name),
+                );
+            }
+            echo '</ul>';
+        }
+
+        echo '</div>';
+
+        return (string) ob_get_clean();
     }
 }

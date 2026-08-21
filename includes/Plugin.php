@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WHW;
 
+use WHW\Admin\AdminBar;
+use WHW\Admin\DashboardWidget;
 use WHW\Admin\Page as AdminPage;
 use WHW\Admin\Rest as AdminRest;
 use WHW\Integration\DynamicTag;
@@ -65,9 +67,13 @@ final class Plugin
         add_action('elementor/editor/after_enqueue_styles', [$this, 'enqueueEditorStyles']);
         add_action('elementor/dynamic_tags/register', [$this, 'registerDynamicTag']);
 
+        $adminPage = new AdminPage($this->holidays, $this->override, $this->official);
+
         (new Visibility($this->holidays, $this->override))->register();
-        (new AdminPage($this->holidays, $this->override, $this->official))->register();
-        (new AdminRest($this->holidays, $this->override))->register();
+        $adminPage->register();
+        (new AdminRest($this->holidays, $this->override, $adminPage))->register();
+        (new DashboardWidget($this->holidays, $this->override))->register();
+        (new AdminBar($this->holidays, $this->override))->register();
 
         $this->cron->register();
     }

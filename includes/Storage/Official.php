@@ -12,13 +12,16 @@ namespace WHW\Storage;
  * otherwise the bundled `data/official-holidays-{jy}.json`, filterable via
  * `whw_official_holidays` for future external data providers. No network
  * request is ever made here.
+ *
+ * Each entry carries the occasion's name (not just a boolean flag) so the
+ * admin calendar can list "۲۰ مرداد — روز جهانی مادر", not just a dot.
  */
 final class Official
 {
-    /** @var array<string, array<int, true>> */
+    /** @var array<string, array<int, string>> */
     private array $cache = [];
 
-    /** @return array<int, true> */
+    /** @return array<int, string> day => occasion name */
     public function forMonth(int $jalaliYear, int $jalaliMonth): array
     {
         $key = sprintf('%d_%02d', $jalaliYear, $jalaliMonth);
@@ -27,17 +30,10 @@ final class Official
             return $this->cache[$key];
         }
 
-        $days = $this->forYear($jalaliYear)[$jalaliMonth] ?? [];
-        $map = [];
-
-        foreach ($days as $day) {
-            $map[(int) $day] = true;
-        }
-
-        return $this->cache[$key] = $map;
+        return $this->cache[$key] = $this->forYear($jalaliYear)[$jalaliMonth] ?? [];
     }
 
-    /** @param array<int, list<int>> $monthToDays */
+    /** @param array<int, array<int, string>> $monthToDays month => (day => name) */
     public function saveYear(int $jalaliYear, array $monthToDays): void
     {
         update_option(self::optionName($jalaliYear), $this->normalize($monthToDays), false);
@@ -49,7 +45,7 @@ final class Official
         );
     }
 
-    /** @return array<int, list<int>> */
+    /** @return array<int, array<int, string>> */
     private function forYear(int $jalaliYear): array
     {
         $stored = get_option(self::optionName($jalaliYear), null);
@@ -79,7 +75,7 @@ final class Official
          * Filters the bundled official-holidays dataset for a Jalali year.
          * Informational only — never affects HolidayStatus resolution.
          *
-         * @param array<int|string, mixed> $data month => list of days
+         * @param array<int|string, mixed> $data month => (day => name)
          * @param int $jalaliYear
          */
         return (array) apply_filters('whw_official_holidays', $data, $jalaliYear);
@@ -87,7 +83,7 @@ final class Official
 
     /**
      * @param array<int|string, mixed> $data
-     * @return array<int, list<int>>
+     * @return array<int, array<int, string>>
      */
     private function normalize(array $data): array
     {
@@ -98,7 +94,13 @@ final class Official
                 continue;
             }
 
-            $result[(int) $month] = array_values(array_map('intval', $days));
+            $normalizedDays = [];
+
+            foreach ($days as $day => $name) {
+                $normalizedDays[(int) $day] = is_string($name) ? $name : '';
+            }
+
+            $result[(int) $month] = $normalizedDays;
         }
 
         return $result;

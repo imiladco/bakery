@@ -36,6 +36,7 @@ final class Rest
     public function __construct(
         private readonly Holidays $holidays,
         private readonly Override $override,
+        private readonly Page $page,
     ) {
     }
 
@@ -67,6 +68,26 @@ final class Rest
                     'required' => true,
                     'type' => 'integer',
                     'validate_callback' => static fn ($value): bool => is_numeric($value) && (int) $value >= 1 && (int) $value <= 31,
+                    'sanitize_callback' => 'absint',
+                ],
+            ],
+        ]);
+
+        register_rest_route(self::NAMESPACE, '/calendar', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [$this, 'calendar'],
+            'permission_callback' => [$this, 'checkPermission'],
+            'args' => [
+                'jalali_year' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'validate_callback' => static fn ($value): bool => is_numeric($value) && (int) $value >= 1300 && (int) $value <= 1500,
+                    'sanitize_callback' => 'absint',
+                ],
+                'jalali_month' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'validate_callback' => static fn ($value): bool => is_numeric($value) && (int) $value >= 1 && (int) $value <= 12,
                     'sanitize_callback' => 'absint',
                 ],
             ],
@@ -111,6 +132,23 @@ final class Rest
         $isHoliday = $this->holidays->toggleDay($jalaliYear, $jalaliMonth, $day);
 
         return new WP_REST_Response(['holiday' => $isHoliday], 200);
+    }
+
+    public function calendar(WP_REST_Request $request): WP_REST_Response
+    {
+        $jalaliYear = (int) $request->get_param('jalali_year');
+        $jalaliMonth = (int) $request->get_param('jalali_month');
+
+        $url = add_query_arg(
+            ['page' => Page::SLUG, 'whw_y' => $jalaliYear, 'whw_m' => $jalaliMonth],
+            admin_url('admin.php'),
+        );
+
+        return new WP_REST_Response([
+            'calendar_html' => $this->page->renderCalendarFragment($jalaliYear, $jalaliMonth),
+            'official_html' => $this->page->renderOfficialHolidaysFragment($jalaliYear, $jalaliMonth),
+            'url' => $url,
+        ], 200);
     }
 
     public function setOverride(WP_REST_Request $request): WP_REST_Response

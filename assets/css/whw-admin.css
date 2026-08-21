@@ -53,6 +53,20 @@
     }
 }
 
+.whw-admin-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 32px;
+}
+
+@media (max-width: 900px) {
+    .whw-admin-sidebar {
+        position: static;
+    }
+}
+
 .whw-admin-card {
     background: #fff;
     border: 1px solid #dcdcde;
@@ -63,14 +77,6 @@
 
 .whw-admin-card--side {
     padding: 20px;
-    position: sticky;
-    top: 32px;
-}
-
-@media (max-width: 900px) {
-    .whw-admin-card--side {
-        position: static;
-    }
 }
 
 .whw-admin-card h2 {
@@ -153,16 +159,23 @@
 .whw-nav-btn {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 32px;
+    gap: 4px;
     height: 32px;
+    padding: 0 12px;
     border: 1px solid #dcdcde;
     border-radius: 6px;
     background: #f6f7f7;
     color: #2c3338;
     text-decoration: none;
-    font-size: 16px;
+    font-size: 13px;
+    font-weight: 500;
     line-height: 1;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.whw-nav-btn span {
+    font-size: 16px;
 }
 
 .whw-nav-btn:hover,
@@ -170,6 +183,12 @@
     background: #a8261a;
     border-color: #a8261a;
     color: #fff;
+}
+
+.whw-nav-btn.is-busy {
+    opacity: 0.6;
+    cursor: wait;
+    pointer-events: none;
 }
 
 .whw-admin-calendar__weekdays,
@@ -218,9 +237,11 @@
     outline-offset: 2px;
 }
 
-.whw-admin-day--blank {
-    visibility: hidden;
-    border: none;
+.whw-admin-day--overflow {
+    border-color: transparent;
+    background: transparent;
+    color: #c3c4c7;
+    font-weight: 500;
     cursor: default;
 }
 
@@ -300,6 +321,77 @@
 .whw-legend-item.is-today::before {
     background: #fff;
     border: 2px solid #2a1e17;
+}
+
+/* ---------------------------------------------------------------------
+ * Dashboard widget (wp-admin/index.php)
+ * ------------------------------------------------------------------- */
+
+.whw-dashboard-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    margin: 0 0 12px;
+}
+
+.whw-status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+}
+
+.whw-status-dot.is-open {
+    background: #00a32a;
+}
+
+.whw-status-dot.is-closed {
+    background: #d63638;
+}
+
+.whw-dashboard-link {
+    margin: 12px 0 0;
+    font-size: 12px;
+}
+
+/* ---------------------------------------------------------------------
+ * Official holidays list (sidebar)
+ * ------------------------------------------------------------------- */
+
+.whw-official-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.whw-official-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px 0;
+    border-top: 1px solid #f0f0f1;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.whw-official-list li:first-child {
+    border-top: none;
+}
+
+.whw-official-list__day {
+    flex: 0 0 auto;
+    font-weight: 600;
+    color: #2271b1;
+    white-space: nowrap;
+}
+
+.whw-official-list__name {
+    color: #2c3338;
 }
 
 @media (max-width: 480px) {
