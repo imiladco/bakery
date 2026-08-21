@@ -83,6 +83,8 @@ final class Page
             'nonce' => wp_create_nonce('wp_rest'),
             'strings' => [
                 'error' => __('خطا در ارتباط با سرور. دوباره تلاش کنید.', 'weekly-holidays-widget'),
+                'dayMarkedHoliday' => __('روز %d تعطیل علامت خورد', 'weekly-holidays-widget'),
+                'dayMarkedNormal' => __('روز %d عادی شد', 'weekly-holidays-widget'),
             ],
         ]);
     }
@@ -123,9 +125,12 @@ final class Page
 
         echo '<div class="wrap whw-admin-wrap">';
         echo '<h1>' . esc_html__('تعطیلات هفته', 'weekly-holidays-widget') . '</h1>';
+        echo '<p class="whw-admin-intro">' . esc_html__('تقویم زیر تعیین می‌کند ویجت «تعطیلات هفته» هر روز را چه وضعیتی نشان دهد. برای تعطیل‌کردن دستی یک روز، رویش کلیک کنید.', 'weekly-holidays-widget') . '</p>';
 
-        $this->renderTodayOverride($overrideState);
+        echo '<div class="whw-admin-layout">';
         $this->renderCalendar($year, $month, $daysInMonth, $manualHolidays, $officialHolidays, $todayJalali, $prevYear, $prevMonth, $nextYear, $nextMonth);
+        $this->renderTodayOverride($overrideState);
+        echo '</div>';
 
         echo '</div>';
     }
@@ -138,7 +143,7 @@ final class Page
             OverrideState::ForceNormal->value => __('اجبار به عادی', 'weekly-holidays-widget'),
         ];
 
-        echo '<div class="whw-admin-card whw-admin-override" role="group" aria-label="' . esc_attr__('Override وضعیت امروز', 'weekly-holidays-widget') . '">';
+        echo '<div class="whw-admin-card whw-admin-card--side whw-admin-override" role="group" aria-label="' . esc_attr__('Override وضعیت امروز', 'weekly-holidays-widget') . '">';
         echo '<h2>' . esc_html__('وضعیت امروز', 'weekly-holidays-widget') . '</h2>';
         echo '<p class="description">' . esc_html__('این کلید فقط برای امروز اعتبار دارد و فردا خودش خنثی می‌شود — نیازی به خاموش کردن دستی نیست.', 'weekly-holidays-widget') . '</p>';
 
@@ -177,7 +182,7 @@ final class Page
         $prevUrl = add_query_arg(['whw_y' => $prevYear, 'whw_m' => $prevMonth]);
         $nextUrl = add_query_arg(['whw_y' => $nextYear, 'whw_m' => $nextMonth]);
 
-        echo '<div class="whw-admin-card">';
+        echo '<div class="whw-admin-card whw-admin-card--main">';
         echo '<div class="whw-admin-calendar" data-jalali-year="' . esc_attr((string) $year) . '" data-jalali-month="' . esc_attr((string) $month) . '">';
 
         echo '<div class="whw-admin-calendar__nav">';
@@ -247,6 +252,8 @@ final class Page
         printf('<span class="whw-legend-item is-official-holiday">%s</span>', esc_html__('تعطیل رسمی (اطلاع‌رسانی)', 'weekly-holidays-widget'));
         printf('<span class="whw-legend-item is-today">%s</span>', esc_html__('امروز', 'weekly-holidays-widget'));
         echo '</div>';
+
+        echo '<span class="whw-calendar-status whw-visually-hidden" role="status" aria-live="polite"></span>';
 
         echo '</div>';
         echo '</div>';

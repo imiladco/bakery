@@ -1,5 +1,11 @@
 /*
  * Admin settings page — Jalali monthly calendar + Today Override.
+ *
+ * Layout: the calendar is the primary/"hero" surface (main column), the
+ * Today Override is a secondary quick-action (sidebar column on wide
+ * screens, stacks below the calendar on narrow ones). DOM order matches
+ * this visual order too, so tab order stays sensible.
+ *
  * Explicit dir: rtl throughout so the layout is correct regardless of the
  * wp-admin locale (content here is always Persian, even on an English
  * install), and explicit weekday columns so every day actually lines up
@@ -9,50 +15,97 @@
 
 .whw-admin-wrap {
     direction: rtl;
-    max-width: 720px;
+    max-width: 980px;
 }
 
 .whw-admin-wrap h1 {
-    margin-bottom: 20px;
+    margin-bottom: 4px;
+}
+
+.whw-admin-intro {
+    margin: 0 0 24px;
+    color: #646970;
+    max-width: 60ch;
+}
+
+.whw-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.whw-admin-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    align-items: start;
+    gap: 20px;
+}
+
+@media (max-width: 900px) {
+    .whw-admin-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 .whw-admin-card {
     background: #fff;
     border: 1px solid #dcdcde;
-    border-radius: 8px;
+    border-radius: 10px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    padding: 20px 24px;
-    margin-bottom: 20px;
+    padding: 24px;
+}
+
+.whw-admin-card--side {
+    padding: 20px;
+    position: sticky;
+    top: 32px;
+}
+
+@media (max-width: 900px) {
+    .whw-admin-card--side {
+        position: static;
+    }
 }
 
 .whw-admin-card h2 {
     margin: 0 0 4px;
-    font-size: 15px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #646970;
 }
 
 .whw-admin-card .description {
     margin: 0 0 16px;
-    color: #646970;
+    font-size: 12px;
+    color: #8c8f94;
 }
 
 /* ---------------------------------------------------------------------
- * Today Override
+ * Today Override (sidebar)
  * ------------------------------------------------------------------- */
 
 .whw-override-group {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .whw-override-btn {
     appearance: none;
     cursor: pointer;
+    text-align: right;
     border: 1px solid #dcdcde;
     border-radius: 6px;
     background: #f6f7f7;
     color: #2c3338;
-    padding: 8px 16px;
+    padding: 9px 14px;
     font-size: 13px;
     font-weight: 500;
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -74,25 +127,27 @@
 }
 
 .whw-admin-status {
-    display: inline-block;
-    margin-inline-start: 12px;
+    display: block;
+    margin-top: 10px;
     font-size: 12px;
     color: #646970;
+    min-height: 1em;
 }
 
 /* ---------------------------------------------------------------------
- * Calendar
+ * Calendar (main)
  * ------------------------------------------------------------------- */
 
 .whw-admin-calendar__nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .whw-admin-calendar__title {
-    font-size: 15px;
+    font-size: 16px;
+    font-weight: 600;
 }
 
 .whw-nav-btn {
@@ -110,27 +165,29 @@
     line-height: 1;
 }
 
-.whw-nav-btn:hover {
-    background: #f0f0f1;
-    color: #2c3338;
+.whw-nav-btn:hover,
+.whw-nav-btn:focus-visible {
+    background: #a8261a;
+    border-color: #a8261a;
+    color: #fff;
 }
 
 .whw-admin-calendar__weekdays,
 .whw-admin-calendar__grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
+    gap: 8px;
 }
 
 .whw-admin-calendar__weekdays {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .whw-admin-calendar__weekdays span {
     text-align: center;
     font-size: 12px;
     font-weight: 600;
-    color: #646970;
+    color: #8c8f94;
     padding-bottom: 4px;
 }
 
@@ -141,18 +198,24 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    border: 1px solid #dcdcde;
-    border-radius: 6px;
+    border: 1px solid #e2e4e7;
+    border-radius: 8px;
     background: #fff;
     color: #2c3338;
     cursor: pointer;
     font-weight: 600;
-    font-size: 13px;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    font-size: 14px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 .whw-admin-day:hover {
     border-color: #a8261a;
+    transform: translateY(-1px);
+}
+
+.whw-admin-day:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
 }
 
 .whw-admin-day--blank {
@@ -175,8 +238,8 @@
 .whw-admin-day.is-official-holiday::after {
     content: '';
     position: absolute;
-    top: 4px;
-    left: 4px;
+    top: 5px;
+    left: 5px;
     width: 6px;
     height: 6px;
     border-radius: 50%;
@@ -191,13 +254,14 @@
 .whw-admin-day.is-busy {
     opacity: 0.5;
     cursor: wait;
+    transform: none;
 }
 
 .whw-admin-calendar__legend {
     display: flex;
     flex-wrap: wrap;
     gap: 8px 20px;
-    margin-top: 20px;
+    margin-top: 24px;
     padding-top: 16px;
     border-top: 1px solid #f0f0f1;
     font-size: 12px;
@@ -241,9 +305,14 @@
 @media (max-width: 480px) {
     .whw-admin-day {
         font-size: 12px;
+        border-radius: 6px;
     }
 
     .whw-admin-calendar__weekdays span {
         font-size: 11px;
+    }
+
+    .whw-admin-card {
+        padding: 16px;
     }
 }

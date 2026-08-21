@@ -43,6 +43,7 @@
 
         var year = parseInt(grid.getAttribute('data-jalali-year'), 10);
         var month = parseInt(grid.getAttribute('data-jalali-month'), 10);
+        var status = grid.querySelector('.whw-calendar-status');
 
         grid.addEventListener('click', function (event) {
             var button = event.target.closest('.whw-admin-day:not(.whw-admin-day--blank)');
@@ -62,6 +63,11 @@
                 .then(function (result) {
                     button.classList.toggle('is-manual-holiday', !!result.holiday);
                     button.setAttribute('aria-pressed', result.holiday ? 'true' : 'false');
+                    if (status) {
+                        status.textContent = result.holiday
+                            ? whwAdmin.strings.dayMarkedHoliday.replace('%d', day)
+                            : whwAdmin.strings.dayMarkedNormal.replace('%d', day);
+                    }
                 })
                 .catch(function () {
                     window.alert(whwAdmin.strings.error);
