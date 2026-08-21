@@ -29,6 +29,14 @@ final class Page
     private const SLUG = 'whw-weekly-holidays';
     private const CAPABILITY = 'manage_options';
 
+    private const WEEKDAY_LABELS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
+
+    private const MONTH_NAMES = [
+        1 => 'فروردین', 2 => 'اردیبهشت', 3 => 'خرداد', 4 => 'تیر',
+        5 => 'مرداد', 6 => 'شهریور', 7 => 'مهر', 8 => 'آبان',
+        9 => 'آذر', 10 => 'دی', 11 => 'بهمن', 12 => 'اسفند',
+    ];
+
     public function __construct(
         private readonly Holidays $holidays,
         private readonly Override $override,
@@ -130,18 +138,21 @@ final class Page
             OverrideState::ForceNormal->value => __('اجبار به عادی', 'weekly-holidays-widget'),
         ];
 
-        echo '<div class="whw-admin-override" role="group" aria-label="' . esc_attr__('Override وضعیت امروز', 'weekly-holidays-widget') . '">';
+        echo '<div class="whw-admin-card whw-admin-override" role="group" aria-label="' . esc_attr__('Override وضعیت امروز', 'weekly-holidays-widget') . '">';
         echo '<h2>' . esc_html__('وضعیت امروز', 'weekly-holidays-widget') . '</h2>';
+        echo '<p class="description">' . esc_html__('این کلید فقط برای امروز اعتبار دارد و فردا خودش خنثی می‌شود — نیازی به خاموش کردن دستی نیست.', 'weekly-holidays-widget') . '</p>';
 
+        echo '<div class="whw-override-group">';
         foreach ($options as $value => $label) {
             printf(
-                '<button type="button" class="button whw-override-btn%1$s" data-state="%2$s" aria-pressed="%3$s">%4$s</button>',
-                $current->value === $value ? ' button-primary is-active' : '',
+                '<button type="button" class="whw-override-btn%1$s" data-state="%2$s" aria-pressed="%3$s">%4$s</button>',
+                $current->value === $value ? ' is-active' : '',
                 esc_attr($value),
                 $current->value === $value ? 'true' : 'false',
                 esc_html($label),
             );
         }
+        echo '</div>';
 
         echo '<span class="whw-admin-status" role="status" aria-live="polite"></span>';
         echo '</div>';
@@ -166,15 +177,36 @@ final class Page
         $prevUrl = add_query_arg(['whw_y' => $prevYear, 'whw_m' => $prevMonth]);
         $nextUrl = add_query_arg(['whw_y' => $nextYear, 'whw_m' => $nextMonth]);
 
+        echo '<div class="whw-admin-card">';
         echo '<div class="whw-admin-calendar" data-jalali-year="' . esc_attr((string) $year) . '" data-jalali-month="' . esc_attr((string) $month) . '">';
 
         echo '<div class="whw-admin-calendar__nav">';
-        printf('<a class="button" href="%s">&raquo; %s</a>', esc_url($prevUrl), esc_html__('ماه قبل', 'weekly-holidays-widget'));
-        printf('<strong>%d / %02d</strong>', $year, $month);
-        printf('<a class="button" href="%s">%s &laquo;</a>', esc_url($nextUrl), esc_html__('ماه بعد', 'weekly-holidays-widget'));
+        printf('<a class="whw-nav-btn" href="%s" aria-label="%s">&raquo;</a>', esc_url($prevUrl), esc_attr__('ماه قبل', 'weekly-holidays-widget'));
+        printf(
+            '<strong class="whw-admin-calendar__title">%s %s</strong>',
+            esc_html(self::MONTH_NAMES[$month]),
+            esc_html($this->toPersianDigits((string) $year)),
+        );
+        printf('<a class="whw-nav-btn" href="%s" aria-label="%s">&laquo;</a>', esc_url($nextUrl), esc_attr__('ماه بعد', 'weekly-holidays-widget'));
         echo '</div>';
 
+        echo '<div class="whw-admin-calendar__weekdays">';
+        foreach (self::WEEKDAY_LABELS as $label) {
+            printf('<span>%s</span>', esc_html($label));
+        }
+        echo '</div>';
+
+        // روز اول ماه لزوماً شنبه نیست؛ همین‌قدر خانهٔ خالی قبل از روز ۱
+        // اضافه می‌شود تا هر روز واقعاً زیر ستون هم‌نامش بنشیند.
+        $firstWeekdayIndex = Week::weekdayIndex((new JalaliDate($year, $month, 1))->toGregorian());
+        $totalCells = $firstWeekdayIndex + $daysInMonth;
+        $trailingBlanks = (7 - ($totalCells % 7)) % 7;
+
         echo '<div class="whw-admin-calendar__grid">';
+
+        for ($i = 0; $i < $firstWeekdayIndex; $i++) {
+            echo '<span class="whw-admin-day whw-admin-day--blank" aria-hidden="true"></span>';
+        }
 
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $jalali = new JalaliDate($year, $month, $day);
@@ -195,11 +227,16 @@ final class Page
             }
 
             printf(
-                '<button type="button" class="%1$s" data-day="%2$d" aria-pressed="%3$s">%2$d</button>',
+                '<button type="button" class="%1$s" data-day="%2$d" aria-pressed="%3$s">%4$s</button>',
                 esc_attr(implode(' ', $classes)),
                 $day,
                 isset($manualHolidays[$day]) ? 'true' : 'false',
+                esc_html($this->toPersianDigits((string) $day)),
             );
+        }
+
+        for ($i = 0; $i < $trailingBlanks; $i++) {
+            echo '<span class="whw-admin-day whw-admin-day--blank" aria-hidden="true"></span>';
         }
 
         echo '</div>';
@@ -212,5 +249,11 @@ final class Page
         echo '</div>';
 
         echo '</div>';
+        echo '</div>';
+    }
+
+    private function toPersianDigits(string $value): string
+    {
+        return strtr($value, ['0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴', '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹']);
     }
 }

@@ -45,7 +45,7 @@
         var month = parseInt(grid.getAttribute('data-jalali-month'), 10);
 
         grid.addEventListener('click', function (event) {
-            var button = event.target.closest('.whw-admin-day');
+            var button = event.target.closest('.whw-admin-day:not(.whw-admin-day--blank)');
             if (!button || button.disabled) {
                 return;
             }
@@ -98,7 +98,6 @@
                     buttons.forEach(function (btn) {
                         var isActive = btn === button;
                         btn.classList.toggle('is-active', isActive);
-                        btn.classList.toggle('button-primary', isActive);
                         btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
                     });
                     if (status) {
