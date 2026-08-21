@@ -95,6 +95,7 @@ final class Account_Bar extends Widget_Base
         $this->register_name_style_controls();
         $this->register_separator_style_controls();
         $this->register_balance_style_controls();
+        $this->register_compact_user_style_controls();
     }
 
     /* =====================================================================
@@ -179,6 +180,34 @@ final class Account_Bar extends Widget_Base
             'condition' => ['show_user' => 'yes'],
         ]);
 
+        /*
+         * «فشرده» رفرنس مجزای فیگما برای مصرف تک‌آیتمِ کیف‌پول (مثلاً
+         * نسخهٔ موبایل) است — نه فقط اندازهٔ کوچک‌تر همین پیل، بلکه
+         * ترکیب محتوای متفاوت: یک سطر خوش‌آمدگویی + یک رشتهٔ کامل موجودی
+         * به‌جای نام/جداکننده/برچسب/عدد/واحد پول جدا. برای همین یک حالت
+         * نمایش مجزا شد، نه یک بریک‌پوینت ریسپانسیو — چون ممکن است
+         * ادمین بخواهد همین حالت را در دسکتاپ هم برای یک ویجت تک‌آیتم
+         * جدا (کنار خود نوار اصلی) به کار ببرد.
+         */
+        $this->add_control('user_layout', [
+            'label' => __('نوع نمایش', 'bakery-widgets'),
+            'type' => Controls_Manager::SELECT,
+            'default' => 'full',
+            'options' => [
+                'full' => __('کامل (نام، جداکننده، موجودی جداگانه)', 'bakery-widgets'),
+                'compact' => __('فشرده (یک سطر خوش‌آمدگویی + موجودی) — تک‌آیتم/موبایل', 'bakery-widgets'),
+            ],
+            'condition' => ['show_user' => 'yes'],
+        ]);
+
+        $this->add_control('greeting_suffix', [
+            'label' => __('پسوند خوش‌آمدگویی', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('خوش آمدید', 'bakery-widgets'),
+            'description' => __('بعد از نام کاربر می‌آید: «سارا احمدی خوش آمدید».', 'bakery-widgets'),
+            'condition' => ['show_user' => 'yes', 'user_layout' => 'compact'],
+        ]);
+
         $this->add_control('heading_balance', [
             'label' => __('موجودی', 'bakery-widgets'),
             'type' => Controls_Manager::HEADING,
@@ -197,13 +226,13 @@ final class Account_Bar extends Widget_Base
             'label' => __('جداکننده', 'bakery-widgets'),
             'type' => Controls_Manager::TEXT,
             'default' => '-',
-            'condition' => ['show_user' => 'yes', 'show_balance' => 'yes'],
+            'condition' => ['show_user' => 'yes', 'show_balance' => 'yes', 'user_layout' => 'full'],
         ]);
 
         $this->add_control('balance_label', [
             'label' => __('برچسب', 'bakery-widgets'),
             'type' => Controls_Manager::TEXT,
-            'default' => __('موجودی :', 'bakery-widgets'),
+            'default' => __('موجودی:', 'bakery-widgets'),
             'condition' => ['show_user' => 'yes', 'show_balance' => 'yes'],
         ]);
 
@@ -276,6 +305,16 @@ final class Account_Bar extends Widget_Base
         $this->start_controls_section('section_layout', [
             'label' => __('چیدمان', 'bakery-widgets'),
             'tab' => Controls_Manager::TAB_CONTENT,
+        ]);
+
+        $this->add_control('bar_full_width', [
+            'label' => __('عرض کامل', 'bakery-widgets'),
+            'type' => Controls_Manager::SWITCHER,
+            'default' => '',
+            'description' => __('برای استفادهٔ تک‌آیتم (مثلاً فقط سبد خرید یا فقط کیف‌پول در یک ستون باریک) روشن کنید تا پیل تمام عرض جا را بگیرد.', 'bakery-widgets'),
+            'selectors' => [
+                '{{WRAPPER}} .bkw-account-bar' => 'width: 100%;',
+            ],
         ]);
 
         $this->add_responsive_control('bar_gap', [
@@ -362,6 +401,8 @@ final class Account_Bar extends Widget_Base
             'type' => Controls_Manager::DIMENSIONS,
             'size_units' => ['px', 'em', '%'],
             'default' => ['top' => '10', 'right' => '16', 'bottom' => '10', 'left' => '16', 'unit' => 'px', 'isLinked' => false],
+            // مطابق رفرنس‌های «تک‌آیتم سبد خرید» و «تک‌آیتم موبایل کیف‌پول» در فیگما
+            'mobile_default' => ['top' => '8', 'right' => '12', 'bottom' => '8', 'left' => '12', 'unit' => 'px', 'isLinked' => false],
             'selectors' => [
                 '{{WRAPPER}} .bkw-account-bar__item' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
             ],
@@ -373,6 +414,7 @@ final class Account_Bar extends Widget_Base
             'size_units' => ['px', 'em'],
             'range' => ['px' => ['min' => 0, 'max' => 40]],
             'default' => ['size' => 12, 'unit' => 'px'],
+            'mobile_default' => ['size' => 8, 'unit' => 'px'],
             'selectors' => [
                 '{{WRAPPER}} .bkw-account-bar__item' => 'gap: {{SIZE}}{{UNIT}};',
             ],
@@ -406,6 +448,7 @@ final class Account_Bar extends Widget_Base
             'type' => Controls_Manager::DIMENSIONS,
             'size_units' => ['px', '%'],
             'default' => ['top' => '16', 'right' => '16', 'bottom' => '16', 'left' => '16', 'unit' => 'px', 'isLinked' => true],
+            'mobile_default' => ['top' => '12', 'right' => '12', 'bottom' => '12', 'left' => '12', 'unit' => 'px', 'isLinked' => true],
             'selectors' => [
                 '{{WRAPPER}} .bkw-account-bar__item' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
             ],
@@ -471,7 +514,8 @@ final class Account_Bar extends Widget_Base
             'condition' => ['show_cart' => 'yes'],
         ]);
 
-        $this->register_icon_style_controls('cart', '.bkw-account-bar__cart');
+        // مطابق رفرنس «تک‌آیتم سبد خرید»: آیکون در موبایل ۱۸px است، نه ۲۰px
+        $this->register_icon_style_controls('cart', '.bkw-account-bar__cart', 18);
 
         $this->end_controls_section();
     }
@@ -514,6 +558,7 @@ final class Account_Bar extends Widget_Base
             'type' => Controls_Manager::DIMENSIONS,
             'size_units' => ['px', 'em'],
             'default' => ['top' => '2', 'right' => '8', 'bottom' => '2', 'left' => '8', 'unit' => 'px', 'isLinked' => false],
+            'mobile_default' => ['top' => '1', 'right' => '6', 'bottom' => '1', 'left' => '6', 'unit' => 'px', 'isLinked' => false],
             'selectors' => [$selector => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};'],
         ]);
 
@@ -522,6 +567,7 @@ final class Account_Bar extends Widget_Base
             'type' => Controls_Manager::DIMENSIONS,
             'size_units' => ['px', '%'],
             'default' => ['top' => '8', 'right' => '8', 'bottom' => '8', 'left' => '8', 'unit' => 'px', 'isLinked' => true],
+            'mobile_default' => ['top' => '6', 'right' => '6', 'bottom' => '6', 'left' => '6', 'unit' => 'px', 'isLinked' => true],
             'selectors' => [$selector => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};'],
         ]);
 
@@ -560,11 +606,11 @@ final class Account_Bar extends Widget_Base
      * می‌گذارد تا اگر کاربر بعداً یک SVG توپُر جایگزین کرد، همان کنترل
      * برایش هم کار کند — دقیقاً مثل آیکون‌باکس.
      */
-    private function register_icon_style_controls(string $prefix, string $item_class): void
+    private function register_icon_style_controls(string $prefix, string $item_class, ?int $mobile_size = null): void
     {
         $icon_selector = "{{WRAPPER}} {$item_class} .bkw-account-bar__icon";
 
-        $this->add_responsive_control($prefix . '_icon_size', [
+        $size_control = [
             'label' => __('اندازه', 'bakery-widgets'),
             'type' => Controls_Manager::SLIDER,
             'size_units' => ['px'],
@@ -573,7 +619,13 @@ final class Account_Bar extends Widget_Base
             'selectors' => [
                 "{$icon_selector} svg, {$icon_selector} img" => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
             ],
-        ]);
+        ];
+
+        if (null !== $mobile_size) {
+            $size_control['mobile_default'] = ['unit' => 'px', 'size' => $mobile_size];
+        }
+
+        $this->add_responsive_control($prefix . '_icon_size', $size_control);
 
         $this->add_control($prefix . '_icon_flip', [
             'label' => __('قرینهٔ افقی', 'bakery-widgets'),
@@ -683,7 +735,7 @@ final class Account_Bar extends Widget_Base
         $this->start_controls_section('section_style_separator', [
             'label' => __('جداکننده', 'bakery-widgets'),
             'tab' => Controls_Manager::TAB_STYLE,
-            'condition' => ['show_user' => 'yes', 'show_balance' => 'yes'],
+            'condition' => ['show_user' => 'yes', 'show_balance' => 'yes', 'user_layout' => 'full'],
         ]);
 
         $selector = '{{WRAPPER}} .bkw-account-bar__separator';
@@ -712,7 +764,7 @@ final class Account_Bar extends Widget_Base
         $this->start_controls_section('section_style_balance', [
             'label' => __('موجودی', 'bakery-widgets'),
             'tab' => Controls_Manager::TAB_STYLE,
-            'condition' => ['show_user' => 'yes', 'show_balance' => 'yes'],
+            'condition' => ['show_user' => 'yes', 'show_balance' => 'yes', 'user_layout' => 'full'],
         ]);
 
         $this->add_responsive_control('balance_gap', [
@@ -763,6 +815,34 @@ final class Account_Bar extends Widget_Base
             'default' => $default_color,
             'selectors' => [$selector => 'color: {{VALUE}};'],
         ]);
+    }
+
+    /* =====================================================================
+     * استایل — حالت فشرده کاربر (خوش‌آمدگویی + موجودی یک‌سطری)
+     * =================================================================== */
+
+    private function register_compact_user_style_controls(): void
+    {
+        $this->start_controls_section('section_style_compact_user', [
+            'label' => __('نسخهٔ فشرده کاربر', 'bakery-widgets'),
+            'tab' => Controls_Manager::TAB_STYLE,
+            'condition' => ['show_user' => 'yes', 'show_balance' => 'yes', 'user_layout' => 'compact'],
+        ]);
+
+        $this->add_control('heading_compact_greeting', [
+            'label' => __('خوش‌آمدگویی', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+        ]);
+        $this->register_balance_part_style_controls('compact_greeting', '{{WRAPPER}} .bkw-account-bar__greeting', '#2a1e17');
+
+        $this->add_control('heading_compact_balance', [
+            'label' => __('موجودی', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+        $this->register_balance_part_style_controls('compact_balance', '{{WRAPPER}} .bkw-account-bar__balance-compact', '#615249');
+
+        $this->end_controls_section();
     }
 
     /* =====================================================================
@@ -883,14 +963,19 @@ final class Account_Bar extends Widget_Base
         $name = $this->resolve_display_name($user, '' !== trim($fallback_name) ? $fallback_name : __('کاربر مهمان', 'bakery-widgets'));
 
         $show_balance = 'yes' === ($settings['show_balance'] ?? 'yes');
+        $compact = $show_balance && 'compact' === ($settings['user_layout'] ?? 'full');
+
+        if ($compact) {
+            $this->render_user_item_compact($settings, $user, $name);
+            return;
+        }
 
         echo '<div class="bkw-account-bar__item bkw-account-bar__user">';
 
         printf('<span class="bkw-account-bar__name">%s</span>', esc_html($name));
 
         if ($show_balance) {
-            $balance = $this->resolve_balance((float) $settings['balance_fallback'], $user->ID);
-            $amount = $this->to_persian_digits(number_format($balance, 0, '.', ','));
+            $amount = $this->format_balance($settings, $user);
 
             printf('<span class="bkw-account-bar__separator">%s</span>', esc_html((string) $settings['separator_text']));
 
@@ -902,6 +987,38 @@ final class Account_Bar extends Widget_Base
         }
 
         echo '</div>';
+    }
+
+    /**
+     * حالت «فشرده» — رفرنس فیگما «نسخه موبایل تک آیتم کیف پول»: یک سطر
+     * خوش‌آمدگویی («سارا احمدی خوش آمدید») + یک رشتهٔ کامل موجودی
+     * («موجودی: ۲,۵۰۰,۰۰۰ تومان»)، به‌جای پنج بخش جداگانهٔ حالت کامل.
+     * ترتیب DOM عمداً خوش‌آمدگویی را اول می‌آورد: زیر dir="rtl"، فرزند
+     * اول سمت راست می‌نشیند — همان‌جایی که در حالت کامل هم نام است.
+     */
+    private function render_user_item_compact(array $settings, WP_User $user, string $name): void
+    {
+        $amount = $this->format_balance($settings, $user);
+        $balance_text = trim(sprintf(
+            '%s %s %s',
+            (string) $settings['balance_label'],
+            $amount,
+            (string) $settings['balance_currency'],
+        ));
+
+        $greeting = trim($name . ' ' . (string) $settings['greeting_suffix']);
+
+        echo '<div class="bkw-account-bar__item bkw-account-bar__user bkw-account-bar__user--compact">';
+        printf('<span class="bkw-account-bar__greeting">%s</span>', esc_html($greeting));
+        printf('<span class="bkw-account-bar__balance-compact">%s</span>', esc_html($balance_text));
+        echo '</div>';
+    }
+
+    private function format_balance(array $settings, WP_User $user): string
+    {
+        $balance = $this->resolve_balance((float) $settings['balance_fallback'], $user->ID);
+
+        return $this->to_persian_digits(number_format($balance, 0, '.', ','));
     }
 
     private function render_logout_item(array $settings): void

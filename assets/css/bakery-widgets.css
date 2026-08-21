@@ -151,3 +151,22 @@ a.bkw-account-bar__item {
 	display: inline-flex;
 	align-items: baseline;
 }
+
+/*
+ * حالت «فشرده» پیل کاربر (رفرنس فیگما «نسخه موبایل تک آیتم کیف پول»):
+ * برخلاف بقیهٔ پیل‌ها که shrink-to-fit هستند، این حالت طوری طراحی شده
+ * که یک نوار تمام‌عرض باشد (خوش‌آمدگویی یک سر، موجودی سر دیگر) — پس
+ * width:100% می‌گیرد؛ کنترل «عرض کامل» در تب چیدمان همین را روی خودِ
+ * .bkw-account-bar هم اعمال می‌کند، برای وقتی این پیل به‌تنهایی
+ * (بدون سبد/خروج) استفاده می‌شود.
+ */
+.bkw-account-bar__user--compact {
+	width: 100%;
+	justify-content: space-between;
+}
+
+.bkw-account-bar__greeting,
+.bkw-account-bar__balance-compact {
+	white-space: nowrap;
+	line-height: 1.4;
+}
