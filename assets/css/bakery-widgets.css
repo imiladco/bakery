@@ -91,3 +91,63 @@
 	color: #c00;
 	font-size: 13px;
 }
+
+/*
+ * ویجت account-bar: سه پیل مستقل (سبد خرید / کاربر / خروج) کنار هم.
+ * جایگاه نهایی هر پیل با CSS order (کنترل «ترتیب نمایش» در تب چیدمان)
+ * تعیین می‌شود، نه ترتیب DOM — دقیقاً مثل .bkw-price. کادر پیل‌ها
+ * (پس‌زمینه/حاشیه/رادیوس/پدینگ) روی کلاس مشترک __item است چون در
+ * رفرنس فیگما هر سه پیل دقیقاً یک ظاهر دارند.
+ */
+.bkw-account-bar {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+.bkw-account-bar__item {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	box-sizing: border-box;
+	color: inherit;
+	text-decoration: none;
+}
+
+a.bkw-account-bar__item {
+	cursor: pointer;
+}
+
+.bkw-account-bar__icon {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
+
+.bkw-account-bar__icon svg,
+.bkw-account-bar__icon img {
+	display: block;
+}
+
+.bkw-account-bar__badge,
+.bkw-account-bar__name,
+.bkw-account-bar__separator,
+.bkw-account-bar__balance-label,
+.bkw-account-bar__balance-amount,
+.bkw-account-bar__balance-currency {
+	white-space: nowrap;
+	line-height: 1;
+}
+
+.bkw-account-bar__badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.bkw-account-bar__balance {
+	display: inline-flex;
+	align-items: baseline;
+}
