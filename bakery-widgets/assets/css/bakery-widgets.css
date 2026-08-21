@@ -1,0 +1,93 @@
+/**
+ * استایل ساختاری ویجت‌های بیکری عظام.
+ * فقط چیدمان و مقادیر پیش‌فرض اینجا تعریف می‌شود؛ رنگ، تایپوگرافی و
+ * فاصله‌های قابل‌تنظیم همگی از کنترل‌های تب استایل المنتور (selectors)
+ * به‌صورت inline روی هر ویجت اعمال می‌شوند.
+ *
+ * ساختار ویجت icon-box عمداً دو‌سطری است:
+ *   سطر ۱ (.bkw-icon-box__header): عنوان، + آیکون در صورتی که «جایگاه
+ *     آیکون» روی «کنار عنوان» باشد.
+ *   سطر ۲ (.bkw-icon-box__description-row): توضیحات، + آیکون در صورتی
+ *     که «جایگاه آیکون» روی «کنار توضیحات» باشد.
+ * آیکون همیشه فقط در یکی از این دو سطر است، هیچ‌وقت هر دو. این جدایی
+ * تضمین می‌کند آیکون هیچ‌وقت با ارتفاعش وارد سطر دیگر نشود و فقط با
+ * متن هم‌سطر خودش هم‌تراز بماند؛ وقتی آیکون کنار عنوان است، توضیحات هم
+ * با margin-inline-start محاسبه‌شده در PHP (کنترل «هم‌تراز کردن
+ * توضیحات») دقیقاً زیر عنوان می‌نشیند.
+ */
+
+.bkw-icon-box {
+	--bkw-icon-size: 40px;
+	--bkw-box-gap: 16px;
+	display: flex;
+	flex-direction: column;
+	row-gap: 8px;
+}
+
+.bkw-icon-box a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.bkw-icon-box__header,
+.bkw-icon-box__description-row {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: var(--bkw-box-gap);
+}
+
+.bkw-icon-box__icon {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
+
+.bkw-icon-box__icon svg {
+	width: var(--bkw-icon-size);
+	height: var(--bkw-icon-size);
+	display: block;
+}
+
+.bkw-icon-box__icon img {
+	width: var(--bkw-icon-size);
+	height: auto;
+	display: block;
+}
+
+.bkw-icon-box__title,
+.bkw-icon-box__description {
+	margin: 0;
+	min-width: 0;
+}
+
+/*
+ * ویجت price: یک فلکس‌ردیف ساده با سه فرزند مستقل (فعلی/پیشین/واحد پول).
+ * ترتیب واقعی نمایش‌شان با کنترل «ترتیب نمایش» هر کدام (CSS order) از
+ * تب چیدمان تعیین می‌شود، نه با ترتیب مارک‌آپ — پس هر توالی‌ای ممکن است.
+ */
+.bkw-price {
+	display: flex;
+	flex-direction: row;
+	align-items: baseline;
+	gap: 8px;
+}
+
+.bkw-price__now,
+.bkw-price__old,
+.bkw-price__currency {
+	margin: 0;
+}
+
+.bkw-price__old {
+	text-decoration: line-through;
+}
+
+.bkw-price__notice {
+	padding: 16px;
+	border: 1px dashed #c00;
+	color: #c00;
+	font-size: 13px;
+}
