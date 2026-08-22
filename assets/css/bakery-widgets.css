@@ -500,9 +500,67 @@ html.bkw-panel-open {
  * بریک‌پوینت ثابت پنهان می‌شود — دقیقاً همان تفاوت متن دسکتاپ/موبایل
  * رفرنس فیگما («ورود به حساب کاربری» ↔ «ورود»)، بدون دو دکمهٔ جدا.
  */
-.bkw-login {
+/*
+ * ریست تهاجمی روی همهٔ فرزندهای .bkw-login: تم/کیت پیش‌فرض المنتور
+ * معمولاً یک استایل عمومی برای input/textarea/button/select کل سایت
+ * تعریف می‌کند (بردر، رادیوس، پدینگ) که چون سلکتورش هم‌تخصص با CSS
+ * همین افزونه است، صرفاً به‌خاطر ترتیب لود ممکن است آن را رد کند. این
+ * قانون‌ها روی تک‌تک عنصرهای فرم داخل ویجت با !important قفل می‌شوند
+ * تا صرفاً کنترل‌های خودِ این ویجت (که همه‌شان روی همین سلکتورها inline
+ * ست می‌شوند) واقعاً همیشه برنده باشند.
+ */
+.bkw-login,
+.bkw-login *,
+.bkw-login *::before,
+.bkw-login *::after {
 	box-sizing: border-box;
+}
+
+.bkw-login {
 	width: 100%;
+	position: relative;
+}
+
+.bkw-login__card {
+	box-sizing: border-box !important;
+	width: 100%;
+	background-clip: padding-box !important;
+	position: relative;
+	z-index: 1;
+}
+
+/*
+ * پس‌زمینهٔ صفحه (اختیاری، پیش‌فرض خاموش — رجوع کن به
+ * Widgets\Login::register_page_background_controls). حالت تمام‌صفحه
+ * با position:fixed پشت کل ویوپورت را می‌پوشاند (برای وقتی این ویجت
+ * خودش کل «صفحهٔ ورود» است)؛ بدون آن، فقط پشت خودِ ویجت را می‌پوشاند.
+ */
+.bkw-login__backdrop,
+.bkw-login__backdrop-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+}
+
+.bkw-login--full-bleed .bkw-login__backdrop,
+.bkw-login--full-bleed .bkw-login__backdrop-overlay {
+	position: fixed;
+}
+
+.bkw-login--full-bleed {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 100vh;
+	padding-top: 24px;
+	padding-bottom: 24px;
+}
+
+.bkw-login__backdrop {
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	transform: scale(1.05);
 }
 
 .bkw-login__step {
@@ -582,12 +640,20 @@ html.bkw-panel-open {
 	text-align: right;
 }
 
+/*
+ * .bkw-login__input-wrap خودِ کادر قابل‌مشاهده است (بردر/پس‌زمینه/رادیوس
+ * از کنترل‌های تب استایل می‌آید)؛ input واقعی داخلش کاملاً بی‌قاب است.
+ * چون استایل پیش‌فرض تم/کیت المنتور معمولاً مستقیم روی input[type=text]
+ * می‌نشیند (نه یک کلاس)، این ریست‌ها !important دارند تا هر ترتیب لودی
+ * که باشد، ظاهر نهایی همیشه دست کنترل‌های همین ویجت بماند.
+ */
 .bkw-login__input-wrap {
-	display: flex;
+	display: flex !important;
 	align-items: center;
 	gap: 8px;
 	width: 100%;
-	box-sizing: border-box;
+	box-sizing: border-box !important;
+	margin: 0 !important;
 }
 
 .bkw-login__input-icon {
@@ -603,29 +669,41 @@ html.bkw-panel-open {
 .bkw-login__input {
 	flex: 1 1 0;
 	min-width: 0;
-	width: 100%;
-	border: 0 none;
-	background: transparent;
-	padding: 0;
+	width: 100% !important;
+	height: auto !important;
+	border: 0 none !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	margin: 0 !important;
+	padding: 0 !important;
 	text-align: right;
 	direction: rtl;
-	font: inherit;
+	font: inherit !important;
+	line-height: normal;
+	-webkit-appearance: none;
+	appearance: none;
 }
 
 .bkw-login__input:focus {
-	outline: 0 none;
+	outline: 0 none !important;
+	box-shadow: none !important;
 }
 
 .bkw-login__submit {
+	-webkit-appearance: none;
 	appearance: none;
-	border: 0 none;
+	border: 0 none !important;
 	cursor: pointer;
-	display: flex;
+	display: flex !important;
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	box-sizing: border-box;
+	box-sizing: border-box !important;
+	margin: 0 !important;
 	font: inherit;
+	line-height: normal;
+	text-decoration: none !important;
 }
 
 .bkw-login__submit-text-short {
@@ -647,13 +725,17 @@ html.bkw-panel-open {
 }
 
 .bkw-login__edit-number {
+	-webkit-appearance: none;
 	appearance: none;
-	background: transparent;
-	border: 0 none;
-	padding: 0;
+	background: transparent !important;
+	border: 0 none !important;
+	box-shadow: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
 	cursor: pointer;
 	text-decoration: underline;
 	font: inherit;
+	line-height: normal;
 }
 
 .bkw-login__edit-number-value {
@@ -668,15 +750,20 @@ html.bkw-panel-open {
 }
 
 .bkw-login__otp-input {
-	box-sizing: border-box;
+	box-sizing: border-box !important;
 	text-align: center;
-	border-style: solid;
+	border-style: solid !important;
 	flex-shrink: 0;
-	font: inherit;
+	margin: 0 !important;
+	font: inherit !important;
+	line-height: normal;
+	-webkit-appearance: none;
+	appearance: none;
 }
 
 .bkw-login__otp-input:focus {
-	outline: 0 none;
+	outline: 0 none !important;
+	box-shadow: none !important;
 }
 
 .bkw-login__timer-row {
@@ -702,11 +789,15 @@ html.bkw-panel-open {
 }
 
 .bkw-login__resend {
+	-webkit-appearance: none;
 	appearance: none;
-	background: transparent;
-	border: 0 none;
-	padding: 0;
+	background: transparent !important;
+	border: 0 none !important;
+	box-shadow: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
 	font: inherit;
+	line-height: normal;
 }
 
 .bkw-login__resend:disabled {

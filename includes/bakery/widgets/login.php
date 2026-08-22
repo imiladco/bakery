@@ -88,8 +88,10 @@ final class Login extends Widget_Base
         $this->register_step1_controls();
         $this->register_step2_controls();
         $this->register_behavior_controls();
+        $this->register_page_background_controls();
 
         // تب استایل
+        $this->register_page_background_style_controls();
         $this->register_card_style_controls();
         $this->register_brand_style_controls();
         $this->register_divider_style_controls();
@@ -349,7 +351,79 @@ final class Login extends Widget_Base
             'default' => ['unit' => 'px', 'size' => 480],
             'mobile_default' => ['unit' => 'px', 'size' => 400],
             'selectors' => [
-                '{{WRAPPER}} .bkw-login' => 'max-width: {{SIZE}}{{UNIT}}; margin-left: auto; margin-right: auto;',
+                '{{WRAPPER}} .bkw-login__card' => 'max-width: {{SIZE}}{{UNIT}}; margin-left: auto; margin-right: auto;',
+            ],
+        ]);
+
+        $this->end_controls_section();
+    }
+
+    /* =====================================================================
+     * محتوا — پس‌زمینهٔ صفحه (رفرنس‌های موبایل فیگما یک تصویر تمام‌صفحه
+     * پشت کارت دارند — نه بخشی از خودِ کارت؛ اختیاری و پیش‌فرض خاموش،
+     * چون در رفرنس دسکتاپ اصلاً وجود ندارد)
+     * =================================================================== */
+
+    private function register_page_background_controls(): void
+    {
+        $this->start_controls_section('section_page_background', [
+            'label' => __('پس‌زمینهٔ صفحه', 'bakery-widgets'),
+            'tab' => Controls_Manager::TAB_CONTENT,
+        ]);
+
+        $this->add_control('page_background_notice', [
+            'type' => Controls_Manager::RAW_HTML,
+            'raw' => __('اگر این ویجت به‌صورت یک صفحهٔ کامل ورود استفاده می‌شود (رفرنس موبایل فیگما یک عکس پشت کارت دارد)، اینجا تصویر پس‌زمینه را انتخاب کنید. برای استفادهٔ داخل یک صفحهٔ معمولی (مثلاً وسط یک سکشن)، خالی بگذارید.', 'bakery-widgets'),
+            'content_classes' => 'elementor-descriptor',
+        ]);
+
+        $this->add_control('page_background_image', [
+            'label' => __('تصویر پس‌زمینه', 'bakery-widgets'),
+            'type' => Controls_Manager::MEDIA,
+            'media_types' => ['image'],
+        ]);
+
+        $this->add_control('page_background_full_bleed', [
+            'label' => __('تمام‌صفحه (پشت کل ویوپورت)', 'bakery-widgets'),
+            'type' => Controls_Manager::SWITCHER,
+            'default' => 'yes',
+            'description' => __('روشن: تصویر کل صفحه را می‌پوشاند (position: fixed) — مناسب صفحهٔ اختصاصی ورود. خاموش: فقط پشت همین ویجت را می‌پوشاند.', 'bakery-widgets'),
+            'condition' => ['page_background_image[url]!' => ''],
+        ]);
+
+        $this->end_controls_section();
+    }
+
+    /* =====================================================================
+     * استایل — پس‌زمینهٔ صفحه
+     * =================================================================== */
+
+    private function register_page_background_style_controls(): void
+    {
+        $this->start_controls_section('section_style_page_background', [
+            'label' => __('پس‌زمینهٔ صفحه', 'bakery-widgets'),
+            'tab' => Controls_Manager::TAB_STYLE,
+            'condition' => ['page_background_image[url]!' => ''],
+        ]);
+
+        $this->add_control('page_background_overlay_color', [
+            'label' => __('رنگ پردهٔ روی تصویر', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => 'rgba(26, 19, 14, 0.55)',
+            'description' => __('برای خواناتر شدن کارت روی عکس، یک پردهٔ رنگی تیره روی تصویر کشیده می‌شود.', 'bakery-widgets'),
+            'selectors' => [
+                '{{WRAPPER}} .bkw-login__backdrop-overlay' => 'background-color: {{VALUE}};',
+            ],
+        ]);
+
+        $this->add_control('page_background_blur', [
+            'label' => __('میزان بلور تصویر', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 20]],
+            'default' => ['unit' => 'px', 'size' => 4],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-login__backdrop' => 'filter: blur({{SIZE}}{{UNIT}});',
             ],
         ]);
 
@@ -374,7 +448,7 @@ final class Login extends Widget_Base
             'default' => ['top' => '48', 'right' => '48', 'bottom' => '48', 'left' => '48', 'unit' => 'px', 'isLinked' => true],
             'mobile_default' => ['top' => '24', 'right' => '24', 'bottom' => '24', 'left' => '24', 'unit' => 'px', 'isLinked' => true],
             'selectors' => [
-                '{{WRAPPER}} .bkw-login' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                '{{WRAPPER}} .bkw-login__card' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
             ],
         ]);
 
@@ -385,6 +459,7 @@ final class Login extends Widget_Base
             'range' => ['px' => ['min' => 8, 'max' => 60]],
             'default' => ['unit' => 'px', 'size' => 32],
             'mobile_default' => ['unit' => 'px', 'size' => 24],
+            'tablet_default' => ['unit' => 'px', 'size' => 24],
             'selectors' => [
                 '{{WRAPPER}} .bkw-login__step' => 'gap: {{SIZE}}{{UNIT}};',
             ],
@@ -397,21 +472,22 @@ final class Login extends Widget_Base
             'range' => ['px' => ['min' => 0, 'max' => 60]],
             'default' => ['unit' => 'px', 'size' => 32],
             'mobile_default' => ['unit' => 'px', 'size' => 28],
+            'tablet_default' => ['unit' => 'px', 'size' => 28],
             'selectors' => [
-                '{{WRAPPER}} .bkw-login' => 'border-radius: {{SIZE}}{{UNIT}};',
+                '{{WRAPPER}} .bkw-login__card' => 'border-radius: {{SIZE}}{{UNIT}} !important;',
             ],
         ]);
 
         $this->add_group_control(Group_Control_Background::get_type(), [
             'name' => 'card_background',
             'types' => ['classic'],
-            'selector' => '{{WRAPPER}} .bkw-login',
+            'selector' => '{{WRAPPER}} .bkw-login__card',
             'fields_options' => ['color' => ['default' => '#ffffff']],
         ]);
 
         $this->add_group_control(Group_Control_Border::get_type(), [
             'name' => 'card_border',
-            'selector' => '{{WRAPPER}} .bkw-login',
+            'selector' => '{{WRAPPER}} .bkw-login__card',
             'fields_options' => [
                 'border' => ['default' => 'solid'],
                 'width' => ['default' => ['top' => '1', 'right' => '1', 'bottom' => '1', 'left' => '1', 'unit' => 'px']],
@@ -421,7 +497,7 @@ final class Login extends Widget_Base
 
         $this->add_group_control(Group_Control_Box_Shadow::get_type(), [
             'name' => 'card_shadow',
-            'selector' => '{{WRAPPER}} .bkw-login',
+            'selector' => '{{WRAPPER}} .bkw-login__card',
             'fields_options' => [
                 'box_shadow_type' => ['default' => 'yes'],
                 'box_shadow' => ['default' => [
@@ -527,15 +603,23 @@ final class Login extends Widget_Base
             'tab' => Controls_Manager::TAB_STYLE,
         ]);
 
+        /*
+         * tablet_default صریح لازم است: کنترل‌های ریسپانسیو المنتور اگر
+         * برای یک بریک‌پوینت مقداری نداشته باشند، از بریک‌پوینت بزرگ‌تر
+         * بعدی ارث می‌برند — یعنی بدون این خط، در بازهٔ تبلت (که خیلی
+         * وقت‌ها یک لپ‌تاپ نیمه‌بازشده هم داخلش می‌افتد) این خط دوباره
+         * به مقدار صفرِ دسکتاپ برمی‌گشت و «گم» می‌شد.
+         */
         $this->add_responsive_control('divider_height', [
             'label' => __('ضخامت', 'bakery-widgets'),
             'type' => Controls_Manager::SLIDER,
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 0, 'max' => 4]],
             'default' => ['unit' => 'px', 'size' => 0],
+            'tablet_default' => ['unit' => 'px', 'size' => 1],
             'mobile_default' => ['unit' => 'px', 'size' => 1],
             'selectors' => [
-                '{{WRAPPER}} .bkw-login__divider' => 'height: {{SIZE}}{{UNIT}};',
+                '{{WRAPPER}} .bkw-login__divider' => 'height: {{SIZE}}{{UNIT}} !important; display: block !important;',
             ],
         ]);
 
@@ -543,7 +627,7 @@ final class Login extends Widget_Base
             'label' => __('رنگ', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
             'default' => '#eaded6',
-            'selectors' => ['{{WRAPPER}} .bkw-login__divider' => 'background-color: {{VALUE}};'],
+            'selectors' => ['{{WRAPPER}} .bkw-login__divider' => 'background-color: {{VALUE}} !important;'],
         ]);
 
         $this->end_controls_section();
@@ -1084,15 +1168,26 @@ final class Login extends Widget_Base
         $countdown = max(10, (int) $settings['countdown_seconds']);
         $redirect_url = !empty($settings['redirect_url']['url']) ? (string) $settings['redirect_url']['url'] : home_url('/');
 
+        $bg_url = (string) ($settings['page_background_image']['url'] ?? '');
+        $full_bleed = '' !== $bg_url && 'yes' === $settings['page_background_full_bleed'];
+
         printf(
-            '<div class="bkw-login" dir="rtl" data-otp-length="%1$d" data-countdown-seconds="%2$d" data-redirect-url="%3$s">',
+            '<div class="bkw-login%1$s" dir="rtl" data-otp-length="%2$d" data-countdown-seconds="%3$d" data-redirect-url="%4$s">',
+            $full_bleed ? ' bkw-login--full-bleed' : '',
             $otp_length,
             $countdown,
             esc_attr($redirect_url),
         );
 
+        if ('' !== $bg_url) {
+            printf('<div class="bkw-login__backdrop" style="background-image:url(%s);"></div>', esc_url($bg_url));
+            echo '<div class="bkw-login__backdrop-overlay"></div>';
+        }
+
+        echo '<div class="bkw-login__card">';
         $this->render_step1($settings);
         $this->render_step2($settings, $otp_length);
+        echo '</div>';
 
         echo '</div>';
     }
