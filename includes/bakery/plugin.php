@@ -82,6 +82,7 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/section-title.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/header.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/login.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/terms-modal.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
         $widgets_manager->register(new Widgets\Price());
@@ -89,6 +90,7 @@ final class Plugin
         $widgets_manager->register(new Widgets\Section_Title());
         $widgets_manager->register(new Widgets\Header());
         $widgets_manager->register(new Widgets\Login());
+        $widgets_manager->register(new Widgets\Terms_Modal());
     }
 
     /**
@@ -133,16 +135,25 @@ final class Plugin
             BAKERY_WIDGETS_VERSION,
             true,
         );
+
+        wp_register_script(
+            'bakery-terms-modal',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-terms-modal.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
     }
 
     /**
      * در ادیتور همیشه اسکریپت‌های تعاملی لود شوند تا پیش‌نمایش (پنل هدر،
-     * جابه‌جایی مراحل ورود) هم درست کار کند
+     * جابه‌جایی مراحل ورود، مودال قوانین) هم درست کار کند
      */
     public function enqueue_editor_scripts(): void
     {
         $this->register_scripts();
         wp_enqueue_script('bakery-header');
         wp_enqueue_script('bakery-login');
+        wp_enqueue_script('bakery-terms-modal');
     }
 }
