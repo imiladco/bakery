@@ -58,17 +58,30 @@ final class Site_Gate
             return;
         }
 
-        if (is_page($login_page_id)) {
-            return;
-        }
-
         $login_url = get_permalink($login_page_id);
         if (!$login_url) {
             return;
         }
 
+        // عمداً is_page() استفاده نشده: فقط برای post_type «page» درست
+        // کار می‌کند، ولی صفحهٔ ورود ممکن است یک Landing Page المنتور
+        // (post_type دیگری) باشد؛ مقایسهٔ مسیر خام درخواست با خودِ
+        // آدرس صفحهٔ ورود مستقل از post_type و همیشه درست است — و از
+        // حلقهٔ ریدایرکت به خودش جلوگیری می‌کند.
+        if ($this->is_current_request_to($login_url)) {
+            return;
+        }
+
         wp_safe_redirect($login_url);
         exit;
+    }
+
+    private function is_current_request_to(string $url): bool
+    {
+        $target_path = (string) wp_parse_url($url, PHP_URL_PATH);
+        $current_path = (string) wp_parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+
+        return untrailingslashit($target_path) === untrailingslashit($current_path);
     }
 
     private function has_access_cookie(): bool
