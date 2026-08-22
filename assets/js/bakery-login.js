@@ -2,8 +2,15 @@
  * ویجت ورود — فقط ظاهر و رفتار سمت کاربر (جابه‌جایی مرحله، پیش‌رفتن
  * خودکار خانه‌های کد تأیید، شمارش معکوس، ارسال مجدد). هیچ درخواست
  * شبکه‌ای نمی‌رود؛ اعتبارسنجی واقعی و ورود واقعی بعداً اضافه می‌شود
- * (رجوع کن به یادداشت بالای Widgets\Login). با کلیک روی دکمهٔ مرحلهٔ ۲
- * فقط به آدرس تنظیم‌شده در ویجت (data-redirect-url) هدایت می‌شود.
+ * (رجوع کن به یادداشت بالای Widgets\Login).
+ *
+ * کلیک روی دکمهٔ مرحلهٔ ۲ دیگر مستقیم ریدایرکت نمی‌کند: اول مودال
+ * قوانینِ تعبیه‌شده در همین صفحه (data-bkw-terms، رجوع کن به
+ * Traits\Terms_Modal_Controls::render_terms_modal) را پیدا می‌کند. اگر
+ * قبلاً در همین مرورگر پذیرفته شده (localStorage)، مستقیم به
+ * data-redirect-url می‌رود؛ وگرنه مودال را نمایان می‌کند و منتظر
+ * می‌ماند — خودِ assets/js/bakery-terms-modal.js پس از چک‌باکس+تأیید
+ * ریدایرکت را انجام می‌دهد.
  */
 (function () {
     'use strict';
@@ -134,7 +141,30 @@
 
         if (step2SubmitBtn) {
             step2SubmitBtn.addEventListener('click', function () {
-                window.location.href = redirectUrl;
+                var termsOverlay = root.querySelector('[data-bkw-terms]');
+
+                if (!termsOverlay) {
+                    window.location.href = redirectUrl;
+                    return;
+                }
+
+                var storageKey = termsOverlay.getAttribute('data-storage-key');
+                var alreadyAccepted = false;
+
+                try {
+                    alreadyAccepted = 'accepted' === window.localStorage.getItem(storageKey);
+                } catch (e) {
+                    // localStorage در دسترس نیست؛ فرض می‌شود هنوز پذیرفته
+                    // نشده — مودال دوباره نشان داده می‌شود، مسدودکننده نیست.
+                }
+
+                if (alreadyAccepted) {
+                    window.location.href = redirectUrl;
+                    return;
+                }
+
+                termsOverlay.hidden = false;
+                document.documentElement.classList.add('bkw-panel-open');
             });
         }
 

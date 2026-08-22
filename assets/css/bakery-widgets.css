@@ -852,6 +852,17 @@ html.bkw-panel-open {
 	box-sizing: border-box;
 }
 
+/*
+ * حالت تعبیه‌شده در Login با ویژگی HTML `hidden` رندر می‌شود (نه یک
+ * کلاس)؛ چون خودِ این سلکتور بالا `display: flex` دارد و با ویژگی
+ * `hidden` هم‌ارزش است (هر دو روی خودِ عنصر)، بدون `!important` بارگذاری
+ * کدام یکی برنده می‌شود قطعی نیست — اینجا صریحاً تضمین می‌شود که پنهان
+ * بماند تا وقتی assets/js/bakery-login.js آن را نمایان کند.
+ */
+.bkw-terms-modal-overlay[hidden] {
+	display: none !important;
+}
+
 
 .bkw-terms-modal,
 .bkw-terms-modal * {

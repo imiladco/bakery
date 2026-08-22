@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bakery_Widgets\Widgets;
 
 use Bakery_Widgets\Svg;
+use Bakery_Widgets\Widgets\Traits\Terms_Modal_Controls;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Background;
 use Elementor\Group_Control_Border;
@@ -31,9 +32,19 @@ if (!defined('ABSPATH')) {
  * کاربر واقعی وارد نشده، همان فالبک موجود («کاربر مهمان» —
  * Traits\Account_Actions_Controls::resolve_display_name()) خودش نمایش
  * داده می‌شود؛ نیازی به مکانیزم جدید نبود.
+ *
+ * مودال «قوانین و مقررات» (Traits\Terms_Modal_Controls) همین‌جا، داخل
+ * همین صفحهٔ ورود، تعبیه شده — نه به‌عنوان ویجت جداگانه روی صفحهٔ مقصد.
+ * بعد از کلیک روی دکمهٔ مرحلهٔ ۲، اول این مودال (پنهان‌شده با ویژگی
+ * HTML `hidden`) نمایان می‌شود؛ کاربر باید چک‌باکس را بزند و دکمهٔ
+ * تأیید مودال را بزند تا واقعاً به redirect_url منتقل شود. اگر قبلاً
+ * (در همان مرورگر) پذیرفته باشد، مودال اصلاً نمایان نمی‌شود و مستقیم
+ * منتقل می‌شود — رجوع کن به assets/js/bakery-login.js.
  */
 final class Login extends Widget_Base
 {
+    use Terms_Modal_Controls;
+
     #[\Override]
     public function get_name(): string
     {
@@ -73,7 +84,7 @@ final class Login extends Widget_Base
     #[\Override]
     public function get_script_depends(): array
     {
-        return ['bakery-login'];
+        return ['bakery-login', 'bakery-terms-modal'];
     }
 
     /* ---------------------------------------------------------------------
@@ -89,6 +100,7 @@ final class Login extends Widget_Base
         $this->register_step2_controls();
         $this->register_behavior_controls();
         $this->register_page_background_controls();
+        $this->register_terms_modal_content_controls();
 
         // تب استایل
         $this->register_page_background_style_controls();
@@ -102,6 +114,7 @@ final class Login extends Widget_Base
         $this->register_timer_style_controls();
         $this->register_edit_number_style_controls();
         $this->register_footer_note_style_controls();
+        $this->register_terms_modal_style_controls();
     }
 
     /* =====================================================================
@@ -1188,6 +1201,11 @@ final class Login extends Widget_Base
         $this->render_step1($settings);
         $this->render_step2($settings, $otp_length);
         echo '</div>';
+
+        // مودال قوانین همین‌جا تعبیه می‌شود (پنهان با hidden)؛ فقط بعد از
+        // کلیک روی دکمهٔ مرحلهٔ ۲ با JS نمایان می‌شود و تنها بعد از تأیید
+        // خودش (چک‌باکس + دکمه) به redirect_url منتقل می‌کند.
+        $this->render_terms_modal($settings, $redirect_url, false);
 
         echo '</div>';
     }
