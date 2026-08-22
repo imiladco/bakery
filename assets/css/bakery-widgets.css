@@ -489,3 +489,248 @@ a.bkw-account-bar__item {
 html.bkw-panel-open {
 	overflow: hidden;
 }
+
+/*
+ * ویجت login: کارت دومرحله‌ای (کد ملی+موبایل → کد تأیید). هر دو مرحله
+ * همیشه در DOM هستند؛ فقط یکی با ویژگی HTML `hidden` مخفی است —
+ * assets/js/bakery-login.js با تغییر همین ویژگی بین‌شان جابه‌جا می‌کند،
+ * بدون هیچ درخواست شبکه (این ویجت فعلاً فقط ظاهری است).
+ *
+ * دکمهٔ اصلی هر مرحله دو برچسب دارد (کامل/کوتاه) که یکی با یک
+ * بریک‌پوینت ثابت پنهان می‌شود — دقیقاً همان تفاوت متن دسکتاپ/موبایل
+ * رفرنس فیگما («ورود به حساب کاربری» ↔ «ورود»)، بدون دو دکمهٔ جدا.
+ */
+.bkw-login {
+	box-sizing: border-box;
+	width: 100%;
+}
+
+.bkw-login__step {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.bkw-login__step[hidden] {
+	display: none;
+}
+
+.bkw-login__brand-group {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+}
+
+.bkw-login__brand-logo {
+	display: inline-flex;
+	line-height: 1;
+}
+
+.bkw-login__brand-logo svg,
+.bkw-login__brand-logo img {
+	display: block;
+}
+
+.bkw-login__brand-name,
+.bkw-login__brand-subtitle {
+	margin: 0;
+	text-align: center;
+	white-space: nowrap;
+}
+
+.bkw-login__divider {
+	width: 100%;
+	flex-shrink: 0;
+}
+
+.bkw-login__step-heading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	text-align: center;
+}
+
+.bkw-login__step-title,
+.bkw-login__step-description {
+	margin: 0;
+	width: 100%;
+}
+
+.bkw-login__fields {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	width: 100%;
+}
+
+.bkw-login__field {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+	width: 100%;
+}
+
+.bkw-login__label {
+	display: block;
+	width: 100%;
+	text-align: right;
+}
+
+.bkw-login__input-wrap {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.bkw-login__input-icon {
+	flex-shrink: 0;
+	display: inline-flex;
+	line-height: 1;
+}
+
+.bkw-login__input-icon svg {
+	display: block;
+}
+
+.bkw-login__input {
+	flex: 1 1 0;
+	min-width: 0;
+	width: 100%;
+	border: 0 none;
+	background: transparent;
+	padding: 0;
+	text-align: right;
+	direction: rtl;
+	font: inherit;
+}
+
+.bkw-login__input:focus {
+	outline: 0 none;
+}
+
+.bkw-login__submit {
+	appearance: none;
+	border: 0 none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	box-sizing: border-box;
+	font: inherit;
+}
+
+.bkw-login__submit-text-short {
+	display: none;
+}
+
+.bkw-login__footer-note {
+	margin: 0;
+	text-align: center;
+	width: 100%;
+}
+
+.bkw-login__edit-number-row {
+	display: flex;
+	align-items: baseline;
+	justify-content: center;
+	gap: 4px;
+	width: 100%;
+}
+
+.bkw-login__edit-number {
+	appearance: none;
+	background: transparent;
+	border: 0 none;
+	padding: 0;
+	cursor: pointer;
+	text-decoration: underline;
+	font: inherit;
+}
+
+.bkw-login__edit-number-value {
+	white-space: nowrap;
+}
+
+.bkw-login__otp-row {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+}
+
+.bkw-login__otp-input {
+	box-sizing: border-box;
+	text-align: center;
+	border-style: solid;
+	flex-shrink: 0;
+	font: inherit;
+}
+
+.bkw-login__otp-input:focus {
+	outline: 0 none;
+}
+
+.bkw-login__timer-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+}
+
+.bkw-login__countdown {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.bkw-login__countdown-icon {
+	display: inline-flex;
+	line-height: 1;
+}
+
+.bkw-login__countdown-icon svg {
+	display: block;
+}
+
+.bkw-login__resend {
+	appearance: none;
+	background: transparent;
+	border: 0 none;
+	padding: 0;
+	font: inherit;
+}
+
+.bkw-login__resend:disabled {
+	cursor: default;
+}
+
+.bkw-login__resend:not(:disabled) {
+	cursor: pointer;
+}
+
+.bkw-login__actions {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 16px;
+	width: 100%;
+}
+
+@media (max-width: 600px) {
+	.bkw-login__submit-text-full {
+		display: none;
+	}
+
+	.bkw-login__submit-text-short {
+		display: inline;
+	}
+}

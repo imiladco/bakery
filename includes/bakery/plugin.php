@@ -81,12 +81,14 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/account-bar.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/section-title.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/header.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/login.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
         $widgets_manager->register(new Widgets\Price());
         $widgets_manager->register(new Widgets\Account_Bar());
         $widgets_manager->register(new Widgets\Section_Title());
         $widgets_manager->register(new Widgets\Header());
+        $widgets_manager->register(new Widgets\Login());
     }
 
     /**
@@ -123,14 +125,24 @@ final class Plugin
             BAKERY_WIDGETS_VERSION,
             true,
         );
+
+        wp_register_script(
+            'bakery-login',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-login.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
     }
 
     /**
-     * در ادیتور همیشه اسکریپت هدر لود شود تا پنل موبایل در پیش‌نمایش هم کار کند
+     * در ادیتور همیشه اسکریپت‌های تعاملی لود شوند تا پیش‌نمایش (پنل هدر،
+     * جابه‌جایی مراحل ورود) هم درست کار کند
      */
     public function enqueue_editor_scripts(): void
     {
         $this->register_scripts();
         wp_enqueue_script('bakery-header');
+        wp_enqueue_script('bakery-login');
     }
 }
