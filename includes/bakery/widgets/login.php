@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Widgets\Widgets;
 
+use Bakery_Widgets\Site_Gate;
 use Bakery_Widgets\Svg;
 use Bakery_Widgets\Widgets\Traits\Terms_Modal_Controls;
 use Elementor\Controls_Manager;
@@ -1176,6 +1177,11 @@ final class Login extends Widget_Base
     protected function render(): void
     {
         $settings = $this->get_settings_for_display();
+
+        // به دروازهٔ سطح سایت (Site_Gate) اعلام می‌کند این صفحه، صفحهٔ
+        // ورود است — بدون این، دروازه نمی‌داند بازدیدکنندگان بدون دسترسی
+        // را به کجا بفرستد. رجوع کن به includes/bakery/site-gate.php.
+        Site_Gate::remember_login_page((int) get_the_ID());
 
         $otp_length = max(3, min(8, (int) $settings['otp_length']));
         $countdown = max(10, (int) $settings['countdown_seconds']);

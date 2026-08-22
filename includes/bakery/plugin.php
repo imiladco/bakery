@@ -26,6 +26,7 @@ final class Plugin
     private function __construct()
     {
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/svg.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/site-gate.php';
 
         add_action('init', [$this, 'maybe_flush_after_update'], 20);
 
@@ -35,6 +36,8 @@ final class Plugin
         add_action('elementor/editor/after_enqueue_styles', [$this, 'enqueue_editor_styles']);
         add_action('elementor/frontend/after_register_scripts', [$this, 'register_scripts']);
         add_action('elementor/editor/after_enqueue_scripts', [$this, 'enqueue_editor_scripts']);
+
+        (new Site_Gate())->register();
     }
 
     /**

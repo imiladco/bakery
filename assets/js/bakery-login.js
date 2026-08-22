@@ -11,9 +11,28 @@
  * data-redirect-url می‌رود؛ وگرنه مودال را نمایان می‌کند و منتظر
  * می‌ماند — خودِ assets/js/bakery-terms-modal.js پس از چک‌باکس+تأیید
  * ریدایرکت را انجام می‌دهد.
+ *
+ * هر جا کاربر واقعاً از این ویجت رد می‌شود (لاگین + تأیید قوانین)، کوکی
+ * دسترسی سایت (Bakery_Widgets\Site_Gate::COOKIE_NAME) ست می‌شود — همان
+ * کوکی‌ای که دروازهٔ سمت PHP (includes/bakery/site-gate.php) روی هر
+ * صفحهٔ دیگر سایت چک می‌کند تا دیگر کاربر را دوباره به ورود نفرستد.
  */
 (function () {
     'use strict';
+
+    var SITE_ACCESS_COOKIE = 'bkw_site_access';
+    var SITE_ACCESS_MAX_AGE = 60 * 60 * 24 * 365; // یک سال
+
+    function grantSiteAccess() {
+        try {
+            var secure = 'https:' === window.location.protocol ? '; Secure' : '';
+            document.cookie = SITE_ACCESS_COOKIE + '=1; path=/; max-age=' + SITE_ACCESS_MAX_AGE + '; SameSite=Lax' + secure;
+        } catch (e) {
+            // اگر کوکی به هر دلیلی قابل نوشتن نباشد، ریدایرکت همچنان انجام
+            // می‌شود؛ فقط دفعهٔ بعد دوباره به صفحهٔ ورود هدایت می‌شود —
+            // مسدودکننده نیست.
+        }
+    }
 
     var PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
 
@@ -144,6 +163,7 @@
                 var termsOverlay = root.querySelector('[data-bkw-terms]');
 
                 if (!termsOverlay) {
+                    grantSiteAccess();
                     window.location.href = redirectUrl;
                     return;
                 }
@@ -159,6 +179,7 @@
                 }
 
                 if (alreadyAccepted) {
+                    grantSiteAccess();
                     window.location.href = redirectUrl;
                     return;
                 }

@@ -12,9 +12,28 @@
  * تعبیه‌شده در Login (با data-redirect-url) که با ویژگی HTML `hidden`
  * شروع می‌شود — assets/js/bakery-login.js آن را نمایان می‌کند — و بعد
  * از تأیید به همان آدرس ریدایرکت می‌کند.
+ *
+ * فقط در همین حالت دوم، تأیید همچنین کوکی دسترسی سایت
+ * (Bakery_Widgets\Site_Gate::COOKIE_NAME) را ست می‌کند — همان کوکی‌ای
+ * که دروازهٔ سمت PHP (includes/bakery/site-gate.php) روی هر صفحهٔ دیگر
+ * سایت چک می‌کند.
  */
 (function () {
     'use strict';
+
+    var SITE_ACCESS_COOKIE = 'bkw_site_access';
+    var SITE_ACCESS_MAX_AGE = 60 * 60 * 24 * 365; // یک سال
+
+    function grantSiteAccess() {
+        try {
+            var secure = 'https:' === window.location.protocol ? '; Secure' : '';
+            document.cookie = SITE_ACCESS_COOKIE + '=1; path=/; max-age=' + SITE_ACCESS_MAX_AGE + '; SameSite=Lax' + secure;
+        } catch (e) {
+            // اگر کوکی به هر دلیلی قابل نوشتن نباشد، ریدایرکت همچنان انجام
+            // می‌شود؛ فقط دفعهٔ بعد دوباره به صفحهٔ ورود هدایت می‌شود —
+            // مسدودکننده نیست.
+        }
+    }
 
     function setupModal(overlay) {
         var isEditMode = '1' === overlay.getAttribute('data-edit-mode');
@@ -64,6 +83,7 @@
             // مصرف مستقل چنین ویژگی‌ای ندارد و به‌جایش فقط پرده را می‌بندد.
             var redirectUrl = overlay.getAttribute('data-redirect-url');
             if (redirectUrl) {
+                grantSiteAccess();
                 window.location.href = redirectUrl;
                 return;
             }
