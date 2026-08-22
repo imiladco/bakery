@@ -190,3 +190,302 @@ a.bkw-account-bar__item {
 .bkw-section-title__line {
 	flex-shrink: 0;
 }
+
+/*
+ * ویجت header: سه ترکیب مارک‌آپ کاملاً متفاوت زیر یک ریشه (رجوع کن به
+ * یادداشت بالای Widgets\Header) — دسکتاپ، ردیف جمع‌شدهٔ موبایل، و پنل
+ * کشویی موبایل. جابه‌جایی دسکتاپ↔موبایل با یک بریک‌پوینت ثابت ۱۰۲۴px
+ * انجام می‌شود (مطابق بریک‌پوینت پیش‌فرض «تبلت» خود المنتور) — جدا از
+ * بریک‌پوینت‌های ریسپانسیو کنترل‌های تب استایل که مستقل کار می‌کنند.
+ * پیل‌های سبد/کاربر/خروج همان کلاس‌های .bkw-account-bar__* را دارند
+ * (از Traits\Account_Actions_Controls) و بدون تغییر همین‌جا هم درست
+ * نمایش داده می‌شوند.
+ */
+.bkw-header {
+	position: relative;
+	box-sizing: border-box;
+}
+
+.bkw-header__desktop-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.bkw-header__brand-nav {
+	display: flex;
+	align-items: center;
+	gap: 48px;
+}
+
+.bkw-header__brand {
+	display: flex;
+	align-items: center;
+	text-decoration: none;
+	color: inherit;
+}
+
+.bkw-header__brand-logo {
+	display: inline-flex;
+	flex-shrink: 0;
+	line-height: 1;
+}
+
+.bkw-header__brand-logo svg,
+.bkw-header__brand-logo img {
+	display: block;
+}
+
+.bkw-header__brand-text {
+	white-space: nowrap;
+}
+
+.bkw-header__nav {
+	display: flex;
+	align-items: center;
+}
+
+.bkw-header__nav-link {
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.bkw-header__mobile-row {
+	display: none;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.bkw-header__mobile-wallet {
+	display: none;
+	margin-top: 12px;
+}
+
+.bkw-header__hamburger,
+.bkw-header__close {
+	appearance: none;
+	background: transparent;
+	border: 0 none;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	line-height: 1;
+}
+
+.bkw-header__hamburger {
+	padding: 8px;
+}
+
+.bkw-header__close {
+	padding: 10px;
+}
+
+.bkw-header__hamburger svg,
+.bkw-header__close svg {
+	display: block;
+}
+
+@media (max-width: 1024px) {
+	.bkw-header__desktop-row {
+		display: none;
+	}
+
+	.bkw-header__mobile-row {
+		display: flex;
+	}
+
+	.bkw-header__mobile-wallet {
+		display: block;
+	}
+}
+
+/* --- پنل کشویی موبایل ------------------------------------------------ */
+
+.bkw-header__panel-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity 0.25s ease;
+}
+
+.bkw-header__panel-overlay.is-open {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+}
+
+.bkw-header__panel {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	z-index: 1001;
+	box-sizing: border-box;
+	transform: translateX(var(--bkw-panel-closed-x, 100%));
+	transition: transform 0.3s ease;
+}
+
+.bkw-header__panel.is-open {
+	transform: translateX(0);
+}
+
+.bkw-header__panel-content {
+	display: flex;
+	flex-direction: column;
+	gap: 28px;
+	height: 100%;
+	overflow-y: auto;
+	box-sizing: border-box;
+	padding: 12px 20px 32px;
+}
+
+.bkw-header__panel-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	flex-shrink: 0;
+}
+
+.bkw-header__user-card {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 16px;
+	flex-shrink: 0;
+}
+
+.bkw-header__user-card-stack {
+	display: flex;
+	flex-direction: column;
+	/* در ستون rtl، flex-start فیزیکاً راست است، نه چپ — رجوع کن به
+	   یادداشت مشابه در Widgets\Section_Title::register_layout_controls() */
+	align-items: flex-start;
+	gap: 4px;
+	flex: 1 1 0;
+	min-width: 0;
+	text-align: right;
+}
+
+.bkw-header__user-card-name,
+.bkw-header__user-card-balance {
+	margin: 0;
+	width: 100%;
+	white-space: nowrap;
+}
+
+.bkw-header__nav-stack {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	flex-shrink: 0;
+}
+
+.bkw-header__nav-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 12px 16px;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.bkw-header__nav-badge {
+	flex-shrink: 0;
+	width: 32px;
+	height: 32px;
+	box-sizing: border-box;
+	border-radius: 8px;
+	border: 1px solid #eaded6;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.bkw-header__nav-badge svg {
+	display: block;
+	width: 18px;
+	height: 18px;
+}
+
+.bkw-header__nav-label {
+	flex: 1 1 0;
+	min-width: 0;
+	text-align: right;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.bkw-header__nav-chevron {
+	flex-shrink: 0;
+	display: inline-flex;
+	line-height: 1;
+}
+
+.bkw-header__nav-chevron svg {
+	display: block;
+	width: 16px;
+	height: 16px;
+}
+
+.bkw-header__panel-footer-zone {
+	margin-top: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	width: 100%;
+	flex-shrink: 0;
+}
+
+.bkw-header__logout-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 12px;
+	text-decoration: none;
+	cursor: pointer;
+	background: transparent;
+}
+
+.bkw-header__logout-button svg {
+	display: block;
+}
+
+.bkw-header__panel-footer {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	text-align: center;
+	width: 100%;
+}
+
+.bkw-header__panel-footer-line1,
+.bkw-header__panel-footer-line2 {
+	margin: 0;
+}
+
+.bkw-header__panel-footer-line1 {
+	font-size: 10px;
+	font-weight: 500;
+}
+
+.bkw-header__panel-footer-line2 {
+	font-size: 9px;
+}
+
+/* قفل اسکرول پس‌زمینه وقتی پنل بازست (assets/js/bakery-header.js) */
+html.bkw-panel-open {
+	overflow: hidden;
+}

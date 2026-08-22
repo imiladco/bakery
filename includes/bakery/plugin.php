@@ -33,6 +33,8 @@ final class Plugin
         add_action('elementor/widgets/register', [$this, 'register_widgets']);
         add_action('elementor/frontend/after_register_styles', [$this, 'register_styles']);
         add_action('elementor/editor/after_enqueue_styles', [$this, 'enqueue_editor_styles']);
+        add_action('elementor/frontend/after_register_scripts', [$this, 'register_scripts']);
+        add_action('elementor/editor/after_enqueue_scripts', [$this, 'enqueue_editor_scripts']);
     }
 
     /**
@@ -73,15 +75,18 @@ final class Plugin
      */
     public function register_widgets($widgets_manager): void
     {
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/traits/account-actions-controls.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/icon-box.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/price.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/account-bar.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/section-title.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/header.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
         $widgets_manager->register(new Widgets\Price());
         $widgets_manager->register(new Widgets\Account_Bar());
         $widgets_manager->register(new Widgets\Section_Title());
+        $widgets_manager->register(new Widgets\Header());
     }
 
     /**
@@ -104,5 +109,28 @@ final class Plugin
     {
         $this->register_styles();
         wp_enqueue_style('bakery-widgets');
+    }
+
+    /**
+     * ثبت اسکریپت‌ها؛ ویجت با get_script_depends فقط در صورت استفاده لودشان می‌کند
+     */
+    public function register_scripts(): void
+    {
+        wp_register_script(
+            'bakery-header',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-header.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+    }
+
+    /**
+     * در ادیتور همیشه اسکریپت هدر لود شود تا پنل موبایل در پیش‌نمایش هم کار کند
+     */
+    public function enqueue_editor_scripts(): void
+    {
+        $this->register_scripts();
+        wp_enqueue_script('bakery-header');
     }
 }
