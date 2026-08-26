@@ -88,8 +88,7 @@
             }
 
             var itemRow = button.closest('[data-bkw-cart-item]');
-            var root = button.closest('.bkw-cart-sidebar');
-            if (!itemRow || !root || root.classList.contains('is-loading')) {
+            if (!itemRow || itemRow.classList.contains('is-loading')) {
                 return;
             }
 
@@ -106,7 +105,12 @@
                 payload.quantity = Math.max(0, currentQty - 1);
             }
 
-            root.classList.add('is-loading');
+            // لایهٔ بلور فقط روی همین ردیف (دقیقاً مفهوم ویجت افزودن به
+            // سبد)؛ اگر پاسخ موفق باشد، کل [data-bkw-cart-items] با
+            // فرگمنت تازه جایگزین می‌شود و این ردیف قدیمی (با کلاسش)
+            // اصلاً از DOM حذف می‌شود — پاک‌کردن کلاس در finally فقط
+            // برای حالت خطا (که ردیف دست‌نخورده می‌ماند) واقعاً اثر دارد.
+            itemRow.classList.add('is-loading');
 
             var body = new URLSearchParams(Object.assign({ action: action, nonce: bkwCartSidebar.nonce }, payload));
 
@@ -128,7 +132,7 @@
                     // شبکه/سرور خطا داد؛ چیزی تغییر نکرده، فقط بلور خاموش می‌شود.
                 })
                 .finally(function () {
-                    root.classList.remove('is-loading');
+                    itemRow.classList.remove('is-loading');
                 });
         });
     }

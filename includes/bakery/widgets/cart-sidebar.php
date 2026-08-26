@@ -102,6 +102,7 @@ final class Cart_Sidebar extends Widget_Base
         $this->register_credit_style_controls();
         $this->register_items_style_controls();
         $this->register_footer_style_controls();
+        $this->register_loading_style_controls();
     }
 
     /* =====================================================================
@@ -439,7 +440,7 @@ final class Cart_Sidebar extends Widget_Base
         $this->add_control('divider_color', [
             'label' => __('رنگ', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
-            'default' => '#eaded6',
+            'default' => 'rgba(195, 171, 155, 0.5)',
             'selectors' => [
                 '{{WRAPPER}} .bkw-cart-sidebar__divider' => 'border-color: {{VALUE}};',
             ],
@@ -594,6 +595,29 @@ final class Cart_Sidebar extends Widget_Base
             ],
         ]);
 
+        $this->add_control('heading_step_hover', [
+            'label' => __('حالت هاور', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_control('step_hover_background', [
+            'label' => __('رنگ پس‌زمینه', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => 'rgba(35, 25, 18, 0.08)',
+            'selectors' => [
+                '{{WRAPPER}} .bkw-cart-sidebar__step:not(:disabled):hover' => 'background-color: {{VALUE}};',
+            ],
+        ]);
+
+        $this->add_control('step_hover_color', [
+            'label' => __('رنگ آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'selectors' => [
+                '{{WRAPPER}} .bkw-cart-sidebar__step:not(:disabled):hover' => 'color: {{VALUE}};',
+            ],
+        ]);
+
         $this->add_group_control(Group_Control_Typography::get_type(), [
             'name' => 'qty_value_typography',
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__qty-value',
@@ -719,6 +743,45 @@ final class Cart_Sidebar extends Widget_Base
             'selectors' => [
                 '{{WRAPPER}} .bkw-cart-sidebar__checkout' => 'border-radius: {{SIZE}}{{UNIT}};',
             ],
+        ]);
+
+        $this->end_controls_section();
+    }
+
+    /* =====================================================================
+     * استایل — لایهٔ «در حال انجام» کنترل تعداد
+     * =================================================================== */
+
+    private function register_loading_style_controls(): void
+    {
+        $this->start_controls_section('section_style_loading', [
+            'label' => __('لایهٔ «در حال انجام»', 'bakery-widgets'),
+            'tab' => Controls_Manager::TAB_STYLE,
+            'description' => __('حین ارسال درخواست افزایش/کاهش تعداد هر ردیف، این لایه روی کنترل تعداد همان ردیف نمایان می‌شود — دقیقاً همان مفهوم ویجت افزودن به سبد.', 'bakery-widgets'),
+        ]);
+
+        $this->add_control('loading_background', [
+            'label' => __('رنگ لایه', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => 'rgba(255, 255, 255, 0.45)',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-sidebar' => '--bkw-cart-sidebar-loading-bg: {{VALUE}};'],
+        ]);
+
+        $this->add_responsive_control('loading_blur', [
+            'label' => __('میزان بلور', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 20]],
+            'default' => ['unit' => 'px', 'size' => 4],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-sidebar' => '--bkw-cart-sidebar-loading-blur: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_control('loading_duration', [
+            'label' => __('مدت زمان محو شدن (میلی‌ثانیه)', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'range' => ['px' => ['min' => 0, 'max' => 1000]],
+            'default' => ['size' => 180],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-sidebar' => '--bkw-cart-sidebar-loading-duration: {{SIZE}}ms;'],
         ]);
 
         $this->end_controls_section();

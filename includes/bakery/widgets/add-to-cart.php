@@ -311,6 +311,25 @@ final class Add_To_Cart extends Widget_Base
             'selectors' => ['{{WRAPPER}} .bkw-atc__step' => 'color: {{VALUE}};'],
         ]);
 
+        $this->add_control('heading_step_hover', [
+            'label' => __('حالت هاور', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_control('step_hover_background', [
+            'label' => __('رنگ پس‌زمینه', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => 'rgba(255, 255, 255, 0.4)',
+            'selectors' => ['{{WRAPPER}} .bkw-atc__step:not(:disabled):hover' => 'background-color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('step_hover_color', [
+            'label' => __('رنگ متن', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'selectors' => ['{{WRAPPER}} .bkw-atc__step:not(:disabled):hover' => 'color: {{VALUE}};'],
+        ]);
+
         $this->add_control('heading_step_disabled', [
             'label' => __('حالت غیرفعال (رسیدن به سقف موجودی)', 'bakery-widgets'),
             'type' => Controls_Manager::HEADING,

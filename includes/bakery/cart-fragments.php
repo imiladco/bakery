@@ -127,6 +127,7 @@ final class Cart_Fragments
                 <button type="button" class="bkw-cart-sidebar__step bkw-cart-sidebar__step--plus" data-bkw-cart-step="plus" aria-label="<?php esc_attr_e('افزایش تعداد', 'bakery-widgets'); ?>" <?php disabled(-1 !== $item['max'] && $item['quantity'] >= $item['max']); ?>><?php self::render_plus_icon(); ?></button>
                 <span class="bkw-cart-sidebar__qty-value"><?php echo esc_html((string) $item['quantity']); ?></span>
                 <button type="button" class="bkw-cart-sidebar__step bkw-cart-sidebar__step--minus" data-bkw-cart-step="minus" aria-label="<?php esc_attr_e('کاهش تعداد', 'bakery-widgets'); ?>"><?php self::render_minus_icon(); ?></button>
+                <span class="bkw-cart-sidebar__qty-overlay" aria-hidden="true"></span>
             </div>
         </div>
         <?php

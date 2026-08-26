@@ -1134,6 +1134,11 @@ html.bkw-panel-open {
 	cursor: pointer;
 	font: inherit;
 	line-height: 1;
+	transition: background-color 0.15s ease;
+}
+
+.bkw-atc__step:not(:disabled):hover {
+	background-color: rgba(255, 255, 255, 0.4);
 }
 
 .bkw-atc__step:disabled {
@@ -1316,12 +1321,16 @@ html.bkw-panel-open {
 }
 
 .bkw-cart-sidebar__divider {
-	border-top: 1px solid #eaded6;
+	/* رفرنس فیگما این خط را با یک تصویر SVG جدا رندر می‌کند، نه با
+	 * همان رنگ حاشیهٔ پنل (#eaded6) — رنگ واقعی‌اش #C3AB9B با opacity
+	 * ۰.۵ است. */
+	border-top: 1px solid rgba(195, 171, 155, 0.5);
 }
 
 .bkw-cart-sidebar__items {
 	display: flex;
 	flex-direction: column;
+	gap: 16px;
 }
 
 .bkw-cart-sidebar__empty {
@@ -1383,6 +1392,7 @@ html.bkw-panel-open {
 }
 
 .bkw-cart-sidebar__qty {
+	position: relative;
 	flex-shrink: 0;
 	display: flex;
 	align-items: center;
@@ -1391,6 +1401,33 @@ html.bkw-panel-open {
 	padding: 8px 12px;
 	border-radius: 16px;
 	background-color: #ffffff;
+}
+
+/*
+ * لایهٔ «در حال انجام» کنترل تعداد هر ردیف — دقیقاً همان مفهوم بلورِ
+ * سفیدِ کم‌رنگ ویجت افزودن به سبد (.bkw-atc__overlay)؛ جاوااسکریپت
+ * (assets/js/bakery-cart-sidebar.js) فقط کلاس is-loading را روی همین
+ * ردیف [data-bkw-cart-item] می‌گذارد تا کاربر قبل از رسیدن پاسخ AJAX
+ * دوباره کلیک نکند.
+ */
+.bkw-cart-sidebar__qty-overlay {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: var(--bkw-cart-sidebar-loading-bg, rgba(255, 255, 255, 0.45));
+	backdrop-filter: blur(var(--bkw-cart-sidebar-loading-blur, 4px));
+	-webkit-backdrop-filter: blur(var(--bkw-cart-sidebar-loading-blur, 4px));
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--bkw-cart-sidebar-loading-duration, 180ms) ease;
+}
+
+[data-bkw-cart-item].is-loading .bkw-cart-sidebar__qty-overlay {
+	opacity: 1;
+}
+
+[data-bkw-cart-item].is-loading .bkw-cart-sidebar__step {
+	pointer-events: none;
 }
 
 .bkw-cart-sidebar__step {
@@ -1406,12 +1443,20 @@ html.bkw-panel-open {
 	line-height: 1;
 	padding: 0;
 	color: #231912;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	transition: background-color 0.15s ease;
 }
 
 .bkw-cart-sidebar__step svg {
 	display: block;
 	width: 12px;
 	height: 12px;
+}
+
+.bkw-cart-sidebar__step:not(:disabled):hover {
+	background-color: rgba(35, 25, 18, 0.08);
 }
 
 .bkw-cart-sidebar__step:disabled {
