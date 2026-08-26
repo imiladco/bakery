@@ -250,7 +250,10 @@ final class Cart_Sidebar extends Widget_Base
             'range' => ['px' => ['min' => 280, 'max' => 600]],
             'default' => ['unit' => 'px', 'size' => 500],
             'selectors' => [
-                '{{WRAPPER}} .bkw-cart-sidebar__panel' => 'width: {{SIZE}}{{UNIT}}; max-width: 92vw;',
+                // max-width عمداً 100vw است، نه یک عدد کوچک‌تر مثل 92vw: طبق
+                // رفرنس فیگما موبایل، سایدبار روی صفحهٔ موبایل باید کاملاً
+                // تمام‌عرض (لبه‌به‌لبه) باشد، نه یک نوار با فاصلهٔ کناری قابل‌مشاهده.
+                '{{WRAPPER}} .bkw-cart-sidebar__panel' => 'width: {{SIZE}}{{UNIT}}; max-width: 100vw;',
             ],
         ]);
 
@@ -481,7 +484,13 @@ final class Cart_Sidebar extends Widget_Base
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__item-name',
             'fields_options' => [
                 'font_weight' => ['default' => '700'],
-                'font_size' => ['default' => ['unit' => 'px', 'size' => 16]],
+                // رفرنس فیگما موبایل نام محصول را ۱۸px می‌خواهد (نه ۱۶px دسکتاپ) —
+                // font_size داخل گروه تایپوگرافی خودش ریسپانسیو است، پس همین‌جا
+                // مقدار پیش‌فرض موبایل جدا تنظیم می‌شود.
+                'font_size' => [
+                    'default' => ['unit' => 'px', 'size' => 16],
+                    'mobile_default' => ['unit' => 'px', 'size' => 18],
+                ],
             ],
         ]);
 
@@ -564,14 +573,40 @@ final class Cart_Sidebar extends Widget_Base
             'fields_options' => ['color' => ['default' => '#ffffff']],
         ]);
 
-        $this->add_control('qty_radius', [
+        $this->add_responsive_control('qty_radius', [
             'label' => __('رادیوس محفظه', 'bakery-widgets'),
             'type' => Controls_Manager::SLIDER,
             'size_units' => ['px'],
-            'range' => ['px' => ['min' => 0, 'max' => 40]],
+            'range' => ['px' => ['min' => 0, 'max' => 100]],
+            // رفرنس فیگما دسکتاپ یک باکس با گوشهٔ نسبتاً گرد است (۱۶px)؛
+            // رفرنس موبایل همان کنترل را کاملاً بیضی/پیل می‌خواهد (۱۰۰px).
             'default' => ['unit' => 'px', 'size' => 16],
+            'mobile_default' => ['unit' => 'px', 'size' => 100],
             'selectors' => [
                 '{{WRAPPER}} .bkw-cart-sidebar__qty' => 'border-radius: {{SIZE}}{{UNIT}};',
+            ],
+        ]);
+
+        $this->add_responsive_control('qty_gap', [
+            'label' => __('فاصلهٔ داخلی', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 30]],
+            'default' => ['unit' => 'px', 'size' => 12],
+            'mobile_default' => ['unit' => 'px', 'size' => 16],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-cart-sidebar__qty' => 'gap: {{SIZE}}{{UNIT}};',
+            ],
+        ]);
+
+        $this->add_responsive_control('qty_padding', [
+            'label' => __('پدینگ', 'bakery-widgets'),
+            'type' => Controls_Manager::DIMENSIONS,
+            'size_units' => ['px'],
+            'default' => ['top' => '8', 'right' => '12', 'bottom' => '8', 'left' => '12', 'unit' => 'px', 'isLinked' => false],
+            'mobile_default' => ['top' => '8', 'right' => '14', 'bottom' => '8', 'left' => '14', 'unit' => 'px', 'isLinked' => false],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-cart-sidebar__qty' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
             ],
         ]);
 

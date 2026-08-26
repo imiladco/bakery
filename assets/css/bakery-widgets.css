@@ -1227,7 +1227,7 @@ html.bkw-panel-open {
 	justify-content: space-between;
 	overflow-y: auto;
 	width: 500px;
-	max-width: 92vw;
+	max-width: 100vw;
 	padding: 24px;
 	background-color: #efe6d5;
 	/* فقط فالبک برای پیش از اعمال شدن CSS المنتور؛ کنترل «جهت باز شدن»
