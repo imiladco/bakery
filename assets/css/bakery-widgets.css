@@ -1374,7 +1374,7 @@ html.bkw-panel-open {
 .bkw-cart-sidebar__item-details {
 	display: flex;
 	flex-direction: column;
-	align-items: flex-end;
+	align-items: flex-start;
 	gap: 4px;
 	text-align: right;
 }

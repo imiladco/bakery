@@ -900,8 +900,9 @@ trait Account_Actions_Controls
         }
 
         $show_badge = 'yes' === ($settings['show_cart_badge'] ?? 'yes');
+        $show_zero = 'yes' === ($settings['cart_badge_show_zero'] ?? 'no');
         $count = $this->cart_count();
-        $render_badge = $show_badge && ($count > 0 || 'yes' === $settings['cart_badge_show_zero']);
+        $hidden = 0 === $count && !$show_zero;
 
         printf('<%1$s %2$s>', esc_html($tag), $this->get_render_attribute_string('cart')); // phpcs:ignore WordPress.Security.EscapeOutput -- render attributes are Elementor-escaped
 
@@ -912,8 +913,21 @@ trait Account_Actions_Controls
         $this->render_icon_field($settings['cart_icon'] ?? []);
         echo '</span>';
 
-        if ($render_badge) {
-            printf('<span class="bkw-account-bar__badge">%s</span>', esc_html($this->to_persian_digits((string) $count)));
+        /*
+         * حتی وقتی تعداد صفر است و باید مخفی بماند، بج هنوز در DOM هست
+         * (فقط با display:none) — نه غایب کامل — چون bakery-add-to-cart.js
+         * و bakery-cart-sidebar.js بعد از هر افزودن/کاهش AJAX همین
+         * data-bkw-cart-badge را پیدا و به‌روز می‌کنند؛ اگر عنصر اصلاً
+         * وجود نداشت، اولین افزودن به سبد بدون رفرش صفحه نمی‌توانست
+         * جایی برای نمایش شمارنده بسازد.
+         */
+        if ($show_badge) {
+            printf(
+                '<span class="bkw-account-bar__badge" data-bkw-cart-badge data-show-zero="%s"%s>%s</span>',
+                $show_zero ? '1' : '0',
+                $hidden ? ' style="display:none;"' : '',
+                esc_html($this->to_persian_digits((string) $count))
+            );
         }
 
         printf('</%s>', esc_html($tag));

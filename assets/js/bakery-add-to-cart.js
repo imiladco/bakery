@@ -30,7 +30,34 @@
             });
         }
 
+        if (data && undefined !== data.cart_count) {
+            updateCartBadge(data.cart_count);
+        }
+
         document.body.dispatchEvent(new CustomEvent('wc_fragment_refresh', { bubbles: true }));
+    }
+
+    var PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+
+    function toPersianDigits(value) {
+        return String(value).replace(/[0-9]/g, function (digit) {
+            return PERSIAN_DIGITS[digit];
+        });
+    }
+
+    /**
+     * شمارندهٔ بج سبد در پیل هدر/نوار حساب کاربری (Traits\Account_Actions_Controls)
+     * را همه‌جای صفحه به‌روز می‌کند — آن بج همیشه در DOM هست (حتی وقتی
+     * صفر و باید مخفی بماند، فقط با display:none)، دقیقاً برای همین.
+     */
+    function updateCartBadge(count) {
+        count = parseInt(count, 10) || 0;
+
+        document.querySelectorAll('[data-bkw-cart-badge]').forEach(function (badge) {
+            var showZero = '1' === badge.getAttribute('data-show-zero');
+            badge.style.display = count > 0 || showZero ? '' : 'none';
+            badge.textContent = toPersianDigits(count);
+        });
     }
 
     function setLoading(root, isLoading) {

@@ -12,23 +12,47 @@
 (function () {
     'use strict';
 
-    function applyFragments(fragments) {
-        if (!fragments) {
-            return;
+    function applyFragments(data) {
+        if (data && data.fragments) {
+            Object.keys(data.fragments).forEach(function (selector) {
+                document.querySelectorAll(selector).forEach(function (el) {
+                    var template = document.createElement('template');
+                    template.innerHTML = data.fragments[selector].trim();
+                    var replacement = template.content.firstElementChild;
+                    if (replacement) {
+                        el.replaceWith(replacement);
+                    }
+                });
+            });
         }
 
-        Object.keys(fragments).forEach(function (selector) {
-            document.querySelectorAll(selector).forEach(function (el) {
-                var template = document.createElement('template');
-                template.innerHTML = fragments[selector].trim();
-                var replacement = template.content.firstElementChild;
-                if (replacement) {
-                    el.replaceWith(replacement);
-                }
-            });
-        });
+        if (data && undefined !== data.cart_count) {
+            updateCartBadge(data.cart_count);
+        }
 
         document.body.dispatchEvent(new CustomEvent('wc_fragment_refresh', { bubbles: true }));
+    }
+
+    var PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+
+    function toPersianDigits(value) {
+        return String(value).replace(/[0-9]/g, function (digit) {
+            return PERSIAN_DIGITS[digit];
+        });
+    }
+
+    /**
+     * شمارندهٔ بج سبد در پیل هدر/نوار حساب کاربری را همه‌جای صفحه
+     * به‌روز می‌کند — رجوع کن به یادداشت مشابه در bakery-add-to-cart.js.
+     */
+    function updateCartBadge(count) {
+        count = parseInt(count, 10) || 0;
+
+        document.querySelectorAll('[data-bkw-cart-badge]').forEach(function (badge) {
+            var showZero = '1' === badge.getAttribute('data-show-zero');
+            badge.style.display = count > 0 || showZero ? '' : 'none';
+            badge.textContent = toPersianDigits(count);
+        });
     }
 
     function setupSidebar(sidebar) {
@@ -125,7 +149,7 @@
                 })
                 .then(function (response) {
                     if (response && response.success && response.data) {
-                        applyFragments(response.data.fragments);
+                        applyFragments(response.data);
                     }
                 })
                 .catch(function () {

@@ -151,6 +151,9 @@ final class Cart_Ajax
         wp_send_json_success([
             'qty' => $this->cart_quantity($product_id),
             'max' => $max,
+            // شمارندهٔ بج سبد در هدر/نوار حساب کاربری (Traits\Account_Actions_Controls)
+            // از همین مقدار زنده می‌ماند؛ بدون آن، آن بج فقط با رفرش صفحه به‌روز می‌شد.
+            'cart_count' => WC()->cart->get_cart_contents_count(),
             'fragments' => apply_filters('woocommerce_add_to_cart_fragments', []),
             'cart_hash' => WC()->cart->get_cart_hash(),
         ]);
