@@ -39,10 +39,18 @@ final class Plugin
 
         (new Site_Gate())->register();
 
-        // فقط وقتی ووکامرس فعال است لازم است — ویجت افزودن به سبد بدون آن اصلاً رندر نمی‌شود.
+        // فقط وقتی ووکامرس فعال است لازم است — ویجت‌های افزودن به سبد و
+        // سایدبار سبد بدون آن اصلاً رندر نمی‌شوند.
         if (class_exists('\WooCommerce')) {
             require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-ajax.php';
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-fragments.php';
+
             new Cart_Ajax();
+
+            // اتصال محتوای زندهٔ سایدبار سبد به همان فیلتر فرگمنت استاندارد
+            // ووکامرس — Cart_Ajax و Widgets\Cart_Sidebar هیچ‌کدام از وجود
+            // یکدیگر خبر ندارند، سیم‌کشی‌شان فقط همین‌جاست.
+            add_filter('woocommerce_add_to_cart_fragments', [Cart_Fragments::class, 'add']);
         }
     }
 
@@ -94,6 +102,7 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/login.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/terms-modal.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/add-to-cart.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/cart-sidebar.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
         $widgets_manager->register(new Widgets\Price());
@@ -103,6 +112,7 @@ final class Plugin
         $widgets_manager->register(new Widgets\Login());
         $widgets_manager->register(new Widgets\Terms_Modal());
         $widgets_manager->register(new Widgets\Add_To_Cart());
+        $widgets_manager->register(new Widgets\Cart_Sidebar());
     }
 
     /**
@@ -164,10 +174,25 @@ final class Plugin
             true,
         );
 
+        wp_register_script(
+            'bakery-cart-sidebar',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-cart-sidebar.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+
         // رشتهٔ اکشن نانس مستقیم است (نه ارجاع به Cart_Ajax::NONCE_ACTION) چون این
         // متد صرف‌نظر از فعال بودن ووکامرس اجرا می‌شود، در حالی که آن کلاس فقط
-        // وقتی ووکامرس فعال باشد بارگذاری می‌شود.
+        // وقتی ووکامرس فعال باشد بارگذاری می‌شود. هر دو اسکریپت (افزودن به
+        // سبد و سایدبار) روی همان دو اکشن admin-ajax سوار می‌شوند، پس با
+        // همان اکشن نانس مستقل از هم لوکالایز می‌شوند.
         wp_localize_script('bakery-add-to-cart', 'bkwAtc', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('bkw_atc'),
+        ]);
+
+        wp_localize_script('bakery-cart-sidebar', 'bkwCartSidebar', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('bkw_atc'),
         ]);
@@ -184,5 +209,6 @@ final class Plugin
         wp_enqueue_script('bakery-login');
         wp_enqueue_script('bakery-terms-modal');
         wp_enqueue_script('bakery-add-to-cart');
+        wp_enqueue_script('bakery-cart-sidebar');
     }
 }

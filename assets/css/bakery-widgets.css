@@ -1175,3 +1175,202 @@ html.bkw-panel-open {
 .bkw-atc.is-loading button {
 	pointer-events: none;
 }
+
+/*
+ * ویجت cart-sidebar: پردهٔ تیرهٔ بلورشده (fixed inset:0) + پنل کشویی
+ * تمام‌ارتفاع. باز/بسته‌شدن با toggle کلاس is-open روی هر دو انجام
+ * می‌شود (assets/js/bakery-cart-sidebar.js) — دقیقاً همان الگوی پنل
+ * کشویی موبایل ویجت Header (.bkw-header__panel-overlay/.bkw-header__panel).
+ * جهت باز شدن (چپ/راست) و رنگ حاشیهٔ لبهٔ تماس با محتوا از کنترل
+ * «جهت باز شدن» (تب استایل → پنل) با هم عوض می‌شوند تا حاشیه همیشه
+ * روی لبهٔ درست بماند.
+ */
+.bkw-cart-sidebar {
+	--bkw-cart-sidebar-blur: 8px;
+}
+
+.bkw-cart-sidebar__overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	backdrop-filter: blur(var(--bkw-cart-sidebar-blur));
+	-webkit-backdrop-filter: blur(var(--bkw-cart-sidebar-blur));
+	transition: opacity 0.25s ease;
+}
+
+.bkw-cart-sidebar__overlay.is-open {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+}
+
+.bkw-cart-sidebar__panel {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	z-index: 1001;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	overflow-y: auto;
+	transform: translateX(var(--bkw-cart-sidebar-closed-x, -100%));
+	transition: transform 0.3s ease;
+}
+
+.bkw-cart-sidebar__panel.is-open {
+	transform: translateX(0);
+}
+
+.bkw-cart-sidebar__top {
+	display: flex;
+	flex-direction: column;
+	gap: 32px;
+}
+
+.bkw-cart-sidebar__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.bkw-cart-sidebar__title {
+	margin: 0;
+}
+
+.bkw-cart-sidebar__close {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	appearance: none;
+	cursor: pointer;
+	box-sizing: border-box;
+	line-height: 1;
+}
+
+.bkw-cart-sidebar__close svg {
+	display: block;
+}
+
+.bkw-cart-sidebar__credit {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.bkw-cart-sidebar__credit-label,
+.bkw-cart-sidebar__credit-value,
+.bkw-cart-sidebar__total-label,
+.bkw-cart-sidebar__total-value,
+.bkw-cart-sidebar__item-name,
+.bkw-cart-sidebar__item-price {
+	margin: 0;
+}
+
+.bkw-cart-sidebar__divider {
+	border-top: 1px solid #eaded6;
+}
+
+.bkw-cart-sidebar__items {
+	display: flex;
+	flex-direction: column;
+}
+
+.bkw-cart-sidebar__empty {
+	margin: 0;
+	color: #7d7065;
+	text-align: center;
+}
+
+.bkw-cart-sidebar__item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-block: 8px;
+}
+
+.bkw-cart-sidebar__item-right {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.bkw-cart-sidebar__item-icon {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+.bkw-cart-sidebar__item-icon img {
+	width: 50%;
+	height: 50%;
+	object-fit: contain;
+	display: block;
+}
+
+.bkw-cart-sidebar__item-details {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 4px;
+	text-align: right;
+}
+
+.bkw-cart-sidebar__qty {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 8px 12px;
+}
+
+.bkw-cart-sidebar__step {
+	flex-shrink: 0;
+	appearance: none;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font: inherit;
+	line-height: 1;
+	padding: 0;
+}
+
+.bkw-cart-sidebar__step:disabled {
+	cursor: not-allowed;
+}
+
+.bkw-cart-sidebar__qty-value {
+	min-width: 1em;
+	text-align: center;
+}
+
+.bkw-cart-sidebar__footer {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.bkw-cart-sidebar__total {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.bkw-cart-sidebar__checkout {
+	appearance: none;
+	border: none;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font: inherit;
+	box-sizing: border-box;
+}
