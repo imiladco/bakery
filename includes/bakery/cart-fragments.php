@@ -72,7 +72,7 @@ final class Cart_Fragments
         return sprintf(
             '<span class="bkw-cart-sidebar__total-value" %s>%s</span>',
             self::attr(self::TOTAL_SELECTOR),
-            esc_html(self::format_amount($subtotal))
+            esc_html(self::format_price($subtotal))
         );
     }
 
@@ -119,7 +119,7 @@ final class Cart_Fragments
                 </div>
                 <div class="bkw-cart-sidebar__item-details">
                     <p class="bkw-cart-sidebar__item-name"><?php echo esc_html($product->get_name()); ?></p>
-                    <p class="bkw-cart-sidebar__item-price"><?php echo esc_html(self::format_amount($price)); ?></p>
+                    <p class="bkw-cart-sidebar__item-price"><?php echo esc_html(self::format_price($price)); ?></p>
                 </div>
             </div>
 
@@ -149,6 +149,20 @@ final class Cart_Fragments
         $thou_sep = function_exists('wc_get_price_thousand_separator') ? wc_get_price_thousand_separator() : ',';
 
         return number_format($value, $decimals, $dec_sep, $thou_sep);
+    }
+
+    /**
+     * عدد + واحد پول، در یک رشته — نه دو عنصر جدا مثل ویجت Price. علتش
+     * فقط ظاهری نیست: بدون کلمهٔ «تومان» (یک نویسهٔ راست‌به‌چپ) کنار
+     * عدد، رشته‌ای که فقط رقم است زیر dir="rtl" گاهی با الگوریتم Bidi
+     * مرورگر به‌جای لبهٔ راست، عملاً به لبهٔ چپ می‌چسبد؛ یکی‌کردن عدد و
+     * واحد پول در همان متن، جهت پاراگراف را روی کل رشته درست اعمال
+     * می‌کند.
+     */
+    public static function format_price(float $value): string
+    {
+        /* translators: %s: formatted amount */
+        return sprintf(__('%s تومان', 'bakery-widgets'), self::format_amount($value));
     }
 
     /**

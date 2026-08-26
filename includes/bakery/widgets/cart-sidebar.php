@@ -821,7 +821,7 @@ final class Cart_Sidebar extends Widget_Base
 
                     <div class="bkw-cart-sidebar__credit">
                         <span class="bkw-cart-sidebar__credit-label"><?php echo esc_html($settings['credit_label']); ?></span>
-                        <span class="bkw-cart-sidebar__credit-value"><?php echo esc_html($this->format_with_currency($credit)); ?></span>
+                        <span class="bkw-cart-sidebar__credit-value"><?php echo esc_html(Cart_Fragments::format_price($credit)); ?></span>
                     </div>
 
                     <div class="bkw-cart-sidebar__divider"></div>
@@ -844,16 +844,6 @@ final class Cart_Sidebar extends Widget_Base
             </div>
         </div>
         <?php
-    }
-
-    /** عدد قالب‌بندی‌شده + واحد پول («تومان») — هم‌سو با Cart_Fragments::format_amount() */
-    private function format_with_currency(float $amount): string
-    {
-        return sprintf(
-            /* translators: %s: formatted amount */
-            __('%s تومان', 'bakery-widgets'),
-            Cart_Fragments::format_amount($amount)
-        );
     }
 
     /** رندر یک فیلد MEDIA؛ کپی هم‌سو با Traits\Account_Actions_Controls::render_icon_field() */
