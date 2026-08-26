@@ -1061,3 +1061,117 @@ html.bkw-panel-open {
 		display: block;
 	}
 }
+
+/*
+ * ویجت add-to-cart: در هر لحظه فقط یکی از دو فرزند مستقیم نمایش داده
+ * می‌شود — دکمهٔ افزودن (.bkw-atc__btn--add) یا محفظهٔ تعداد (.bkw-atc__qty)
+ * — و جاوااسکریپت با toggle کردن `data-state` روی ریشه سوییچ می‌کند؛
+ * حالت ناموجود اصلاً این دو را رندر نمی‌کند، فقط دکمهٔ غیرفعال
+ * .bkw-atc__btn--oos را دارد.
+ */
+.bkw-atc {
+	--bkw-atc-icon-size: 14px;
+	--bkw-atc-step-size: 28px;
+	--bkw-atc-loading-bg: rgba(255, 255, 255, 0.45);
+	--bkw-atc-loading-blur: 4px;
+	--bkw-atc-loading-duration: 180ms;
+	display: inline-flex;
+}
+
+.bkw-atc[data-state="add"] .bkw-atc__qty,
+.bkw-atc[data-state="qty"] .bkw-atc__btn--add {
+	display: none;
+}
+
+.bkw-atc__notice {
+	padding: 16px;
+	border: 1px dashed #c00;
+	color: #c00;
+	font-size: 13px;
+}
+
+.bkw-atc__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	cursor: pointer;
+	font: inherit;
+}
+
+.bkw-atc__btn--oos {
+	cursor: default;
+}
+
+.bkw-atc__icon {
+	display: inline-flex;
+	flex-shrink: 0;
+	width: var(--bkw-atc-icon-size);
+	height: var(--bkw-atc-icon-size);
+	line-height: 0;
+}
+
+.bkw-atc__icon svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.bkw-atc__qty {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+
+.bkw-atc__step {
+	flex-shrink: 0;
+	width: var(--bkw-atc-step-size);
+	height: var(--bkw-atc-step-size);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	cursor: pointer;
+	font: inherit;
+	line-height: 1;
+}
+
+.bkw-atc__step:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.bkw-atc__count {
+	min-width: 1.5em;
+	text-align: center;
+}
+
+/*
+ * لایهٔ «در حال انجام»: هر دو حالت تعاملی (دکمهٔ افزودن و محفظهٔ تعداد)
+ * یک .bkw-atc__overlay مستقل دارند؛ جاوااسکریپت فقط کلاس is-loading را
+ * روی ریشه می‌گذارد و opacity لایهٔ داخل عنصر در حال حاضر قابل مشاهده
+ * (طبق data-state) به ۱ می‌رود — بدون هیچ منطق نمایش/پنهانی اضافه.
+ */
+.bkw-atc__overlay {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: var(--bkw-atc-loading-bg);
+	backdrop-filter: blur(var(--bkw-atc-loading-blur));
+	-webkit-backdrop-filter: blur(var(--bkw-atc-loading-blur));
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--bkw-atc-loading-duration) ease;
+}
+
+.bkw-atc__btn--add {
+	position: relative;
+}
+
+.bkw-atc.is-loading .bkw-atc__overlay {
+	opacity: 1;
+}
+
+.bkw-atc.is-loading button {
+	pointer-events: none;
+}

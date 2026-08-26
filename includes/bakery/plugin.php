@@ -38,6 +38,12 @@ final class Plugin
         add_action('elementor/editor/after_enqueue_scripts', [$this, 'enqueue_editor_scripts']);
 
         (new Site_Gate())->register();
+
+        // فقط وقتی ووکامرس فعال است لازم است — ویجت افزودن به سبد بدون آن اصلاً رندر نمی‌شود.
+        if (class_exists('\WooCommerce')) {
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-ajax.php';
+            new Cart_Ajax();
+        }
     }
 
     /**
@@ -87,6 +93,7 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/header.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/login.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/terms-modal.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/add-to-cart.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
         $widgets_manager->register(new Widgets\Price());
@@ -95,6 +102,7 @@ final class Plugin
         $widgets_manager->register(new Widgets\Header());
         $widgets_manager->register(new Widgets\Login());
         $widgets_manager->register(new Widgets\Terms_Modal());
+        $widgets_manager->register(new Widgets\Add_To_Cart());
     }
 
     /**
@@ -147,6 +155,22 @@ final class Plugin
             BAKERY_WIDGETS_VERSION,
             true,
         );
+
+        wp_register_script(
+            'bakery-add-to-cart',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-add-to-cart.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+
+        // رشتهٔ اکشن نانس مستقیم است (نه ارجاع به Cart_Ajax::NONCE_ACTION) چون این
+        // متد صرف‌نظر از فعال بودن ووکامرس اجرا می‌شود، در حالی که آن کلاس فقط
+        // وقتی ووکامرس فعال باشد بارگذاری می‌شود.
+        wp_localize_script('bakery-add-to-cart', 'bkwAtc', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('bkw_atc'),
+        ]);
     }
 
     /**
@@ -159,5 +183,6 @@ final class Plugin
         wp_enqueue_script('bakery-header');
         wp_enqueue_script('bakery-login');
         wp_enqueue_script('bakery-terms-modal');
+        wp_enqueue_script('bakery-add-to-cart');
     }
 }
