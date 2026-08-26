@@ -574,6 +574,35 @@ final class Cart_Sidebar extends Widget_Base
             ],
         ]);
 
+        $this->add_control('step_icon_size', [
+            'label' => __('اندازهٔ آیکون +/-', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 8, 'max' => 24]],
+            'default' => ['unit' => 'px', 'size' => 12],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-cart-sidebar__step svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+            ],
+        ]);
+
+        $this->add_control('step_icon_color', [
+            'label' => __('رنگ آیکون +/-', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#231912',
+            'selectors' => [
+                '{{WRAPPER}} .bkw-cart-sidebar__step' => 'color: {{VALUE}};',
+            ],
+        ]);
+
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'qty_value_typography',
+            'selector' => '{{WRAPPER}} .bkw-cart-sidebar__qty-value',
+            'fields_options' => [
+                'font_weight' => ['default' => '600'],
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 15]],
+            ],
+        ]);
+
         $this->add_control('qty_value_color', [
             'label' => __('رنگ عدد', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,

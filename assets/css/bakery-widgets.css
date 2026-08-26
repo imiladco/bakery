@@ -1192,10 +1192,14 @@ html.bkw-panel-open {
 .bkw-cart-sidebar__overlay {
 	position: fixed;
 	inset: 0;
-	z-index: 1000;
+	/* هم‌سطح .bkw-terms-modal-overlay: باید بالای هر چیز دیگری در صفحه
+	 * (هدر چسبان، نوار ادمین، مینی‌سبدهای دیگر و ...) بنشیند، نه فقط
+	 * بالای پنل موبایل هدر (که z-index پایین‌تر 1000/1001 دارد). */
+	z-index: 100000;
 	opacity: 0;
 	visibility: hidden;
 	pointer-events: none;
+	background-color: rgba(26, 19, 14, 0.8);
 	backdrop-filter: blur(var(--bkw-cart-sidebar-blur));
 	-webkit-backdrop-filter: blur(var(--bkw-cart-sidebar-blur));
 	transition: opacity 0.25s ease;
@@ -1211,12 +1215,21 @@ html.bkw-panel-open {
 	position: fixed;
 	top: 0;
 	bottom: 0;
-	z-index: 1001;
+	z-index: 100001;
 	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
 	overflow-y: auto;
+	width: 500px;
+	max-width: 92vw;
+	padding: 24px;
+	background-color: #efe6d5;
+	/* فقط فالبک برای پیش از اعمال شدن CSS المنتور؛ کنترل «جهت باز شدن»
+	 * (تب استایل) این حاشیه را با جهت واقعی هماهنگ می‌کند. پیش‌فرض
+	 * «از چپ» است، پس زیرِ dir="rtl" لبهٔ تماس با محتوا سمت راست است
+	 * (inline-start در rtl = راست). */
+	border-inline-start: 1px solid #eaded6;
 	transform: translateX(var(--bkw-cart-sidebar-closed-x, -100%));
 	transition: transform 0.3s ease;
 }
@@ -1239,6 +1252,9 @@ html.bkw-panel-open {
 
 .bkw-cart-sidebar__title {
 	margin: 0;
+	color: #231912;
+	font-size: 22px;
+	font-weight: 900;
 }
 
 .bkw-cart-sidebar__close {
@@ -1250,16 +1266,24 @@ html.bkw-panel-open {
 	cursor: pointer;
 	box-sizing: border-box;
 	line-height: 1;
+	width: 40px;
+	height: 40px;
+	border-radius: 20px;
+	background-color: #faf6f0;
+	border: 1px solid #faf6f0;
 }
 
 .bkw-cart-sidebar__close svg {
 	display: block;
+	width: 40px;
+	height: 40px;
 }
 
 .bkw-cart-sidebar__credit {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	color: #7d7065;
 }
 
 .bkw-cart-sidebar__credit-label,
@@ -1269,6 +1293,26 @@ html.bkw-panel-open {
 .bkw-cart-sidebar__item-name,
 .bkw-cart-sidebar__item-price {
 	margin: 0;
+}
+
+.bkw-cart-sidebar__credit-value,
+.bkw-cart-sidebar__total-value {
+	font-size: 20px;
+	font-weight: 800;
+}
+
+.bkw-cart-sidebar__credit-label,
+.bkw-cart-sidebar__total-label {
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.bkw-cart-sidebar__total-value {
+	color: #231912;
+}
+
+.bkw-cart-sidebar__total-label {
+	color: #7d7065;
 }
 
 .bkw-cart-sidebar__divider {
@@ -1305,6 +1349,10 @@ html.bkw-panel-open {
 	align-items: center;
 	justify-content: center;
 	overflow: hidden;
+	width: 64px;
+	height: 64px;
+	border-radius: 18px;
+	background-color: #ffffff;
 }
 
 .bkw-cart-sidebar__item-icon img {
@@ -1322,6 +1370,18 @@ html.bkw-panel-open {
 	text-align: right;
 }
 
+.bkw-cart-sidebar__item-name {
+	color: #231912;
+	font-size: 16px;
+	font-weight: 700;
+}
+
+.bkw-cart-sidebar__item-price {
+	color: #7d7065;
+	font-size: 14px;
+	font-weight: 500;
+}
+
 .bkw-cart-sidebar__qty {
 	flex-shrink: 0;
 	display: flex;
@@ -1329,10 +1389,15 @@ html.bkw-panel-open {
 	justify-content: center;
 	gap: 12px;
 	padding: 8px 12px;
+	border-radius: 16px;
+	background-color: #ffffff;
 }
 
 .bkw-cart-sidebar__step {
 	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	appearance: none;
 	border: none;
 	background: transparent;
@@ -1340,15 +1405,26 @@ html.bkw-panel-open {
 	font: inherit;
 	line-height: 1;
 	padding: 0;
+	color: #231912;
+}
+
+.bkw-cart-sidebar__step svg {
+	display: block;
+	width: 12px;
+	height: 12px;
 }
 
 .bkw-cart-sidebar__step:disabled {
 	cursor: not-allowed;
+	opacity: 0.4;
 }
 
 .bkw-cart-sidebar__qty-value {
 	min-width: 1em;
 	text-align: center;
+	color: #231912;
+	font-size: 15px;
+	font-weight: 600;
 }
 
 .bkw-cart-sidebar__footer {
@@ -1373,4 +1449,10 @@ html.bkw-panel-open {
 	cursor: pointer;
 	font: inherit;
 	box-sizing: border-box;
+	height: 56px;
+	border-radius: 16px;
+	background-color: #366874;
+	color: #ffffff;
+	font-size: 18px;
+	font-weight: 700;
 }
