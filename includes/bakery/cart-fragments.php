@@ -98,7 +98,7 @@ final class Cart_Fragments
             $items[] = [
                 'product' => $product,
                 'quantity' => (int) $cart_item['quantity'],
-                'max' => $product->get_max_purchase_quantity(),
+                'max' => Purchase_Limit::for_product($product),
             ];
         }
 

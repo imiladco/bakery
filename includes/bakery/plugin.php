@@ -26,6 +26,7 @@ final class Plugin
     private function __construct()
     {
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/svg.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/purchase-limit.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/site-gate.php';
 
         add_action('init', [$this, 'maybe_flush_after_update'], 20);

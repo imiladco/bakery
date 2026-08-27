@@ -60,7 +60,7 @@ final class Cart_Ajax
             wp_send_json_error(['message' => __('این محصول قابل خرید نیست.', 'bakery-widgets')], 400);
         }
 
-        $max = $product->get_max_purchase_quantity(); // -1 یعنی نامحدود
+        $max = Purchase_Limit::for_product($product); // -1 یعنی نامحدود
         $current = $this->cart_quantity($product_id);
         if (-1 !== $max && ($current + $quantity) > $max) {
             $quantity = max(0, $max - $current);
@@ -100,7 +100,7 @@ final class Cart_Ajax
         if ($quantity <= 0) {
             WC()->cart->remove_cart_item($cart_item_key);
         } else {
-            $max = $product->get_max_purchase_quantity();
+            $max = Purchase_Limit::for_product($product);
             WC()->cart->set_quantity($cart_item_key, -1 !== $max ? min($quantity, $max) : $quantity);
         }
 
@@ -146,7 +146,7 @@ final class Cart_Ajax
         WC()->cart->calculate_totals();
 
         $product = wc_get_product($product_id);
-        $max = $product instanceof WC_Product ? $product->get_max_purchase_quantity() : -1;
+        $max = $product instanceof WC_Product ? Purchase_Limit::for_product($product) : -1;
 
         wp_send_json_success([
             'qty' => $this->cart_quantity($product_id),

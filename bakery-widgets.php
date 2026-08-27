@@ -2,14 +2,14 @@
 /**
  * Plugin Name:       Bakery Elementor Widgets
  * Description:       ویجت‌های اختصاصی المنتور برای بیکری عظام — آیکون/عنوان/توضیحات، قیمت، افزودن به سبد، و تعطیلات هفته (تقویم شمسی)
- * Version:           2.3.0
+ * Version:           2.4.0
  * Author:            Claude
  * Text Domain:       bakery-widgets
  * Requires PHP:      8.1
  * Requires at least: 6.4
  * Elementor tested up to: 3.35
  *
- * One plugin, two internal code families sharing one Elementor category
+ * One plugin, three internal code families sharing one Elementor category
  * ("bakery"):
  *   - includes/bakery/*        Icon Box + Price widgets (procedural style,
  *                              manual require_once, no autoloader — as
@@ -18,8 +18,13 @@
  *                              Weekly Holidays widget (PSR-4-ish autoloaded
  *                              under the WHW\ namespace, PHP 8.1 target —
  *                              see includes/Domain/JalaliDate.php for why).
+ *   - includes/Credit/*        Monthly store credit (Bakery_Credit\ namespace,
+ *                              autoloaded, layered Domain/Storage/Service/
+ *                              Integration/Admin with pure PHPUnit coverage —
+ *                              this one handles money, so the balance formula
+ *                              and Jalali period maths are unit tested).
  * Kept in separate namespaces/directories deliberately (Bakery_Widgets\*
- * vs WHW\*) rather than forced into one — they were built independently
+ * vs WHW\* vs Bakery_Credit\*) rather than forced into one — they were built independently
  * and merging their internals would be pure churn with no benefit. What's
  * unified here is everything WordPress/Elementor actually sees: one
  * plugin header, one activation lifecycle, one PHP/Elementor version
@@ -30,7 +35,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BAKERY_WIDGETS_VERSION', '2.3.0');
+define('BAKERY_WIDGETS_VERSION', '2.4.0');
 define('BAKERY_WIDGETS_FILE', __FILE__);
 define('BAKERY_WIDGETS_PATH', plugin_dir_path(__FILE__));
 define('BAKERY_WIDGETS_URL', plugin_dir_url(__FILE__));
@@ -115,6 +120,12 @@ function bakery_widgets_init() {
     \Bakery_Widgets\Plugin::instance();
 
     \WHW\Plugin::instance()->init();
+
+    // اعتبار ماهانه فقط با ووکامرس معنا دارد — بدون آن نه درگاهی هست و
+    // نه سبدی که سقفش را محدود کند.
+    if (class_exists('\WooCommerce')) {
+        \Bakery_Credit\Plugin::instance()->init();
+    }
 }
 add_action('plugins_loaded', 'bakery_widgets_init');
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bakery_Widgets\Widgets;
 
 use Bakery_Widgets\Cart_Ajax;
+use Bakery_Widgets\Purchase_Limit;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Background;
 use Elementor\Group_Control_Border;
@@ -504,7 +505,7 @@ final class Add_To_Cart extends Widget_Base
         }
 
         $in_stock = $product->is_purchasable() && $product->is_in_stock();
-        $max = $product->get_max_purchase_quantity(); // -1 = نامحدود
+        $max = Purchase_Limit::for_product($product); // -1 = نامحدود
         $qty = $in_stock ? $this->cart_quantity($product->get_id()) : 0;
 
         $add_text = trim((string) ($settings['add_text'] ?? '')) ?: __('افزودن به سبد', 'bakery-widgets');
