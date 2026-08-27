@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bakery_Credit\Service;
 
 use Bakery_Credit\Domain\Balance;
+use Bakery_Credit\Domain\EntryType;
 use Bakery_Credit\Domain\Period;
 use Bakery_Credit\Storage\AllowanceSource;
 use Bakery_Credit\Storage\LedgerSource;
@@ -69,12 +70,17 @@ final class CreditAccount
      * برگشت اعتبار. دوره از تاریخ سفارش اصلی گرفته می‌شود، نه از امروز،
      * تا اعتبار به همان ماهی برگردد که از آن کم شده بود.
      */
-    public function reverse(int $userId, float $amount, int $refundId, DateTimeImmutable $orderDate): bool
-    {
+    public function reverse(
+        int $userId,
+        float $amount,
+        int $refId,
+        DateTimeImmutable $orderDate,
+        EntryType $type = EntryType::Refund
+    ): bool {
         if ($userId <= 0 || $amount <= 0.0) {
             return false;
         }
 
-        return $this->ledger->reverse($userId, Period::fromDate($orderDate)->key(), $amount, $refundId);
+        return $this->ledger->reverse($userId, Period::fromDate($orderDate)->key(), $amount, $refId, $type);
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bakery_Credit\Storage;
 
+use Bakery_Credit\Domain\EntryType;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -71,7 +73,7 @@ final class Ledger implements LedgerSource
         try {
             // ری‌ترای یا دابل‌کلیک روی همان سفارش: اعتبارش قبلاً کسر شده،
             // پس این تلاش موفق است — نه یک کسر دوم و نه یک شکست دروغین.
-            if ($this->hasEntry('debit', $orderId)) {
+            if ($this->hasEntry(EntryType::Debit->value, $orderId)) {
                 return true;
             }
 
@@ -81,7 +83,7 @@ final class Ledger implements LedgerSource
                 return false;
             }
 
-            return $this->insert($userId, $periodKey, $amount, 'debit', $orderId);
+            return $this->insert($userId, $periodKey, $amount, EntryType::Debit->value, $orderId);
         } finally {
             $this->releaseLock($userId);
         }
@@ -97,13 +99,17 @@ final class Ledger implements LedgerSource
      * حسابداری‌درست می‌ماند به‌جای اینکه به تصادفِ تاریخ بستگی داشته باشد.
      */
     #[\Override]
-    public function reverse(int $userId, string $periodKey, float $amount, int $refundId): bool
+    public function reverse(int $userId, string $periodKey, float $amount, int $refId, EntryType $type): bool
     {
-        if ($amount <= 0.0 || $this->hasEntry('refund', $refundId)) {
+        if ($amount <= 0.0 || !$type->isReversal()) {
             return false;
         }
 
-        return $this->insert($userId, $periodKey, -$amount, 'refund', $refundId);
+        if ($this->hasEntry($type->value, $refId)) {
+            return false;
+        }
+
+        return $this->insert($userId, $periodKey, -$amount, $type->value, $refId);
     }
 
     /**
@@ -119,7 +125,7 @@ final class Ledger implements LedgerSource
             return false;
         }
 
-        return $this->insert($userId, $periodKey, $amount, 'adjust', null, $actorId, $note);
+        return $this->insert($userId, $periodKey, $amount, EntryType::Adjust->value, null, $actorId, $note);
     }
 
     /** @return array<int, array<string, mixed>> سطرهای یک کاربر در یک دوره، تازه‌ترین اول */

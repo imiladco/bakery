@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Credit\Tests\Service;
 
+use Bakery_Credit\Domain\EntryType;
 use Bakery_Credit\Service\CreditAccount;
 use Bakery_Credit\Tests\Service\Fakes\FixedAllowance;
 use Bakery_Credit\Tests\Service\Fakes\InMemoryLedger;
@@ -180,6 +181,34 @@ final class CreditAccountTest extends TestCase
 
         self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
         self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::MEHR)));
+    }
+
+    /**
+     * شناسهٔ سفارش و شناسهٔ رکورد مرجوعی دو فضای شمارهٔ مستقل‌اند و
+     * می‌توانند عدد یکسان داشته باشند. اگر لغو و مرجوعی زیر یک نوع
+     * ثبت می‌شدند، قید یکتایی دومی را به‌اشتباه «تکراری» می‌دید و
+     * اعتبار بی‌صدا برنمی‌گشت. جدا بودن نوع دقیقاً همین را می‌بندد.
+     */
+    public function test_a_cancellation_and_a_refund_sharing_an_id_do_not_collide(): void
+    {
+        $sharedId = 101;
+
+        $this->account->debit(self::USER, 500_000, $sharedId, $this->at(self::SHAHRIVAR));
+
+        self::assertTrue($this->account->reverse(self::USER, 200_000, $sharedId, $this->at(self::SHAHRIVAR), EntryType::Cancel));
+        self::assertTrue($this->account->reverse(self::USER, 300_000, $sharedId, $this->at(self::SHAHRIVAR), EntryType::Refund));
+
+        self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
+    }
+
+    /** Debit و Adjust نوع معتبرِ enum هستند ولی مسیر برگشت نیستند. */
+    public function test_a_non_reversal_type_cannot_return_credit(): void
+    {
+        $this->account->debit(self::USER, 500_000, 101, $this->at(self::SHAHRIVAR));
+
+        self::assertFalse($this->account->reverse(self::USER, 100_000, 55, $this->at(self::SHAHRIVAR), EntryType::Debit));
+        self::assertFalse($this->account->reverse(self::USER, 100_000, 56, $this->at(self::SHAHRIVAR), EntryType::Adjust));
+        self::assertSame(500_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
     }
 
     public function test_a_zero_or_negative_debit_is_rejected(): void

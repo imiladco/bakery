@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bakery_Credit\Storage;
 
+use Bakery_Credit\Domain\EntryType;
+
 /**
  * درز خواندن/نوشتن دفتر — تا Service\CreditAccount بدون پایگاه داده و
  * بدون بوت‌استرپ وردپرس قابل تست باشد (همان الگوی WHW\Storage\OverrideSource).
@@ -19,6 +21,14 @@ interface LedgerSource
      */
     public function tryDebit(int $userId, string $periodKey, float $amount, float $allowance, int $orderId): bool;
 
-    /** برگشت اعتبار در پی لغو یا مرجوعی؛ همیشه به دورهٔ سفارش اصلی می‌رود. */
-    public function reverse(int $userId, string $periodKey, float $amount, int $refundId): bool;
+    /**
+     * برگشت اعتبار در پی لغو یا مرجوعی؛ همیشه به دورهٔ سفارش اصلی می‌رود.
+     *
+     * نوع (cancel یا refund) عمداً پارامتر است و پیش‌فرض ندارد. لغو سفارش
+     * به شناسهٔ خودِ سفارش ارجاع می‌دهد و مرجوعی به شناسهٔ رکورد مرجوعی —
+     * دو فضای شمارهٔ مستقل که می‌توانند عدد یکسان داشته باشند. اگر هر دو
+     * زیر یک نوع می‌رفتند، قید UNIQUE(type, ref_id) یکی را به‌اشتباه
+     * «تکراری» می‌دید و برگشت اعتبار بی‌صدا انجام نمی‌شد.
+     */
+    public function reverse(int $userId, string $periodKey, float $amount, int $refId, EntryType $type): bool;
 }

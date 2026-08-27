@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Credit\Tests\Service\Fakes;
 
+use Bakery_Credit\Domain\EntryType;
 use Bakery_Credit\Storage\LedgerSource;
 
 /**
@@ -36,7 +37,7 @@ final class InMemoryLedger implements LedgerSource
             return false;
         }
 
-        if ($this->has('debit', $orderId)) {
+        if ($this->has(EntryType::Debit->value, $orderId)) {
             return true;
         }
 
@@ -44,19 +45,19 @@ final class InMemoryLedger implements LedgerSource
             return false;
         }
 
-        $this->rows[] = ['user' => $userId, 'period' => $periodKey, 'amount' => $amount, 'type' => 'debit', 'ref' => $orderId];
+        $this->rows[] = ['user' => $userId, 'period' => $periodKey, 'amount' => $amount, 'type' => EntryType::Debit->value, 'ref' => $orderId];
 
         return true;
     }
 
     #[\Override]
-    public function reverse(int $userId, string $periodKey, float $amount, int $refundId): bool
+    public function reverse(int $userId, string $periodKey, float $amount, int $refId, EntryType $type): bool
     {
-        if ($amount <= 0.0 || $this->has('refund', $refundId)) {
+        if ($amount <= 0.0 || !$type->isReversal() || $this->has($type->value, $refId)) {
             return false;
         }
 
-        $this->rows[] = ['user' => $userId, 'period' => $periodKey, 'amount' => -$amount, 'type' => 'refund', 'ref' => $refundId];
+        $this->rows[] = ['user' => $userId, 'period' => $periodKey, 'amount' => -$amount, 'type' => $type->value, 'ref' => $refId];
 
         return true;
     }
