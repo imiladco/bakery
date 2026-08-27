@@ -11,10 +11,14 @@
         <testsuite name="service">
             <directory>tests/Service</directory>
         </testsuite>
+        <testsuite name="credit">
+            <directory>tests/Credit</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
             <directory>includes/Domain</directory>
+            <directory>includes/Credit</directory>
         </include>
     </source>
 </phpunit>

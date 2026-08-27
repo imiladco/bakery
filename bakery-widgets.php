@@ -46,17 +46,26 @@ const BAKERY_WIDGETS_MIN_PHP = '8.1.0';
 const BAKERY_WIDGETS_MIN_ELEMENTOR = '3.13.0';
 
 spl_autoload_register(static function (string $class): void {
-    $prefix = 'WHW\\';
+    // WHW\  -> includes/          (ویجت تعطیلات هفته)
+    // Bakery_Credit\ -> includes/Credit/  (اعتبار ماهانه — منطق پول، لایه‌بندی‌شده و تست‌دار)
+    $prefixes = [
+        'WHW\\' => 'includes/',
+        'Bakery_Credit\\' => 'includes/Credit/',
+    ];
 
-    if (!str_starts_with($class, $prefix)) {
+    foreach ($prefixes as $prefix => $baseDir) {
+        if (!str_starts_with($class, $prefix)) {
+            continue;
+        }
+
+        $relative = substr($class, strlen($prefix));
+        $path = BAKERY_WIDGETS_PATH . $baseDir . str_replace('\\', '/', $relative) . '.php';
+
+        if (is_file($path)) {
+            require $path;
+        }
+
         return;
-    }
-
-    $relative = substr($class, strlen($prefix));
-    $path = BAKERY_WIDGETS_PATH . 'includes/' . str_replace('\\', '/', $relative) . '.php';
-
-    if (is_file($path)) {
-        require $path;
     }
 });
 
