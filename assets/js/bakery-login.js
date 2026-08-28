@@ -1,20 +1,31 @@
 /**
- * ویجت ورود — فقط ظاهر و رفتار سمت کاربر (جابه‌جایی مرحله، پیش‌رفتن
- * خودکار خانه‌های کد تأیید، شمارش معکوس، ارسال مجدد). هیچ درخواست
- * شبکه‌ای نمی‌رود؛ اعتبارسنجی واقعی و ورود واقعی بعداً اضافه می‌شود
- * (رجوع کن به یادداشت بالای Widgets\Login).
+ * ویجت ورود — رفتار سمت کاربر (جابه‌جایی مرحله، پیش‌رفتن خودکار
+ * خانه‌های کد تأیید، شمارش معکوس، ارسال مجدد). کد تأیید طبق درخواست
+ * صریح کارفرما همچنان کاملاً شبیه‌سازی‌شده است (هر کدی قبول می‌شود، بدون
+ * پیامک واقعی) — اما «این شماره متعلق به کیست» دیگر ظاهری نیست: دو
+ * درخواست AJAX به Bakery_Widgets\Mobile_Login می‌رود:
  *
- * کلیک روی دکمهٔ مرحلهٔ ۲ دیگر مستقیم ریدایرکت نمی‌کند: اول مودال
- * قوانینِ تعبیه‌شده در همین صفحه (data-bkw-terms، رجوع کن به
+ *   - مرحلهٔ ۱ (bkw_login_check): فقط بررسی می‌کند شماره برای کاربری
+ *     ثبت شده یا نه؛ اگر نه، همان‌جا خطا نشان داده می‌شود و کاربر وقتش
+ *     با تئاتر کد تأیید تلف نمی‌شود (ثبت‌نام خودکار وجود ندارد — فقط
+ *     شماره‌هایی که مدیر از قبل تعریف کرده).
+ *   - لحظهٔ گرفتن دسترسی (bkw_login_complete): همان‌جا wp_set_auth_cookie
+ *     واقعی هم زده می‌شود — عمداً نه زودتر از مرحلهٔ ۱، چون
+ *     Site_Gate::maybe_redirect() هر کاربر واقعاً لاگین‌شده را بی‌قیدوشرط
+ *     رد می‌کند و لاگین واقعی زودتر یعنی رد شدن از کنار مودال قوانین.
+ *
+ * کلیک روی دکمهٔ مرحلهٔ ۲ مستقیم ریدایرکت نمی‌کند: اول مودال قوانینِ
+ * تعبیه‌شده در همین صفحه (data-bkw-terms، رجوع کن به
  * Traits\Terms_Modal_Controls::render_terms_modal) را پیدا می‌کند. اگر
- * قبلاً در همین مرورگر پذیرفته شده (localStorage)، مستقیم به
- * data-redirect-url می‌رود؛ وگرنه مودال را نمایان می‌کند و منتظر
- * می‌ماند — خودِ assets/js/bakery-terms-modal.js پس از چک‌باکس+تأیید
- * ریدایرکت را انجام می‌دهد.
+ * قبلاً در همین مرورگر پذیرفته شده (localStorage)، همین‌جا bkw_login_complete
+ * را صدا می‌زند و بعد به data-redirect-url می‌رود؛ وگرنه مودال را
+ * نمایان می‌کند و منتظر می‌ماند — خودِ assets/js/bakery-terms-modal.js
+ * پس از چک‌باکس+تأیید هم bkw_login_complete و هم ریدایرکت را انجام
+ * می‌دهد.
  *
  * هر جا کاربر واقعاً از این ویجت رد می‌شود (لاگین + تأیید قوانین)، کوکی
- * دسترسی سایت (Bakery_Widgets\Site_Gate::COOKIE_NAME) ست می‌شود — همان
- * کوکی‌ای که دروازهٔ سمت PHP (includes/bakery/site-gate.php) روی هر
+ * دسترسی سایت (Bakery_Widgets\Site_Gate::COOKIE_NAME) هم ست می‌شود —
+ * همان کوکی‌ای که دروازهٔ سمت PHP (includes/bakery/site-gate.php) روی هر
  * صفحهٔ دیگر سایت چک می‌کند تا دیگر کاربر را دوباره به ورود نفرستد.
  */
 (function () {
@@ -32,6 +43,40 @@
             // می‌شود؛ فقط دفعهٔ بعد دوباره به صفحهٔ ورود هدایت می‌شود —
             // مسدودکننده نیست.
         }
+    }
+
+    /**
+     * به Mobile_Login::ajax_check/ajax_complete وصل می‌شود. bkwLogin از
+     * Plugin::register_scripts() (wp_localize_script) می‌آید. نبودش
+     * (مثلاً کش قدیمی اسکریپت) یعنی نمی‌توانیم شماره را تأیید کنیم —
+     * safe fail یعنی رد کردن، نه رد شدن بدون بررسی.
+     */
+    function callLoginAjax(action, mobile, onDone) {
+        if (!window.bkwLogin || !window.bkwLogin.ajaxUrl) {
+            onDone(false);
+            return;
+        }
+
+        var body = new URLSearchParams();
+        body.set('action', action);
+        body.set('nonce', window.bkwLogin.nonce);
+        body.set('mobile', mobile);
+
+        fetch(window.bkwLogin.ajaxUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString(),
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (json) {
+                onDone(Boolean(json && json.success));
+            })
+            .catch(function () {
+                onDone(false);
+            });
     }
 
     var PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
@@ -65,9 +110,26 @@
         var step1SubmitBtn = root.querySelector('[data-bkw-login-step1-submit]');
         var step2SubmitBtn = root.querySelector('[data-bkw-login-step2-submit]');
         var editNumberBtn = root.querySelector('[data-bkw-login-edit-number]');
+        var fieldError = root.querySelector('[data-bkw-login-error]');
 
         if (!step1 || !step2) {
             return;
+        }
+
+        function hideFieldError() {
+            if (fieldError) {
+                fieldError.hidden = true;
+            }
+        }
+
+        function showFieldError() {
+            if (fieldError) {
+                fieldError.hidden = false;
+            }
+        }
+
+        function currentMobile() {
+            return mobileInput ? mobileInput.value.trim() : '';
         }
 
         var countdownTimer = null;
@@ -138,7 +200,20 @@
         }
 
         if (step1SubmitBtn) {
-            step1SubmitBtn.addEventListener('click', goToStep2);
+            step1SubmitBtn.addEventListener('click', function () {
+                hideFieldError();
+                step1SubmitBtn.disabled = true;
+
+                callLoginAjax('bkw_login_check', currentMobile(), function (ok) {
+                    step1SubmitBtn.disabled = false;
+
+                    if (ok) {
+                        goToStep2();
+                    } else {
+                        showFieldError();
+                    }
+                });
+            });
         }
 
         if (editNumberBtn) {
@@ -158,13 +233,32 @@
             });
         }
 
+        function completeLoginAndRedirect() {
+            step2SubmitBtn.disabled = true;
+
+            callLoginAjax('bkw_login_complete', currentMobile(), function (ok) {
+                step2SubmitBtn.disabled = false;
+
+                if (ok) {
+                    grantSiteAccess();
+                    window.location.href = redirectUrl;
+                } else {
+                    // خیلی نادر: شماره بین مرحلهٔ ۱ و همین لحظه از حساب
+                    // کاربری پاک/عوض شده. برمی‌گردد مرحلهٔ ۱ تا دوباره
+                    // بررسی شود، به‌جای ریدایرکت به صفحه‌ای که دوباره
+                    // قفلش می‌کند.
+                    goToStep1();
+                    showFieldError();
+                }
+            });
+        }
+
         if (step2SubmitBtn) {
             step2SubmitBtn.addEventListener('click', function () {
                 var termsOverlay = root.querySelector('[data-bkw-terms]');
 
                 if (!termsOverlay) {
-                    grantSiteAccess();
-                    window.location.href = redirectUrl;
+                    completeLoginAndRedirect();
                     return;
                 }
 
@@ -179,8 +273,7 @@
                 }
 
                 if (alreadyAccepted) {
-                    grantSiteAccess();
-                    window.location.href = redirectUrl;
+                    completeLoginAndRedirect();
                     return;
                 }
 

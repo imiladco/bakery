@@ -716,6 +716,24 @@ html.bkw-panel-open {
 	width: 100%;
 }
 
+/*
+ * پیام «این شماره ثبت نشده» (Widgets\Login::render_step1) — هیچ رفرنس
+ * فیگمایی ندارد چون تا وقتی Mobile_Login وصل نشده بود اصلاً چنین
+ * حالتی وجود نداشت؛ رنگ/تایپوگرافی از یادداشت پایین فرم مجاور خودش
+ * پیروی می‌کند تا با بقیهٔ فرم هم‌خانواده بماند، فقط رنگش هشداردهنده است.
+ */
+.bkw-login__field-error {
+	margin: 0;
+	text-align: center;
+	width: 100%;
+	color: #c0392b;
+	font-size: 13px;
+}
+
+.bkw-login__field-error[hidden] {
+	display: none;
+}
+
 .bkw-login__edit-number-row {
 	display: flex;
 	align-items: baseline;

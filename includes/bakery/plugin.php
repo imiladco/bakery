@@ -28,6 +28,7 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/svg.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/purchase-limit.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/site-gate.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/mobile-login.php';
 
         add_action('init', [$this, 'maybe_flush_after_update'], 20);
 
@@ -39,6 +40,7 @@ final class Plugin
         add_action('elementor/editor/after_enqueue_scripts', [$this, 'enqueue_editor_scripts']);
 
         (new Site_Gate())->register();
+        (new Mobile_Login())->register();
 
         // فقط وقتی ووکامرس فعال است لازم است — ویجت‌های افزودن به سبد و
         // سایدبار سبد بدون آن اصلاً رندر نمی‌شوند.
@@ -158,6 +160,13 @@ final class Plugin
             BAKERY_WIDGETS_VERSION,
             true,
         );
+
+        // برای Mobile_Login::ajax_check/ajax_complete — تشخیص «این شماره
+        // متعلق به کدام کاربر واقعی است» و لاگین واقعی همان لحظه.
+        wp_localize_script('bakery-login', 'bkwLogin', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce(Mobile_Login::nonce_action()),
+        ]);
 
         wp_register_script(
             'bakery-terms-modal',

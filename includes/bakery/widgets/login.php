@@ -214,6 +214,14 @@ final class Login extends Widget_Base
             'default' => __('مثلا: 09013004000', 'bakery-widgets'),
         ]);
 
+        $this->add_control('mobile_not_found_text', [
+            'label' => __('پیام «شماره ثبت نشده»', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('این شماره برای هیچ حسابی در سایت ثبت نشده است.', 'bakery-widgets'),
+            'label_block' => true,
+            'description' => __('وقتی کاربری این شماره را ندارد نشان داده می‌شود (رجوع کن به Mobile_Login::find_user_id). شماره‌ها را فقط مدیر از صفحهٔ ویرایش هر کاربر تعریف می‌کند — ثبت‌نام خودکار وجود ندارد.', 'bakery-widgets'),
+        ]);
+
         $this->add_control('heading_step1_button', [
             'label' => __('دکمه', 'bakery-widgets'),
             'type' => Controls_Manager::HEADING,
@@ -1252,6 +1260,11 @@ final class Login extends Widget_Base
         echo '<div class="bkw-login__fields">';
         $this->render_input_field('national-id', (string) $settings['national_id_label'], (string) $settings['national_id_placeholder']);
         $this->render_input_field('mobile', (string) $settings['mobile_label'], (string) $settings['mobile_placeholder']);
+
+        printf(
+            '<p class="bkw-login__field-error" data-bkw-login-error hidden>%s</p>',
+            esc_html((string) $settings['mobile_not_found_text']),
+        );
 
         echo '<button type="button" class="bkw-login__submit" data-bkw-login-step1-submit>';
         printf('<span class="bkw-login__submit-text-full">%s</span>', esc_html((string) $settings['step1_button_text']));
