@@ -41,8 +41,11 @@ if (!defined('ABSPATH')) {
  * با فعال بودن ماژول اعتبار ماهانه (Bakery_Credit) عدد واقعی برمی‌گردد،
  * وگرنه مقدار فرضی کنترل زیر — یک فیلتر، یک منبع.
  *
- * دکمهٔ «ثبت سفارش»: فعلاً فقط ظاهر (بدون submit واقعی)؛ ساختار و منطق
- * نهایی‌اش طبق گفتهٔ کارفرما بعداً اضافه می‌شود.
+ * دکمهٔ «ثبت سفارش»: مستقیم به صفحهٔ چک‌اوت استاندارد ووکامرس می‌رود
+ * (wc_get_checkout_url) — منطق واقعی («فقط اعتبار، بدون مهمان، هشدار
+ * کمبود») همان‌جا از قبل با Bakery_Credit\Integration\CheckoutGuard/Gateway
+ * پیاده‌سازی شده؛ این ویجت خودش هیچ منطق سفارشی لازم ندارد، فقط باید
+ * کاربر را به همان صفحه برساند.
  */
 final class Cart_Sidebar extends Widget_Base
 {
@@ -872,9 +875,9 @@ final class Cart_Sidebar extends Widget_Base
                         <?php echo Cart_Fragments::total_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- خودش escape می‌کند ?>
                     </div>
 
-                    <button type="button" class="bkw-cart-sidebar__checkout" data-bkw-cart-checkout>
+                    <a href="<?php echo esc_url(wc_get_checkout_url()); ?>" class="bkw-cart-sidebar__checkout" data-bkw-cart-checkout>
                         <?php echo esc_html($settings['checkout_text']); ?>
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
