@@ -100,8 +100,9 @@ final class Gateway extends WC_Payment_Gateway
         }
 
         $total = (float) $order->get_total();
+        $unlimited = CreditExemption::forUser($userId);
 
-        if (!$this->account->debit($userId, $total, (int) $order->get_id(), Clock::now())) {
+        if (!$this->account->debit($userId, $total, (int) $order->get_id(), Clock::now(), $unlimited)) {
             return $this->fail(sprintf(
                 /* translators: %s: remaining credit, formatted */
                 __('اعتبار شما برای این سفارش کافی نیست. باقی‌مانده: %s', 'bakery-widgets'),

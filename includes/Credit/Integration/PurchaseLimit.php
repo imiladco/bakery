@@ -39,6 +39,13 @@ final class PurchaseLimit
             return $max;
         }
 
+        // مدیر معاف است — وگرنه با معافیتِ Gateway/CheckoutGuard از
+        // بلوکهٔ چک‌اوت، همین دکمهٔ + جلوی ساختن سبد آزمایشی را می‌گرفت.
+        // رجوع کن به CreditExemption.
+        if (CreditExemption::forUser($userId)) {
+            return $max;
+        }
+
         $unitPrice = round((float) wc_get_price_to_display($product), 4);
 
         if ($unitPrice <= 0.0) {

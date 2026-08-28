@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bakery_Credit;
 
 use Bakery_Credit\Admin\UserField;
+use Bakery_Credit\Integration\AdminOrders;
 use Bakery_Credit\Integration\BalanceFilter;
 use Bakery_Credit\Integration\CheckoutGuard;
 use Bakery_Credit\Integration\Gateway;
@@ -68,6 +69,7 @@ final class Plugin
 
         if (is_admin()) {
             (new UserField($this->allowances, $this->account))->register();
+            (new AdminOrders($this->account))->register();
         }
     }
 

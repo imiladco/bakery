@@ -50,18 +50,27 @@ final class CreditAccount
      * ناحیهٔ بحرانی انجام شود. تصمیم نهایی عمداً این‌جا گرفته نمی‌شود:
      * اگر مقایسه را در PHP می‌کردیم، دو چک‌اوت هم‌زمان هر دو رد می‌شدند
      * و اعتبار بیش از سقف خرج می‌شد.
+     *
+     * $unlimited برای معافیت نقش مدیر است (تشخیص نقش خودش کار وردپرسی
+     * است، پس در Integration\Gateway/CheckoutGuard انجام می‌شود، نه
+     * این‌جا — این کلاس عمداً بدون بوت‌استرپ وردپرس قابل تست می‌ماند،
+     * رجوع کن به tests/Credit/Architecture/PureLayerTest). سقف واقعی را
+     * نادیده می‌گیرد تا سنجش دفتر همیشه «کافی است» ببیند؛ ثبت سطر دفتر
+     * دست‌نخورده می‌ماند، فقط شرط رد شدنش حذف می‌شود.
      */
-    public function debit(int $userId, float $amount, int $orderId, DateTimeImmutable $now): bool
+    public function debit(int $userId, float $amount, int $orderId, DateTimeImmutable $now, bool $unlimited = false): bool
     {
         if ($userId <= 0 || $amount <= 0.0) {
             return false;
         }
 
+        $allowance = $unlimited ? PHP_FLOAT_MAX : $this->allowances->forUser($userId);
+
         return $this->ledger->tryDebit(
             $userId,
             Period::fromDate($now)->key(),
             $amount,
-            $this->allowances->forUser($userId),
+            $allowance,
             $orderId
         );
     }

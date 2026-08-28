@@ -57,6 +57,20 @@ final class CreditAccountTest extends TestCase
         self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
     }
 
+    /**
+     * معافیت نقش مدیر (تشخیص نقش خودش در Integration\CreditExemption
+     * است، بیرون از این کلاسِ خالص) — کسر همچنان سقف را نادیده می‌گیرد
+     * ولی در دفتر ثبت می‌شود، و باقی‌مانده مثل هر اضافه‌مصرفی روی صفر
+     * clamp می‌شود، نه منفی.
+     */
+    public function test_an_unlimited_debit_ignores_the_allowance_but_is_still_recorded(): void
+    {
+        self::assertTrue($this->account->debit(self::USER, 1_500_000, 101, $this->at(self::SHAHRIVAR), true));
+
+        self::assertSame(1, $this->ledger->rowCount());
+        self::assertSame(0.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
+    }
+
     public function test_spending_the_exact_remaining_amount_is_allowed(): void
     {
         $this->account->debit(self::USER, 600_000, 101, $this->at(self::SHAHRIVAR));

@@ -67,6 +67,13 @@ final class CheckoutGuard
             return;
         }
 
+        // مدیر معاف است — برای اینکه سفارش آزمایشی روی سایتِ زنده ممکن
+        // بماند، بدون اینکه سقف خودش را دستکاری کند. رجوع کن به
+        // CreditExemption.
+        if (CreditExemption::forUser($userId)) {
+            return;
+        }
+
         $total = (float) WC()->cart->get_total('edit');
         $remaining = $this->account->remaining($userId, Clock::now());
 
