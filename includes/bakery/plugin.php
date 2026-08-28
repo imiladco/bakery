@@ -202,9 +202,15 @@ final class Plugin
             'nonce' => wp_create_nonce('bkw_atc'),
         ]);
 
+        // نانس پرداخت عمداً از نانس تغییر تعداد جداست: آن یکی سبد را
+        // دستکاری می‌کند، این یکی پول خرج می‌کند
+        // (Bakery_Credit\Integration\DirectCheckout::NONCE_ACTION — رشتهٔ
+        // مستقیم، به همان دلیل بالا: آن کلاس فقط با ووکامرس بارگذاری می‌شود).
         wp_localize_script('bakery-cart-sidebar', 'bkwCartSidebar', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('bkw_atc'),
+            'placeOrderNonce' => wp_create_nonce('bkw_place_order'),
+            'genericError' => __('ثبت سفارش ممکن نشد. دوباره تلاش کنید.', 'bakery-widgets'),
         ]);
     }
 

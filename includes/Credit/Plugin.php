@@ -8,6 +8,7 @@ use Bakery_Credit\Admin\UserField;
 use Bakery_Credit\Integration\AdminOrders;
 use Bakery_Credit\Integration\BalanceFilter;
 use Bakery_Credit\Integration\CheckoutGuard;
+use Bakery_Credit\Integration\DirectCheckout;
 use Bakery_Credit\Integration\Gateway;
 use Bakery_Credit\Integration\PurchaseLimit;
 use Bakery_Credit\Integration\Registration;
@@ -64,6 +65,11 @@ final class Plugin
         (new PurchaseLimit($this->account))->register();
         (new CheckoutGuard($this->account))->register();
         (new Reversals($this->account))->register();
+
+        // مسیر اصلی پرداخت: یک کلیک از داخل سایدبار سبد، بدون صفحهٔ
+        // تسویه‌حساب. عمداً بیرون از شرط is_admin ثبت می‌شود — اکشن روی
+        // admin-ajax می‌نشیند ولی کاربرِ فرانت آن را صدا می‌زند.
+        (new DirectCheckout($this->account))->register();
 
         add_filter('woocommerce_payment_gateways', [$this, 'register_gateway']);
 

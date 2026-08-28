@@ -35,6 +35,11 @@ final class Gateway extends WC_Payment_Gateway
         $this->init_form_fields();
         $this->init_settings();
 
+        // بدون این خط، کلید «فعال‌سازی» در پنل پرداخت‌های ووکامرس ذخیره
+        // می‌شد ولی هیچ اثری نداشت: WC_Payment_Gateway::$enabled مقدار
+        // پیش‌فرض 'yes' دارد و is_available() همان را می‌خواند، نه
+        // تنظیمات ذخیره‌شده را.
+        $this->enabled = $this->get_option('enabled', 'yes');
         $this->title = $this->get_option('title', __('پرداخت با اعتبار', 'bakery-widgets'));
         $this->description = $this->get_option('description', '');
 

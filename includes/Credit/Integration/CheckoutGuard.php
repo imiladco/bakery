@@ -38,6 +38,12 @@ final class CheckoutGuard
      * اعتبار است». در پنل مدیریت دست‌نخورده می‌ماند تا ادمین بتواند
      * تنظیمات درگاه‌ها را ببیند.
      *
+     * وقتی درگاه اعتبار در دسترس نیست (مثلاً بازدیدکننده واقعاً لاگین
+     * نیست) خروجی عمداً خالی می‌ماند و بقیهٔ درگاه‌ها برنمی‌گردند: قبلاً
+     * در همین حالت کل فهرست دست‌نخورده پس داده می‌شد، یعنی درست در
+     * لحظه‌ای که قاعده باید سفت‌ترین باشد، هر درگاه دیگری که روی سایت
+     * فعال بود دوباره ظاهر می‌شد.
+     *
      * @param array<string, mixed> $gateways
      * @return array<string, mixed>
      */
@@ -47,7 +53,7 @@ final class CheckoutGuard
             return $gateways;
         }
 
-        return isset($gateways[Gateway::ID]) ? [Gateway::ID => $gateways[Gateway::ID]] : $gateways;
+        return isset($gateways[Gateway::ID]) ? [Gateway::ID => $gateways[Gateway::ID]] : [];
     }
 
     public function check_cart_affordable(): void

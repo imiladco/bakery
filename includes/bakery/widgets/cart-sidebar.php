@@ -41,11 +41,17 @@ if (!defined('ABSPATH')) {
  * با فعال بودن ماژول اعتبار ماهانه (Bakery_Credit) عدد واقعی برمی‌گردد،
  * وگرنه مقدار فرضی کنترل زیر — یک فیلتر، یک منبع.
  *
- * دکمهٔ «ثبت سفارش»: مستقیم به صفحهٔ چک‌اوت استاندارد ووکامرس می‌رود
- * (wc_get_checkout_url) — منطق واقعی («فقط اعتبار، بدون مهمان، هشدار
- * کمبود») همان‌جا از قبل با Bakery_Credit\Integration\CheckoutGuard/Gateway
- * پیاده‌سازی شده؛ این ویجت خودش هیچ منطق سفارشی لازم ندارد، فقط باید
- * کاربر را به همان صفحه برساند.
+ * دکمهٔ «ثبت سفارش» خودِ پرداخت است، نه لینکی به صفحهٔ تسویه‌حساب: کلیک
+ * روی آن اکشن `bkw_place_order` را صدا می‌زند
+ * (Bakery_Credit\Integration\DirectCheckout) که سفارش را می‌سازد، اعتبار
+ * را اتمیک کسر می‌کند و سبد را خالی می‌کند. صفحهٔ چک‌اوت ووکامرس در این
+ * فروشگاه چیزی برای پرسیدن ندارد — کاربر از قبل تعریف‌شده و واقعاً لاگین
+ * است، ارسال و مالیات وجود ندارد، و تنها روش پرداخت در کل سایت اعتبار
+ * ماهانه است. پس آن صفحه فقط یک فرم خالی بود بین کاربر و سفارشش.
+ *
+ * خودِ منطق پرداخت عمداً این‌جا نیست: این ویجت فقط مارک‌آپ و متن‌ها را
+ * دارد و هیچ‌وقت نام ماژول اعتبار را نمی‌برد — همان جهت وابستگی همیشگی
+ * (ماژول اعتبار به ویجت‌ها قلاب می‌شود، نه برعکس).
  */
 final class Cart_Sidebar extends Widget_Base
 {
@@ -178,7 +184,47 @@ final class Cart_Sidebar extends Widget_Base
             'type' => Controls_Manager::TEXT,
             'default' => __('ثبت سفارش', 'bakery-widgets'),
             'label_block' => true,
-            'description' => __('فعلاً فقط ظاهری است؛ ساختار و منطق نهایی این دکمه جداگانه اضافه می‌شود.', 'bakery-widgets'),
+            'description' => __('کلیک روی این دکمه خودِ پرداخت است — سفارش همین‌جا ثبت و از اعتبار کاربر کسر می‌شود، بدون رفتن به صفحهٔ تسویه‌حساب.', 'bakery-widgets'),
+        ]);
+
+        $this->add_control('checkout_pending_text', [
+            'label' => __('متن دکمه هنگام ثبت', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('در حال ثبت سفارش…', 'bakery-widgets'),
+            'label_block' => true,
+        ]);
+
+        $this->add_control('heading_success', [
+            'label' => __('پیام موفقیت', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_control('success_title', [
+            'label' => __('عنوان', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('سفارش شما ثبت شد', 'bakery-widgets'),
+            'label_block' => true,
+        ]);
+
+        $this->add_control('success_text', [
+            'label' => __('توضیح', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXTAREA,
+            'default' => __('مبلغ سفارش از اعتبار ماهانهٔ شما کسر شد.', 'bakery-widgets'),
+            'rows' => 2,
+        ]);
+
+        $this->add_control('success_close_text', [
+            'label' => __('متن دکمهٔ بستن', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('بستن', 'bakery-widgets'),
+        ]);
+
+        $this->add_control('success_order_prefix', [
+            'label' => __('پیشوند شمارهٔ سفارش', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('شمارهٔ سفارش:', 'bakery-widgets'),
+            'label_block' => true,
         ]);
 
         $this->end_controls_section();
@@ -842,10 +888,8 @@ final class Cart_Sidebar extends Widget_Base
         $settings = $this->get_settings_for_display();
         $panel_id = $this->get_id() . '-cart-sidebar';
 
-        $credit = (float) apply_filters('bkw_account_balance', (float) $settings['credit_fallback'], get_current_user_id());
-
         ?>
-        <div class="bkw-cart-sidebar" data-bkw-cart-sidebar dir="rtl">
+        <div class="bkw-cart-sidebar" data-bkw-cart-sidebar dir="rtl" data-edit-mode="<?php echo ElementorPlugin::$instance->editor->is_edit_mode() ? '1' : '0'; ?>">
             <div class="bkw-cart-sidebar__overlay" data-bkw-cart-overlay></div>
 
             <div id="<?php echo esc_attr($panel_id); ?>" class="bkw-cart-sidebar__panel" role="dialog" aria-modal="true" aria-label="<?php echo esc_attr($settings['title_text']); ?>" data-bkw-cart-panel>
@@ -859,7 +903,7 @@ final class Cart_Sidebar extends Widget_Base
 
                     <div class="bkw-cart-sidebar__credit">
                         <span class="bkw-cart-sidebar__credit-label"><?php echo esc_html($settings['credit_label']); ?></span>
-                        <span class="bkw-cart-sidebar__credit-value"><?php echo esc_html(Cart_Fragments::format_price($credit)); ?></span>
+                        <?php echo Cart_Fragments::credit_html((float) $settings['credit_fallback']); // phpcs:ignore WordPress.Security.EscapeOutput -- خودش escape می‌کند ?>
                     </div>
 
                     <div class="bkw-cart-sidebar__divider"></div>
@@ -875,9 +919,27 @@ final class Cart_Sidebar extends Widget_Base
                         <?php echo Cart_Fragments::total_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- خودش escape می‌کند ?>
                     </div>
 
-                    <a href="<?php echo esc_url(wc_get_checkout_url()); ?>" class="bkw-cart-sidebar__checkout" data-bkw-cart-checkout>
-                        <?php echo esc_html($settings['checkout_text']); ?>
-                    </a>
+                    <p class="bkw-cart-sidebar__error" data-bkw-cart-error role="alert" hidden></p>
+
+                    <?php
+                    /*
+                     * دکمهٔ پرداخت، نه لینک به صفحهٔ تسویه‌حساب: همین کلیک
+                     * خودِ پرداخت است (Bakery_Credit\Integration\DirectCheckout).
+                     * صفحهٔ چک‌اوت ووکامرس در این فروشگاه چیزی برای پرسیدن
+                     * ندارد — هویت، ارسال و روش پرداخت هر سه از قبل معلوم‌اند.
+                     */
+                    ?>
+                    <button type="button" class="bkw-cart-sidebar__checkout" data-bkw-cart-checkout>
+                        <span class="bkw-cart-sidebar__checkout-label"><?php echo esc_html($settings['checkout_text']); ?></span>
+                        <span class="bkw-cart-sidebar__checkout-pending"><?php echo esc_html($settings['checkout_pending_text']); ?></span>
+                    </button>
+                </div>
+
+                <div class="bkw-cart-sidebar__success" data-bkw-cart-success data-order-prefix="<?php echo esc_attr($settings['success_order_prefix']); ?>" hidden>
+                    <p class="bkw-cart-sidebar__success-title"><?php echo esc_html($settings['success_title']); ?></p>
+                    <p class="bkw-cart-sidebar__success-text"><?php echo esc_html($settings['success_text']); ?></p>
+                    <p class="bkw-cart-sidebar__success-order" data-bkw-cart-success-order></p>
+                    <button type="button" class="bkw-cart-sidebar__success-close" data-bkw-cart-close><?php echo esc_html($settings['success_close_text']); ?></button>
                 </div>
             </div>
         </div>

@@ -21,9 +21,10 @@ if (!defined('ABSPATH')) {
  * سبد در جای دیگر صفحه) دوباره رندر می‌شود — یک تابع، نه دو کپیِ
  * هم‌زمان‌نگه‌داشتنی.
  *
- * دو کلید فرگمنت ثبت می‌شود:
- *   [data-bkw-cart-items] — کل فهرست ردیف‌های سبد (یا پیام «سبد خالی است»)
- *   [data-bkw-cart-total] — فقط مقدار «جمع کل این سفارش»
+ * سه کلید فرگمنت ثبت می‌شود:
+ *   [data-bkw-cart-items]  — کل فهرست ردیف‌های سبد (یا پیام «سبد خالی است»)
+ *   [data-bkw-cart-total]  — فقط مقدار «جمع کل این سفارش»
+ *   [data-bkw-cart-credit] — عدد «باقی‌مانده اعتبار شما»
  * جایگزینی همیشه با replaceWith کل عنصر انجام می‌شود (رجوع کن به
  * assets/js/bakery-cart-sidebar.js)، نه نوشتن innerHTML — پس افزودن یا
  * حذف کامل یک ردیف (رسیدن تعداد به صفر) نیازی به منطق DOM جداگانه ندارد.
@@ -32,12 +33,14 @@ final class Cart_Fragments
 {
     public const ITEMS_SELECTOR = '[data-bkw-cart-items]';
     public const TOTAL_SELECTOR = '[data-bkw-cart-total]';
+    public const CREDIT_SELECTOR = '[data-bkw-cart-credit]';
 
     /** هوک `woocommerce_add_to_cart_fragments` — امضای همان فیلتر را دارد */
     public static function add(array $fragments): array
     {
         $fragments[self::ITEMS_SELECTOR] = self::items_html();
         $fragments[self::TOTAL_SELECTOR] = self::total_html();
+        $fragments[self::CREDIT_SELECTOR] = self::credit_html();
 
         return $fragments;
     }
@@ -62,6 +65,29 @@ final class Cart_Fragments
         echo '</div>';
 
         return (string) ob_get_clean();
+    }
+
+    /**
+     * عدد «باقی‌مانده اعتبار شما».
+     *
+     * فرگمنت است چون بعد از ثبت سفارش مستقیم از همین سایدبار
+     * (Bakery_Credit\Integration\DirectCheckout) اعتبار واقعاً کم شده و
+     * عددِ روی صفحه باید همان لحظه درست شود، نه بعد از رفرش.
+     *
+     * $fallback فقط برای رندر اولیهٔ ویجت است (مقدار فرضیِ تب محتوا، برای
+     * نصبی که ماژول اعتبار روی آن فعال نیست). در مسیر AJAX چنین مقداری
+     * در دسترس نیست و صفر می‌ماند — بی‌اهمیت، چون بدون آن ماژول اصلاً
+     * پرداختی انجام نمی‌شود که اعتباری تغییر کند.
+     */
+    public static function credit_html(float $fallback = 0.0): string
+    {
+        $credit = (float) apply_filters('bkw_account_balance', $fallback, get_current_user_id());
+
+        return sprintf(
+            '<span class="bkw-cart-sidebar__credit-value" %s>%s</span>',
+            self::attr(self::CREDIT_SELECTOR),
+            esc_html(self::format_price($credit))
+        );
     }
 
     /** فقط مقدار «جمع کل این سفارش»، آماده جایگزینی با replaceWith */

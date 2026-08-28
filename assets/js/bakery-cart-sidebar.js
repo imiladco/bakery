@@ -1,8 +1,16 @@
 /**
  * سایدبار سبد خرید: باز/بسته‌شدن (دقیقاً همان الگوی پنل کشویی موبایل
- * bakery-header.js: پرده + Escape + کلیک بیرون) و تعامل AJAX تعداد هر
+ * bakery-header.js: پرده + Escape + کلیک بیرون)، تعامل AJAX تعداد هر
  * ردیف (همان دو اکشن admin-ajax ویجت افزودن به سبد:
- * bkw_add_to_cart/bkw_set_cart_qty، رجوع کن به includes/bakery/cart-ajax.php).
+ * bkw_add_to_cart/bkw_set_cart_qty، رجوع کن به includes/bakery/cart-ajax.php)،
+ * و خودِ پرداخت.
+ *
+ * پرداخت همین‌جا تمام می‌شود: دکمهٔ «ثبت سفارش» یک لینک به صفحهٔ
+ * تسویه‌حساب نیست، بلکه اکشن bkw_place_order را صدا می‌زند
+ * (Bakery_Credit\Integration\DirectCheckout) که سفارش را می‌سازد، اعتبار
+ * را اتمیک کسر می‌کند و سبد را خالی می‌کند. صفحهٔ چک‌اوت ووکامرس در این
+ * فروشگاه چیزی برای پرسیدن ندارد — کاربر از قبل تعریف‌شده و لاگین است،
+ * ارسال و مالیات وجود ندارد و تنها روش پرداخت هم اعتبار ماهانه است.
  *
  * باز شدن از هیچ ویجت دیگری خبر ندارد: فقط سراسر صفحه منتظر کلیک روی
  * `.bkw-account-bar__cart` (پیل مشترک هدر/نوار حساب کاربری) است. اگر
@@ -58,7 +66,8 @@
     function setupSidebar(sidebar) {
         var overlay = sidebar.querySelector('[data-bkw-cart-overlay]');
         var panel = sidebar.querySelector('[data-bkw-cart-panel]');
-        var closeBtn = sidebar.querySelector('[data-bkw-cart-close]');
+        // بیش از یکی است: دکمهٔ بستنِ سربرگ، و دکمهٔ بستنِ پیام «سفارش ثبت شد».
+        var closeButtons = sidebar.querySelectorAll('[data-bkw-cart-close]');
 
         if (!overlay || !panel) {
             return;
@@ -78,13 +87,27 @@
             panel.classList.remove('is-open');
             overlay.classList.remove('is-open');
             document.documentElement.classList.remove('bkw-panel-open');
+
+            // حالت «سفارش ثبت شد» فقط تا بسته‌شدن پنل زندگی می‌کند؛ دفعهٔ
+            // بعد کاربر باید سبد (خالی یا پرشدهٔ دوباره) را ببیند، نه
+            // تأیید سفارش قبلی.
+            var success = sidebar.querySelector('[data-bkw-cart-success]');
+            var error = sidebar.querySelector('[data-bkw-cart-error]');
+
+            sidebar.classList.remove('is-placed');
+            if (success) {
+                success.hidden = true;
+            }
+            if (error) {
+                error.hidden = true;
+            }
         }
 
         sidebar.bkwCartSidebarOpen = open;
 
-        if (closeBtn) {
+        closeButtons.forEach(function (closeBtn) {
             closeBtn.addEventListener('click', close);
-        }
+        });
 
         overlay.addEventListener('click', close);
 
@@ -161,6 +184,104 @@
         });
     }
 
+    /**
+     * دکمهٔ «ثبت سفارش» = خودِ پرداخت. یک درخواست به
+     * Bakery_Credit\Integration\DirectCheckout می‌رود که سفارش را می‌سازد،
+     * اعتبار را اتمیک کسر می‌کند و سبد را خالی می‌کند — بدون صفحهٔ
+     * تسویه‌حساب. تا وقتی پاسخ نیامده دکمه قفل است تا دو کلیک پشت‌هم دو
+     * سفارش نسازد (قید یکتاییِ دفتر هم لایهٔ دوم همین است).
+     */
+    function setupPlaceOrder() {
+        if (typeof bkwCartSidebar === 'undefined') {
+            return;
+        }
+
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('[data-bkw-cart-checkout]');
+            if (!button || button.disabled) {
+                return;
+            }
+
+            event.preventDefault();
+
+            var sidebar = button.closest('[data-bkw-cart-sidebar]');
+
+            // در ادیتور المنتور، ادمین دارد دکمه را استایل می‌دهد؛ کلیکش
+            // نباید سفارش واقعی ثبت کند و اعتبار خرج کند.
+            if (sidebar && '1' === sidebar.getAttribute('data-edit-mode')) {
+                return;
+            }
+
+            var errorBox = sidebar ? sidebar.querySelector('[data-bkw-cart-error]') : null;
+            var successBox = sidebar ? sidebar.querySelector('[data-bkw-cart-success]') : null;
+
+            if (errorBox) {
+                errorBox.hidden = true;
+            }
+
+            button.disabled = true;
+            button.classList.add('is-pending');
+
+            var body = new URLSearchParams({
+                action: 'bkw_place_order',
+                nonce: bkwCartSidebar.placeOrderNonce,
+            });
+
+            fetch(bkwCartSidebar.ajaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString(),
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (response) {
+                    if (!response || !response.success) {
+                        showError(errorBox, response && response.data && response.data.message);
+                        return;
+                    }
+
+                    applyFragments(response.data);
+                    showSuccess(sidebar, successBox, response.data);
+                })
+                .catch(function () {
+                    showError(errorBox, null);
+                })
+                .finally(function () {
+                    button.disabled = false;
+                    button.classList.remove('is-pending');
+                });
+        });
+    }
+
+    function showError(errorBox, message) {
+        if (!errorBox) {
+            return;
+        }
+
+        errorBox.textContent = message || bkwCartSidebar.genericError;
+        errorBox.hidden = false;
+    }
+
+    function showSuccess(sidebar, successBox, data) {
+        if (!sidebar || !successBox) {
+            return;
+        }
+
+        var orderLine = successBox.querySelector('[data-bkw-cart-success-order]');
+        if (orderLine && data && data.order_number) {
+            var prefix = successBox.getAttribute('data-order-prefix') || '';
+            orderLine.textContent = (prefix + ' ' + toPersianDigits(data.order_number)).trim();
+        }
+
+        // پنل به حالت «ثبت شد» می‌رود: فهرست و جمع کل و دکمه جای خود را
+        // به همین پیام می‌دهند تا کاربر سبدِ خالی‌شده را به‌جای تأیید
+        // نبیند. بستن سایدبار خودش این حالت را پس می‌گیرد.
+        sidebar.classList.add('is-placed');
+        successBox.hidden = false;
+    }
+
     function setupOpenTrigger() {
         document.addEventListener('click', function (event) {
             var cartPill = event.target.closest('.bkw-account-bar__cart');
@@ -181,6 +302,7 @@
     function init() {
         document.querySelectorAll('[data-bkw-cart-sidebar]').forEach(setupSidebar);
         setupQuantitySteps();
+        setupPlaceOrder();
         setupOpenTrigger();
     }
 
