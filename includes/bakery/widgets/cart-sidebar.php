@@ -9,6 +9,7 @@ use Bakery_Widgets\Svg;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Background;
 use Elementor\Group_Control_Border;
+use Elementor\Group_Control_Box_Shadow;
 use Elementor\Group_Control_Typography;
 use Elementor\Plugin as ElementorPlugin;
 use Elementor\Widget_Base;
@@ -254,7 +255,8 @@ final class Cart_Sidebar extends Widget_Base
             'label' => __('آیکون', 'bakery-widgets'),
             'type' => Controls_Manager::MEDIA,
             'media_types' => ['image', 'svg'],
-            'default' => ['url' => BAKERY_WIDGETS_URL . 'assets/icons/bag-smile.svg'],
+            'default' => ['url' => BAKERY_WIDGETS_URL . 'assets/icons/icon-circle.svg'],
+            'description' => __('آیکون پیش‌فرض دقیقاً همان خروجی فیگماست و دایرهٔ پس‌زمینه داخل خودِ فایل SVG است — برای همین رنگ دایره و رنگ آیکون در تب استایل جدا از هم قابل تنظیم‌اند. اگر آیکون دیگری بگذارید که دایره نداشته باشد، کنترل «رنگ دایره» اثری نخواهد داشت.', 'bakery-widgets'),
         ]);
 
         $this->add_control('confirm_title', [
@@ -981,9 +983,19 @@ final class Cart_Sidebar extends Widget_Base
             'label' => __('پدینگ', 'bakery-widgets'),
             'type' => Controls_Manager::DIMENSIONS,
             'size_units' => ['px'],
-            'default' => ['top' => '40', 'right' => '32', 'bottom' => '32', 'left' => '32', 'unit' => 'px', 'isLinked' => false],
-            'mobile_default' => ['top' => '32', 'right' => '20', 'bottom' => '24', 'left' => '20', 'unit' => 'px', 'isLinked' => false],
+            'default' => ['top' => '40', 'right' => '40', 'bottom' => '40', 'left' => '40', 'unit' => 'px', 'isLinked' => true],
+            'mobile_default' => ['top' => '28', 'right' => '20', 'bottom' => '28', 'left' => '20', 'unit' => 'px', 'isLinked' => true],
             'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__card' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};'],
+        ]);
+
+        $this->add_responsive_control('confirm_card_gap', [
+            'label' => __('فاصلهٔ بخش‌های کارت', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 8, 'max' => 60]],
+            'default' => ['unit' => 'px', 'size' => 32],
+            'mobile_default' => ['unit' => 'px', 'size' => 24],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__card' => 'gap: {{SIZE}}{{UNIT}};'],
         ]);
 
         $this->add_control('confirm_card_radius', [
@@ -999,7 +1011,29 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'confirm_card_background',
             'types' => ['classic'],
             'selector' => '{{WRAPPER}} .bkw-cart-confirm__card',
-            'fields_options' => ['color' => ['default' => '#faf6f0']],
+            'fields_options' => ['color' => ['default' => '#fcf9f5']],
+        ]);
+
+        $this->add_group_control(Group_Control_Border::get_type(), [
+            'name' => 'confirm_card_border',
+            'selector' => '{{WRAPPER}} .bkw-cart-confirm__card',
+            'fields_options' => [
+                'border' => ['default' => 'solid'],
+                'width' => ['default' => ['top' => '1', 'right' => '1', 'bottom' => '1', 'left' => '1', 'unit' => 'px']],
+                'color' => ['default' => '#eaded6'],
+            ],
+        ]);
+
+        $this->add_group_control(Group_Control_Box_Shadow::get_type(), [
+            'name' => 'confirm_card_shadow',
+            'selector' => '{{WRAPPER}} .bkw-cart-confirm__card',
+            'fields_options' => [
+                'box_shadow_type' => ['default' => 'yes'],
+                'box_shadow' => ['default' => [
+                    'horizontal' => 0, 'vertical' => 24, 'blur' => 24, 'spread' => 0,
+                    'color' => 'rgba(26, 19, 14, 0.25)',
+                ]],
+            ],
         ]);
 
         $this->add_control('heading_confirm_icon', [
@@ -1008,35 +1042,28 @@ final class Cart_Sidebar extends Widget_Base
             'separator' => 'before',
         ]);
 
-        $this->add_responsive_control('confirm_plate_size', [
-            'label' => __('اندازهٔ دایرهٔ پشت آیکون', 'bakery-widgets'),
-            'type' => Controls_Manager::SLIDER,
-            'size_units' => ['px'],
-            'range' => ['px' => ['min' => 48, 'max' => 160]],
-            'default' => ['unit' => 'px', 'size' => 104],
-            'mobile_default' => ['unit' => 'px', 'size' => 88],
-            'selectors' => [
-                '{{WRAPPER}} .bkw-cart-confirm__icon' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
-            ],
-        ]);
-
-        $this->add_control('confirm_plate_color', [
-            'label' => __('رنگ دایره', 'bakery-widgets'),
-            'type' => Controls_Manager::COLOR,
-            'default' => '#f4ece1',
-            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__icon' => 'background-color: {{VALUE}};'],
-        ]);
-
         $this->add_responsive_control('confirm_icon_size', [
-            'label' => __('اندازهٔ آیکون', 'bakery-widgets'),
+            'label' => __('اندازهٔ آیکون (با دایره)', 'bakery-widgets'),
             'type' => Controls_Manager::SLIDER,
             'size_units' => ['px'],
-            'range' => ['px' => ['min' => 20, 'max' => 90]],
-            'default' => ['unit' => 'px', 'size' => 48],
-            'mobile_default' => ['unit' => 'px', 'size' => 40],
+            'range' => ['px' => ['min' => 40, 'max' => 160]],
+            'default' => ['unit' => 'px', 'size' => 72],
+            'mobile_default' => ['unit' => 'px', 'size' => 64],
             'selectors' => [
                 '{{WRAPPER}} .bkw-cart-confirm__icon svg, {{WRAPPER}} .bkw-cart-confirm__icon img' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
             ],
+        ]);
+
+        /*
+         * دایره و خودِ آیکون هر دو داخل یک SVG‌اند (خروجی فیگما)، پس
+         * به‌جای پس‌زمینهٔ CSS، مستقیم روی همان دو عنصر داخل SVG تنظیم
+         * می‌شوند: rect دایره است و path خطوط آیکون.
+         */
+        $this->add_control('confirm_plate_color', [
+            'label' => __('رنگ دایره', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#faf6f0',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__icon svg rect' => 'fill: {{VALUE}};'],
         ]);
 
         $this->add_control('confirm_icon_color', [
@@ -1044,6 +1071,28 @@ final class Cart_Sidebar extends Widget_Base
             'type' => Controls_Manager::COLOR,
             'default' => '#8c583a',
             'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__icon svg [stroke]' => 'stroke: {{VALUE}};'],
+        ]);
+
+        /*
+         * بدون واحد خروجی می‌گیرد: stroke-width در SVG بر حسب واحدهای
+         * داخلی خودِ آیکون است (viewBox ۷۲×۷۲)، نه پیکسل صفحه — پس با
+         * تغییر اندازهٔ آیکون خودش هم متناسب بزرگ/کوچک می‌شود.
+         */
+        $this->add_control('confirm_icon_stroke', [
+            'label' => __('ضخامت خط آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'range' => ['px' => ['min' => 0.5, 'max' => 5, 'step' => 0.1]],
+            'default' => ['size' => 2],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__icon svg [stroke]' => 'stroke-width: {{SIZE}};'],
+        ]);
+
+        $this->add_responsive_control('confirm_header_gap', [
+            'label' => __('فاصلهٔ آیکون تا عنوان', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 48]],
+            'default' => ['unit' => 'px', 'size' => 16],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__header' => 'gap: {{SIZE}}{{UNIT}};'],
         ]);
 
         $this->add_control('heading_confirm_title', [
@@ -1056,8 +1105,8 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'confirm_title_typography',
             'selector' => '{{WRAPPER}} .bkw-cart-confirm__title',
             'fields_options' => [
-                'font_size' => ['default' => ['unit' => 'px', 'size' => 30], 'mobile_default' => ['unit' => 'px', 'size' => 24]],
-                'font_weight' => ['default' => '800'],
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 24], 'mobile_default' => ['unit' => 'px', 'size' => 21]],
+                'font_weight' => ['default' => '900'],
             ],
         ]);
 
@@ -1078,15 +1127,16 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'confirm_text_typography',
             'selector' => '{{WRAPPER}} .bkw-cart-confirm__text',
             'fields_options' => [
-                'font_size' => ['default' => ['unit' => 'px', 'size' => 17], 'mobile_default' => ['unit' => 'px', 'size' => 15]],
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 16], 'mobile_default' => ['unit' => 'px', 'size' => 14]],
                 'font_weight' => ['default' => '700'],
+                'line_height' => ['default' => ['unit' => 'em', 'size' => 1.5]],
             ],
         ]);
 
         $this->add_control('confirm_text_color', [
             'label' => __('رنگ', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
-            'default' => '#2a1e17',
+            'default' => '#231912',
             'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__text' => 'color: {{VALUE}};'],
         ]);
 
@@ -1110,8 +1160,8 @@ final class Cart_Sidebar extends Widget_Base
             'type' => Controls_Manager::SLIDER,
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 36, 'max' => 90]],
-            'default' => ['unit' => 'px', 'size' => 60],
-            'mobile_default' => ['unit' => 'px', 'size' => 52],
+            'default' => ['unit' => 'px', 'size' => 52],
+            'mobile_default' => ['unit' => 'px', 'size' => 48],
             'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__actions button' => 'height: {{SIZE}}{{UNIT}};'],
         ]);
 
@@ -1120,7 +1170,7 @@ final class Cart_Sidebar extends Widget_Base
             'type' => Controls_Manager::SLIDER,
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 0, 'max' => 40]],
-            'default' => ['unit' => 'px', 'size' => 18],
+            'default' => ['unit' => 'px', 'size' => 16],
             'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__actions button' => 'border-radius: {{SIZE}}{{UNIT}};'],
         ]);
 
@@ -1129,8 +1179,8 @@ final class Cart_Sidebar extends Widget_Base
             'label' => __('تایپوگرافی دکمه‌ها', 'bakery-widgets'),
             'selector' => '{{WRAPPER}} .bkw-cart-confirm__actions button',
             'fields_options' => [
-                'font_size' => ['default' => ['unit' => 'px', 'size' => 17], 'mobile_default' => ['unit' => 'px', 'size' => 15]],
-                'font_weight' => ['default' => '800'],
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 15]],
+                'font_weight' => ['default' => '700'],
             ],
         ]);
 
@@ -1158,7 +1208,7 @@ final class Cart_Sidebar extends Widget_Base
         $this->add_control('confirm_cancel_color', [
             'label' => __('رنگ متن انصراف', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
-            'default' => '#2a1e17',
+            'default' => '#7d7065',
             'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__cancel' => 'color: {{VALUE}};'],
         ]);
 
@@ -1167,7 +1217,7 @@ final class Cart_Sidebar extends Widget_Base
             'selector' => '{{WRAPPER}} .bkw-cart-confirm__cancel',
             'fields_options' => [
                 'border' => ['default' => 'solid'],
-                'width' => ['default' => ['top' => '1', 'right' => '1', 'bottom' => '1', 'left' => '1', 'unit' => 'px']],
+                'width' => ['default' => ['top' => '1.5', 'right' => '1.5', 'bottom' => '1.5', 'left' => '1.5', 'unit' => 'px']],
                 'color' => ['default' => '#eaded6'],
             ],
         ]);
@@ -1257,11 +1307,20 @@ final class Cart_Sidebar extends Widget_Base
             ?>
             <div class="bkw-cart-confirm" data-bkw-cart-confirm role="dialog" aria-modal="true" aria-label="<?php echo esc_attr($settings['confirm_title']); ?>" hidden>
                 <div class="bkw-cart-confirm__card">
-                    <span class="bkw-cart-confirm__icon">
-                        <?php $this->render_icon_field($settings['confirm_icon'] ?? []); ?>
-                    </span>
+                    <?php
+                    /*
+                     * آیکون و عنوان یک بلوک‌اند (فاصلهٔ ۱۶ بینشان) و کل
+                     * کارت فاصلهٔ ۳۲ بین بلوک‌هایش دارد — همان ساختار
+                     * modal-header در فیگما، نه سه عنصر هم‌سطح با مارجین.
+                     */
+                    ?>
+                    <div class="bkw-cart-confirm__header">
+                        <span class="bkw-cart-confirm__icon">
+                            <?php $this->render_icon_field($settings['confirm_icon'] ?? []); ?>
+                        </span>
+                        <p class="bkw-cart-confirm__title"><?php echo esc_html($settings['confirm_title']); ?></p>
+                    </div>
 
-                    <p class="bkw-cart-confirm__title"><?php echo esc_html($settings['confirm_title']); ?></p>
                     <p class="bkw-cart-confirm__text"><?php echo esc_html($settings['confirm_text']); ?></p>
 
                     <div class="bkw-cart-confirm__actions">

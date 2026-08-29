@@ -1641,16 +1641,25 @@ html.bkw-panel-open {
 .bkw-cart-confirm__card {
 	display: flex;
 	flex-direction: column;
-	align-items: center;
+	align-items: stretch;
 	text-align: center;
 	max-width: 100%;
 	max-height: 100%;
 	overflow-y: auto;
 	width: 450px;
-	padding: 40px 32px 32px;
+	gap: 32px;
+	padding: 40px;
 	border-radius: 32px;
-	background-color: #faf6f0;
-	box-shadow: 0 24px 48px rgba(26, 19, 14, 0.18);
+	background-color: #fcf9f5;
+	border: 1px solid #eaded6;
+	box-shadow: 0 24px 24px rgba(26, 19, 14, 0.25);
+}
+
+.bkw-cart-confirm__header {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
 }
 
 .bkw-cart-confirm__icon {
@@ -1658,40 +1667,43 @@ html.bkw-panel-open {
 	align-items: center;
 	justify-content: center;
 	flex-shrink: 0;
-	width: 104px;
-	height: 104px;
-	border-radius: 50%;
-	background-color: #f4ece1;
-	margin-bottom: 24px;
+	line-height: 1;
 }
 
+/*
+ * دایرهٔ پس‌زمینه داخل خودِ فایل SVG است (خروجی فیگما: rect با rx=36 و
+ * بعد مسیرهای آیکون رویش)، نه یک پس‌زمینهٔ CSS. برای همین اینجا فقط
+ * اندازهٔ کل SVG تنظیم می‌شود و رنگ دایره/آیکون از تب استایل مستقیم روی
+ * rect و path می‌نشیند.
+ */
 .bkw-cart-confirm__icon svg,
 .bkw-cart-confirm__icon img {
 	display: block;
-	width: 48px;
-	height: 48px;
+	width: 72px;
+	height: 72px;
 }
 
 .bkw-cart-confirm__title {
 	margin: 0;
 	color: #8c583a;
-	font-size: 30px;
-	font-weight: 800;
-	line-height: 1.6;
+	font-size: 24px;
+	font-weight: 900;
+	line-height: 1.4;
 }
 
 .bkw-cart-confirm__text {
-	margin: 12px 0 0;
-	color: #2a1e17;
-	font-size: 17px;
+	margin: 0;
+	color: #231912;
+	font-size: 16px;
 	font-weight: 700;
-	line-height: 1.9;
+	line-height: 1.5;
 }
 
 /*
  * ترتیب DOM «تأیید» بعد «انصراف» است و این ردیف زیر dir="rtl" فرزند اول
- * را سمت راست می‌گذارد — همان چیدمان دیزاین. هر دو دکمه هم‌عرض‌اند تا
- * هیچ‌کدام با پهنای متنش برجسته‌تر از دیگری نشود.
+ * را سمت راست می‌گذارد — همان چیدمان دیزاین. (خروجی JSX فیگما ترتیب
+ * برعکس دارد؛ اسکرین‌شات مرجع است، نه ترتیب خام JSX.) هر دو دکمه
+ * هم‌عرض‌اند تا هیچ‌کدام با پهنای متنش برجسته‌تر از دیگری نشود.
  */
 .bkw-cart-confirm__actions {
 	display: flex;
@@ -1699,7 +1711,6 @@ html.bkw-panel-open {
 	align-items: stretch;
 	gap: 16px;
 	width: 100%;
-	margin-top: 32px;
 }
 
 .bkw-cart-confirm__actions button {
@@ -1711,11 +1722,12 @@ html.bkw-panel-open {
 	justify-content: center;
 	cursor: pointer;
 	font: inherit;
-	height: 60px;
+	height: 52px;
 	border: none;
-	border-radius: 18px;
-	font-size: 17px;
-	font-weight: 800;
+	border-radius: 16px;
+	font-size: 15px;
+	font-weight: 700;
+	white-space: nowrap;
 }
 
 .bkw-cart-confirm__accept {
@@ -1725,8 +1737,8 @@ html.bkw-panel-open {
 
 .bkw-cart-confirm__cancel {
 	background-color: #ffffff;
-	color: #2a1e17;
-	border: 1px solid #eaded6;
+	color: #7d7065;
+	border: 1.5px solid #eaded6;
 }
 
 .bkw-cart-confirm__actions button:disabled {
@@ -1747,7 +1759,7 @@ html.bkw-panel-open {
 }
 
 .bkw-cart-confirm .bkw-cart-sidebar__error {
-	margin: 16px 0 0;
+	margin: 0;
 }
 
 /*
