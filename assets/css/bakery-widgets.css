@@ -1774,3 +1774,271 @@ html.bkw-panel-open {
 		width: 100vw !important;
 	}
 }
+
+/*
+ * ویجت سابقهٔ سفارش‌ها.
+ *
+ * ترتیب DOM هر ردیف عمداً برعکس ترتیب خروجی JSX فیگماست: آن فریم چیدمان
+ * LTR دارد، پس ترتیبش «چپ‌به‌راستِ دیده‌شده» است، در حالی که این‌جا زیر
+ * dir="rtl" فرزندِ اولِ یک ردیف فلکس سمت راست می‌نشیند. پس بلوک شمارهٔ
+ * سفارش اول می‌آید (تا راست بنشیند) و مبلغ آخر (تا چپ بیفتد) — همان
+ * چیزی که در رفرنس دیده می‌شود.
+ *
+ * جای «مراحل سفارش» فعلاً خالی است و فقط با flex فاصلهٔ وسط را نگه
+ * می‌دارد؛ وقتی پر شود، هیچ‌کدام از قواعد این‌جا لازم نیست عوض شود.
+ */
+.bkw-order-history {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	box-sizing: border-box;
+}
+
+.bkw-order-history *,
+.bkw-order-history *::before,
+.bkw-order-history *::after {
+	box-sizing: border-box;
+}
+
+.bkw-order-history__card {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	width: 100%;
+	padding: 24px;
+	border-radius: 24px;
+	background-color: #ffffff;
+	border: 1px solid #eaded6;
+	box-shadow: 0 4px 8px rgba(35, 25, 18, 0.03);
+}
+
+.bkw-order-history__row {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	width: 100%;
+}
+
+.bkw-order-history__meta {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 32px;
+	min-width: 0;
+}
+
+.bkw-order-history__order,
+.bkw-order-history__items-block {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+	/* زیر dir="rtl"، flex-start یعنی راست — همان تراز رفرنس */
+	align-items: flex-start;
+	text-align: right;
+}
+
+.bkw-order-history__caption {
+	margin: 0;
+	color: #a8968d;
+	font-size: 13px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.bkw-order-history__number {
+	margin: 0;
+	color: #231912;
+	font-size: 18px;
+	font-weight: 900;
+	white-space: nowrap;
+}
+
+.bkw-order-history__number-value {
+	color: #8c583a;
+}
+
+.bkw-order-history__date {
+	margin: 0;
+	color: #a8968d;
+	font-size: 13px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+/* متن بلندتر از عرض مجاز با «…» کوتاه می‌شود، دقیقاً مثل رفرنس */
+.bkw-order-history__items {
+	margin: 0;
+	color: #615249;
+	font-size: 15px;
+	font-weight: 700;
+	max-width: 400px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.bkw-order-history__stepper {
+	flex: 1 1 auto;
+	height: 50px;
+	min-width: 0;
+}
+
+.bkw-order-history__price {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 120px;
+	flex-shrink: 0;
+	/* زیر dir="rtl"، flex-end یعنی چپ */
+	align-items: flex-end;
+	text-align: left;
+}
+
+.bkw-order-history__price-row {
+	margin: 0;
+	display: flex;
+	flex-direction: row;
+	align-items: baseline;
+	gap: 4px;
+	white-space: nowrap;
+}
+
+.bkw-order-history__amount {
+	color: #231912;
+	font-size: 18px;
+	font-weight: 900;
+}
+
+.bkw-order-history__currency {
+	color: #c59b62;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.bkw-order-history__divider {
+	width: 100%;
+	height: 1px;
+	flex-shrink: 0;
+	background-color: #eaded6;
+}
+
+.bkw-order-history__cancel-section {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+}
+
+.bkw-order-history__cancel {
+	appearance: none;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font: inherit;
+	border: none;
+	padding: 10px 16px;
+	border-radius: 100px;
+	background-color: #ba291e;
+	color: #ffffff;
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.bkw-order-history__cancel:disabled {
+	cursor: default;
+	opacity: 0.7;
+}
+
+.bkw-order-history__cancel-note {
+	margin: 0;
+	width: 100%;
+	text-align: center;
+	color: #ba291e;
+	font-size: 10px;
+	font-weight: 500;
+	line-height: 1.8;
+}
+
+.bkw-order-history__empty {
+	margin: 0;
+	padding: 32px 24px;
+	text-align: center;
+	color: #615249;
+	font-size: 15px;
+	font-weight: 700;
+	border-radius: 24px;
+	background-color: #ffffff;
+	border: 1px solid #eaded6;
+}
+
+/* --- صفحه‌بندی ------------------------------------------------------- */
+
+.bkw-order-history__pagination {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	width: 100%;
+	margin-top: 12px;
+}
+
+.bkw-order-history__page {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 44px;
+	height: 44px;
+	padding: 0 14px;
+	border-radius: 100px;
+	background-color: #ffffff;
+	border: 1px solid #eaded6;
+	color: #615249;
+	font-size: 14px;
+	font-weight: 700;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.bkw-order-history__page.is-current {
+	background-color: #ba291e;
+	border-color: #ba291e;
+	color: #ffffff;
+	cursor: default;
+}
+
+.bkw-order-history__page.is-disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+/*
+ * زیر بریک‌پوینت موبایل، ردیف افقی کارت جا نمی‌شود: شمارهٔ سفارش،
+ * اقلام و مبلغ زیر هم می‌روند و مبلغ به لبهٔ راست برمی‌گردد تا با بقیه
+ * هم‌تراز بماند.
+ */
+@media (max-width: 767px) {
+	.bkw-order-history__row,
+	.bkw-order-history__meta {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	.bkw-order-history__price {
+		width: auto;
+		align-items: flex-start;
+		text-align: right;
+	}
+
+	.bkw-order-history__items {
+		white-space: normal;
+	}
+}

@@ -47,8 +47,10 @@ final class Plugin
         if (class_exists('\WooCommerce')) {
             require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-ajax.php';
             require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-fragments.php';
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/order-cancellation.php';
 
             new Cart_Ajax();
+            (new Order_Cancellation())->register();
 
             // اتصال محتوای زندهٔ سایدبار سبد به همان فیلتر فرگمنت استاندارد
             // ووکامرس — Cart_Ajax و Widgets\Cart_Sidebar هیچ‌کدام از وجود
@@ -106,6 +108,7 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/terms-modal.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/add-to-cart.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/cart-sidebar.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/order-history.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
         $widgets_manager->register(new Widgets\Price());
@@ -116,6 +119,7 @@ final class Plugin
         $widgets_manager->register(new Widgets\Terms_Modal());
         $widgets_manager->register(new Widgets\Add_To_Cart());
         $widgets_manager->register(new Widgets\Cart_Sidebar());
+        $widgets_manager->register(new Widgets\Order_History());
     }
 
     /**
@@ -212,6 +216,22 @@ final class Plugin
             'placeOrderNonce' => wp_create_nonce('bkw_place_order'),
             'genericError' => __('ثبت سفارش ممکن نشد. دوباره تلاش کنید.', 'bakery-widgets'),
         ]);
+
+        wp_register_script(
+            'bakery-order-history',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-order-history.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+
+        // رشتهٔ اکشن نانس مستقیم است (نه Order_Cancellation::NONCE_ACTION) به
+        // همان دلیل بالا: آن کلاس فقط وقتی ووکامرس فعال باشد بارگذاری می‌شود.
+        wp_localize_script('bakery-order-history', 'bkwOrderHistory', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('bkw_cancel_order'),
+            'genericError' => __('لغو سفارش ممکن نشد. دوباره تلاش کنید.', 'bakery-widgets'),
+        ]);
     }
 
     /**
@@ -226,5 +246,6 @@ final class Plugin
         wp_enqueue_script('bakery-terms-modal');
         wp_enqueue_script('bakery-add-to-cart');
         wp_enqueue_script('bakery-cart-sidebar');
+        wp_enqueue_script('bakery-order-history');
     }
 }
