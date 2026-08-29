@@ -93,6 +93,7 @@
             // تأیید سفارش قبلی.
             var success = sidebar.querySelector('[data-bkw-cart-success]');
             var error = sidebar.querySelector('[data-bkw-cart-error]');
+            var confirmModal = sidebar.querySelector('[data-bkw-cart-confirm]');
 
             sidebar.classList.remove('is-placed');
             if (success) {
@@ -100,6 +101,9 @@
             }
             if (error) {
                 error.hidden = true;
+            }
+            if (confirmModal) {
+                confirmModal.hidden = true;
             }
         }
 
@@ -112,9 +116,19 @@
         overlay.addEventListener('click', close);
 
         document.addEventListener('keydown', function (event) {
-            if ('Escape' === event.key && isOpen()) {
-                close();
+            if ('Escape' !== event.key || !isOpen()) {
+                return;
             }
+
+            // وقتی مودال تأیید باز است، Escape فقط همان را می‌بندد — نه
+            // اینکه سبد را هم پشت سرش ببندد و کاربر ندانَد سفارشش ثبت
+            // شد یا نه. بستن خودِ مودال را setupPlaceOrder انجام می‌دهد.
+            var confirmModal = sidebar.querySelector('[data-bkw-cart-confirm]');
+            if (confirmModal && !confirmModal.hidden) {
+                return;
+            }
+
+            close();
         });
 
         // اگر هنگام باز بودن سایدبار، یک کلیک روی افزودن به سبد در جای
@@ -185,11 +199,13 @@
     }
 
     /**
-     * دکمهٔ «ثبت سفارش» = خودِ پرداخت. یک درخواست به
-     * Bakery_Credit\Integration\DirectCheckout می‌رود که سفارش را می‌سازد،
-     * اعتبار را اتمیک کسر می‌کند و سبد را خالی می‌کند — بدون صفحهٔ
-     * تسویه‌حساب. تا وقتی پاسخ نیامده دکمه قفل است تا دو کلیک پشت‌هم دو
-     * سفارش نسازد (قید یکتاییِ دفتر هم لایهٔ دوم همین است).
+     * پرداخت دو قدم دارد: دکمهٔ «ثبت سفارش» فقط مودال تأیید را باز
+     * می‌کند، و کسر اعتبار تنها بعد از تأیید همان مودال انجام می‌شود.
+     *
+     * چرا این قدم اضافه: کلیک روی «ثبت سفارش» بی‌درنگ پول خرج می‌کند و
+     * لغوش دست کاربر نیست (فقط ادمین می‌تواند سفارش را برگرداند) — پس
+     * برخلاف تغییر تعداد که بی‌ضرر و برگشت‌پذیر است، این یکی باید یک
+     * تأیید صریح داشته باشد.
      */
     function setupPlaceOrder() {
         if (typeof bkwCartSidebar === 'undefined') {
@@ -197,62 +213,133 @@
         }
 
         document.addEventListener('click', function (event) {
-            var button = event.target.closest('[data-bkw-cart-checkout]');
-            if (!button || button.disabled) {
+            var opener = event.target.closest('[data-bkw-cart-checkout]');
+            if (opener && !opener.disabled) {
+                event.preventDefault();
+                openConfirm(opener.closest('[data-bkw-cart-sidebar]'));
                 return;
             }
 
-            event.preventDefault();
-
-            var sidebar = button.closest('[data-bkw-cart-sidebar]');
-
-            // در ادیتور المنتور، ادمین دارد دکمه را استایل می‌دهد؛ کلیکش
-            // نباید سفارش واقعی ثبت کند و اعتبار خرج کند.
-            if (sidebar && '1' === sidebar.getAttribute('data-edit-mode')) {
+            if (event.target.closest('[data-bkw-cart-confirm-cancel]')) {
+                event.preventDefault();
+                closeConfirm(event.target.closest('[data-bkw-cart-sidebar]'));
                 return;
             }
 
-            var errorBox = sidebar ? sidebar.querySelector('[data-bkw-cart-error]') : null;
-            var successBox = sidebar ? sidebar.querySelector('[data-bkw-cart-success]') : null;
-
-            if (errorBox) {
-                errorBox.hidden = true;
+            var accept = event.target.closest('[data-bkw-cart-confirm-accept]');
+            if (accept && !accept.disabled) {
+                event.preventDefault();
+                placeOrder(accept);
+                return;
             }
 
-            button.disabled = true;
-            button.classList.add('is-pending');
-
-            var body = new URLSearchParams({
-                action: 'bkw_place_order',
-                nonce: bkwCartSidebar.placeOrderNonce,
-            });
-
-            fetch(bkwCartSidebar.ajaxUrl, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: body.toString(),
-            })
-                .then(function (response) {
-                    return response.json();
-                })
-                .then(function (response) {
-                    if (!response || !response.success) {
-                        showError(errorBox, response && response.data && response.data.message);
-                        return;
-                    }
-
-                    applyFragments(response.data);
-                    showSuccess(sidebar, successBox, response.data);
-                })
-                .catch(function () {
-                    showError(errorBox, null);
-                })
-                .finally(function () {
-                    button.disabled = false;
-                    button.classList.remove('is-pending');
-                });
+            // کلیک روی خودِ پرده (نه کارت) مثل انصراف است — هیچ سفارشی
+            // ثبت نشده، پس بستنش بی‌خطر است.
+            var overlay = event.target.closest('[data-bkw-cart-confirm]');
+            if (overlay && !event.target.closest('.bkw-cart-confirm__card')) {
+                closeConfirm(overlay.closest('[data-bkw-cart-sidebar]'));
+            }
         });
+
+        document.addEventListener('keydown', function (event) {
+            if ('Escape' !== event.key) {
+                return;
+            }
+
+            document.querySelectorAll('[data-bkw-cart-confirm]').forEach(function (modal) {
+                if (!modal.hidden) {
+                    closeConfirm(modal.closest('[data-bkw-cart-sidebar]'));
+                }
+            });
+        });
+    }
+
+    function openConfirm(sidebar) {
+        if (!sidebar) {
+            return;
+        }
+
+        // در ادیتور المنتور، ادمین دارد دکمه را استایل می‌دهد؛ کلیکش
+        // نباید سفارش واقعی ثبت کند و اعتبار خرج کند.
+        if ('1' === sidebar.getAttribute('data-edit-mode')) {
+            return;
+        }
+
+        var modal = sidebar.querySelector('[data-bkw-cart-confirm]');
+        var errorBox = sidebar.querySelector('[data-bkw-cart-error]');
+
+        if (!modal) {
+            return;
+        }
+
+        if (errorBox) {
+            errorBox.hidden = true;
+        }
+
+        modal.hidden = false;
+    }
+
+    function closeConfirm(sidebar) {
+        if (!sidebar) {
+            return;
+        }
+
+        var modal = sidebar.querySelector('[data-bkw-cart-confirm]');
+        if (modal) {
+            modal.hidden = true;
+        }
+    }
+
+    /**
+     * کسر واقعی اعتبار. تا وقتی پاسخ نیامده دکمه قفل است تا دو کلیک
+     * پشت‌هم دو سفارش نسازد (قید یکتاییِ دفتر هم لایهٔ دوم همین است).
+     */
+    function placeOrder(button) {
+        var sidebar = button.closest('[data-bkw-cart-sidebar]');
+        var errorBox = sidebar ? sidebar.querySelector('[data-bkw-cart-error]') : null;
+        var successBox = sidebar ? sidebar.querySelector('[data-bkw-cart-success]') : null;
+
+        if (errorBox) {
+            errorBox.hidden = true;
+        }
+
+        button.disabled = true;
+        button.classList.add('is-pending');
+
+        var body = new URLSearchParams({
+            action: 'bkw_place_order',
+            nonce: bkwCartSidebar.placeOrderNonce,
+        });
+
+        fetch(bkwCartSidebar.ajaxUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString(),
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (response) {
+                if (!response || !response.success) {
+                    showError(errorBox, response && response.data && response.data.message);
+                    return;
+                }
+
+                // مودال فقط در حالت موفق بسته می‌شود؛ در حالت خطا باز
+                // می‌ماند تا پیام دقیقاً همان‌جا که کاربر منتظر است دیده
+                // شود و بتواند دوباره تلاش کند یا انصراف بدهد.
+                closeConfirm(sidebar);
+                applyFragments(response.data);
+                showSuccess(sidebar, successBox, response.data);
+            })
+            .catch(function () {
+                showError(errorBox, null);
+            })
+            .finally(function () {
+                button.disabled = false;
+                button.classList.remove('is-pending');
+            });
     }
 
     function showError(errorBox, message) {

@@ -113,6 +113,7 @@ final class Cart_Sidebar extends Widget_Base
         $this->register_items_style_controls();
         $this->register_footer_style_controls();
         $this->register_loading_style_controls();
+        $this->register_confirm_style_controls();
     }
 
     /* =====================================================================
@@ -225,6 +226,62 @@ final class Cart_Sidebar extends Widget_Base
             'type' => Controls_Manager::TEXT,
             'default' => __('شمارهٔ سفارش:', 'bakery-widgets'),
             'label_block' => true,
+        ]);
+
+        $this->end_controls_section();
+
+        $this->register_confirm_controls();
+    }
+
+    /* =====================================================================
+     * محتوا — مودال تأیید نهایی
+     * =================================================================== */
+
+    private function register_confirm_controls(): void
+    {
+        $this->start_controls_section('section_confirm', [
+            'label' => __('مودال تأیید سفارش', 'bakery-widgets'),
+            'tab' => Controls_Manager::TAB_CONTENT,
+        ]);
+
+        $this->add_control('confirm_notice', [
+            'type' => Controls_Manager::RAW_HTML,
+            'raw' => __('چون کلیک روی «ثبت سفارش» بی‌درنگ پول خرج می‌کند و برگشتش دست کاربر نیست، پیش از آن یک تأیید نهایی گرفته می‌شود. کسر اعتبار فقط بعد از تأیید همین مودال انجام می‌شود.', 'bakery-widgets'),
+            'content_classes' => 'elementor-descriptor',
+        ]);
+
+        $this->add_control('confirm_icon', [
+            'label' => __('آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::MEDIA,
+            'media_types' => ['image', 'svg'],
+            'default' => ['url' => BAKERY_WIDGETS_URL . 'assets/icons/bag-smile.svg'],
+        ]);
+
+        $this->add_control('confirm_title', [
+            'label' => __('عنوان', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('تأیید سفارش', 'bakery-widgets'),
+            'label_block' => true,
+        ]);
+
+        $this->add_control('confirm_text', [
+            'label' => __('توضیح', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXTAREA,
+            'default' => __('آیا از ثبت این سفارش اطمینان دارید؟', 'bakery-widgets'),
+            'rows' => 2,
+        ]);
+
+        $this->add_control('confirm_accept_text', [
+            'label' => __('متن دکمهٔ تأیید', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('تأیید و ثبت سفارش', 'bakery-widgets'),
+            'label_block' => true,
+        ]);
+
+        $this->add_control('confirm_cancel_text', [
+            'label' => __('متن دکمهٔ انصراف', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('انصراف', 'bakery-widgets'),
         ]);
 
         $this->end_controls_section();
@@ -871,6 +928,253 @@ final class Cart_Sidebar extends Widget_Base
         $this->end_controls_section();
     }
 
+    /* =====================================================================
+     * استایل — مودال تأیید سفارش
+     * =================================================================== */
+
+    private function register_confirm_style_controls(): void
+    {
+        $this->start_controls_section('section_style_confirm', [
+            'label' => __('مودال تأیید سفارش', 'bakery-widgets'),
+            'tab' => Controls_Manager::TAB_STYLE,
+        ]);
+
+        $this->add_control('heading_confirm_overlay', [
+            'label' => __('پرده', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+        ]);
+
+        $this->add_control('confirm_overlay_color', [
+            'label' => __('رنگ پرده', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => 'rgba(26, 19, 14, 0.45)',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm' => 'background-color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('confirm_overlay_blur', [
+            'label' => __('بلور شیشه‌ای پرده', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 30]],
+            'default' => ['unit' => 'px', 'size' => 10],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-cart-confirm' => 'backdrop-filter: blur({{SIZE}}{{UNIT}}); -webkit-backdrop-filter: blur({{SIZE}}{{UNIT}});',
+            ],
+        ]);
+
+        $this->add_control('heading_confirm_card', [
+            'label' => __('کارت', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_responsive_control('confirm_card_width', [
+            'label' => __('عرض کارت', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 280, 'max' => 640]],
+            'default' => ['unit' => 'px', 'size' => 450],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__card' => 'width: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_responsive_control('confirm_card_padding', [
+            'label' => __('پدینگ', 'bakery-widgets'),
+            'type' => Controls_Manager::DIMENSIONS,
+            'size_units' => ['px'],
+            'default' => ['top' => '40', 'right' => '32', 'bottom' => '32', 'left' => '32', 'unit' => 'px', 'isLinked' => false],
+            'mobile_default' => ['top' => '32', 'right' => '20', 'bottom' => '24', 'left' => '20', 'unit' => 'px', 'isLinked' => false],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__card' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};'],
+        ]);
+
+        $this->add_control('confirm_card_radius', [
+            'label' => __('رادیوس', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 60]],
+            'default' => ['unit' => 'px', 'size' => 32],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__card' => 'border-radius: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_group_control(Group_Control_Background::get_type(), [
+            'name' => 'confirm_card_background',
+            'types' => ['classic'],
+            'selector' => '{{WRAPPER}} .bkw-cart-confirm__card',
+            'fields_options' => ['color' => ['default' => '#faf6f0']],
+        ]);
+
+        $this->add_control('heading_confirm_icon', [
+            'label' => __('آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_responsive_control('confirm_plate_size', [
+            'label' => __('اندازهٔ دایرهٔ پشت آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 48, 'max' => 160]],
+            'default' => ['unit' => 'px', 'size' => 104],
+            'mobile_default' => ['unit' => 'px', 'size' => 88],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-cart-confirm__icon' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+            ],
+        ]);
+
+        $this->add_control('confirm_plate_color', [
+            'label' => __('رنگ دایره', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#f4ece1',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__icon' => 'background-color: {{VALUE}};'],
+        ]);
+
+        $this->add_responsive_control('confirm_icon_size', [
+            'label' => __('اندازهٔ آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 20, 'max' => 90]],
+            'default' => ['unit' => 'px', 'size' => 48],
+            'mobile_default' => ['unit' => 'px', 'size' => 40],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-cart-confirm__icon svg, {{WRAPPER}} .bkw-cart-confirm__icon img' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+            ],
+        ]);
+
+        $this->add_control('confirm_icon_color', [
+            'label' => __('رنگ آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#8c583a',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__icon svg [stroke]' => 'stroke: {{VALUE}};'],
+        ]);
+
+        $this->add_control('heading_confirm_title', [
+            'label' => __('عنوان', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'confirm_title_typography',
+            'selector' => '{{WRAPPER}} .bkw-cart-confirm__title',
+            'fields_options' => [
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 30], 'mobile_default' => ['unit' => 'px', 'size' => 24]],
+                'font_weight' => ['default' => '800'],
+            ],
+        ]);
+
+        $this->add_control('confirm_title_color', [
+            'label' => __('رنگ', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#8c583a',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__title' => 'color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('heading_confirm_text', [
+            'label' => __('توضیح', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'confirm_text_typography',
+            'selector' => '{{WRAPPER}} .bkw-cart-confirm__text',
+            'fields_options' => [
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 17], 'mobile_default' => ['unit' => 'px', 'size' => 15]],
+                'font_weight' => ['default' => '700'],
+            ],
+        ]);
+
+        $this->add_control('confirm_text_color', [
+            'label' => __('رنگ', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#2a1e17',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__text' => 'color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('heading_confirm_buttons', [
+            'label' => __('دکمه‌ها', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_responsive_control('confirm_buttons_gap', [
+            'label' => __('فاصلهٔ دو دکمه', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 40]],
+            'default' => ['unit' => 'px', 'size' => 16],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__actions' => 'gap: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_responsive_control('confirm_button_height', [
+            'label' => __('ارتفاع دکمه‌ها', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 36, 'max' => 90]],
+            'default' => ['unit' => 'px', 'size' => 60],
+            'mobile_default' => ['unit' => 'px', 'size' => 52],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__actions button' => 'height: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_control('confirm_button_radius', [
+            'label' => __('رادیوس دکمه‌ها', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 40]],
+            'default' => ['unit' => 'px', 'size' => 18],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__actions button' => 'border-radius: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'confirm_button_typography',
+            'label' => __('تایپوگرافی دکمه‌ها', 'bakery-widgets'),
+            'selector' => '{{WRAPPER}} .bkw-cart-confirm__actions button',
+            'fields_options' => [
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 17], 'mobile_default' => ['unit' => 'px', 'size' => 15]],
+                'font_weight' => ['default' => '800'],
+            ],
+        ]);
+
+        $this->add_control('confirm_accept_bg', [
+            'label' => __('رنگ پس‌زمینهٔ تأیید', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#8c583a',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__accept' => 'background-color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('confirm_accept_color', [
+            'label' => __('رنگ متن تأیید', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#ffffff',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__accept' => 'color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('confirm_cancel_bg', [
+            'label' => __('رنگ پس‌زمینهٔ انصراف', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#ffffff',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__cancel' => 'background-color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('confirm_cancel_color', [
+            'label' => __('رنگ متن انصراف', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#2a1e17',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-confirm__cancel' => 'color: {{VALUE}};'],
+        ]);
+
+        $this->add_group_control(Group_Control_Border::get_type(), [
+            'name' => 'confirm_cancel_border',
+            'selector' => '{{WRAPPER}} .bkw-cart-confirm__cancel',
+            'fields_options' => [
+                'border' => ['default' => 'solid'],
+                'width' => ['default' => ['top' => '1', 'right' => '1', 'bottom' => '1', 'left' => '1', 'unit' => 'px']],
+                'color' => ['default' => '#eaded6'],
+            ],
+        ]);
+
+        $this->end_controls_section();
+    }
+
     /* ---------------------------------------------------------------------
      * رندر
      * ------------------------------------------------------------------- */
@@ -919,19 +1223,16 @@ final class Cart_Sidebar extends Widget_Base
                         <?php echo Cart_Fragments::total_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- خودش escape می‌کند ?>
                     </div>
 
-                    <p class="bkw-cart-sidebar__error" data-bkw-cart-error role="alert" hidden></p>
-
                     <?php
                     /*
-                     * دکمهٔ پرداخت، نه لینک به صفحهٔ تسویه‌حساب: همین کلیک
-                     * خودِ پرداخت است (Bakery_Credit\Integration\DirectCheckout).
-                     * صفحهٔ چک‌اوت ووکامرس در این فروشگاه چیزی برای پرسیدن
-                     * ندارد — هویت، ارسال و روش پرداخت هر سه از قبل معلوم‌اند.
+                     * این دکمه فقط مودال تأیید را باز می‌کند؛ خودِ پرداخت
+                     * (Bakery_Credit\Integration\DirectCheckout) بعد از
+                     * تأیید همان مودال انجام می‌شود. پیام خطا هم آن‌جاست،
+                     * چون دقیقاً همان‌جاست که کاربر منتظر نتیجه است.
                      */
                     ?>
                     <button type="button" class="bkw-cart-sidebar__checkout" data-bkw-cart-checkout>
-                        <span class="bkw-cart-sidebar__checkout-label"><?php echo esc_html($settings['checkout_text']); ?></span>
-                        <span class="bkw-cart-sidebar__checkout-pending"><?php echo esc_html($settings['checkout_pending_text']); ?></span>
+                        <?php echo esc_html($settings['checkout_text']); ?>
                     </button>
                 </div>
 
@@ -940,6 +1241,38 @@ final class Cart_Sidebar extends Widget_Base
                     <p class="bkw-cart-sidebar__success-text"><?php echo esc_html($settings['success_text']); ?></p>
                     <p class="bkw-cart-sidebar__success-order" data-bkw-cart-success-order></p>
                     <button type="button" class="bkw-cart-sidebar__success-close" data-bkw-cart-close><?php echo esc_html($settings['success_close_text']); ?></button>
+                </div>
+            </div>
+
+            <?php
+            /*
+             * تأیید نهایی، بیرون از پنل و روی کل صفحه: کلیک روی «ثبت
+             * سفارش» بی‌درنگ پول خرج می‌کند و کاربر خودش نمی‌تواند پسش
+             * بگیرد، پس یک قدم تأیید بین آن کلیک و کسر اعتبار می‌ایستد.
+             *
+             * ترتیب دکمه‌ها در DOM عمداً «تأیید» بعد «انصراف» است: زیر
+             * dir="rtl" فرزندِ اولِ یک ردیف فلکس سمت راست می‌نشیند —
+             * دقیقاً همان چیدمانی که در دیزاین است.
+             */
+            ?>
+            <div class="bkw-cart-confirm" data-bkw-cart-confirm role="dialog" aria-modal="true" aria-label="<?php echo esc_attr($settings['confirm_title']); ?>" hidden>
+                <div class="bkw-cart-confirm__card">
+                    <span class="bkw-cart-confirm__icon">
+                        <?php $this->render_icon_field($settings['confirm_icon'] ?? []); ?>
+                    </span>
+
+                    <p class="bkw-cart-confirm__title"><?php echo esc_html($settings['confirm_title']); ?></p>
+                    <p class="bkw-cart-confirm__text"><?php echo esc_html($settings['confirm_text']); ?></p>
+
+                    <div class="bkw-cart-confirm__actions">
+                        <button type="button" class="bkw-cart-confirm__accept" data-bkw-cart-confirm-accept>
+                            <span class="bkw-cart-confirm__accept-label"><?php echo esc_html($settings['confirm_accept_text']); ?></span>
+                            <span class="bkw-cart-confirm__accept-pending"><?php echo esc_html($settings['checkout_pending_text']); ?></span>
+                        </button>
+                        <button type="button" class="bkw-cart-confirm__cancel" data-bkw-cart-confirm-cancel><?php echo esc_html($settings['confirm_cancel_text']); ?></button>
+                    </div>
+
+                    <p class="bkw-cart-sidebar__error" data-bkw-cart-error role="alert" hidden></p>
                 </div>
             </div>
         </div>
