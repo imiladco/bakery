@@ -1847,7 +1847,7 @@ html.bkw-panel-open {
  */
 .bkw-order-history__row {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 520px 120px;
+	grid-template-columns: minmax(0, 1fr) 420px 120px;
 	align-items: center;
 	gap: 16px;
 	width: 100%;
