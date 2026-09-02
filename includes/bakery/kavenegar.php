@@ -35,13 +35,18 @@ final class Kavenegar
 
     private const TIMEOUT = 10;
 
+    /** آخرین خطای ارسال، برای نمایش در صفحهٔ تنظیمات. */
+    private const LAST_ERROR_OPTION = 'bkw_otp_last_error';
+
     /**
      * کد را می‌فرستد. true یعنی کاوه‌نگار پذیرفت.
      *
      * خطاها WP_Error برمی‌گردند و نه false، چون پیام واقعی کاوه‌نگار
-     * («اعتبار کافی نیست»، «قالب یافت نشد») تنها سرنخِ عیب‌یابی است و
-     * باید در لاگ بماند — هرچند چیزی که به کاربر نشان داده می‌شود
-     * همیشه پیام عمومی است.
+     * («اعتبار کافی نیست»، «قالب یافت نشد») تنها سرنخِ عیب‌یابی است.
+     * چیزی که به کاربرِ در حال ورود نشان داده می‌شود همچنان عمومی است،
+     * ولی همان پیام واقعی در آپشن ذخیره می‌شود تا مدیر در صفحهٔ تنظیمات
+     * ببیندش — بدون این، تنها راهِ فهمیدنِ علت روشن‌کردن WP_DEBUG_LOG و
+     * خواندن فایل لاگ بود، که عملاً یعنی خطا نامرئی است.
      */
     public static function send(string $mobile, string $code): bool|WP_Error
     {
@@ -49,11 +54,22 @@ final class Kavenegar
         $template = self::template();
 
         if ('' === $api_key || '' === $template) {
-            return new WP_Error('bkw_sms_unconfigured', __('پیکربندی پیامک کامل نیست.', 'bakery-widgets'));
+            return self::fail(new WP_Error('bkw_sms_unconfigured', __('کلید API یا نام قالب خالی است.', 'bakery-widgets')));
         }
 
-        $response = wp_remote_post(sprintf(self::ENDPOINT, rawurlencode($api_key)), [
+        /*
+         * کلید بدون urlencode داخل مسیر می‌نشیند.
+         *
+         * انکود کردنش منطقی به نظر می‌رسد ولی خراب می‌کند: کلیدهای
+         * کاوه‌نگار گاهی به «=» ختم می‌شوند و rawurlencode آن را به
+         * «%3D» تبدیل می‌کند؛ مسیریاب کاوه‌نگار همان رشتهٔ انکودشده را
+         * عیناً با کلید مقایسه می‌کند و نتیجه «کلید نامعتبر» (۴۰۷) است.
+         * کلید فقط trim می‌شود — فاصله یا نیوءلاینِ کپی‌شده از پنل هم
+         * دقیقاً همین خطا را می‌دهد.
+         */
+        $response = wp_remote_post(sprintf(self::ENDPOINT, $api_key), [
             'timeout' => self::TIMEOUT,
+            'headers' => ['Accept' => 'application/json'],
             'body' => [
                 'receptor' => $mobile,
                 'token' => $code,
@@ -63,13 +79,17 @@ final class Kavenegar
         ]);
 
         if (is_wp_error($response)) {
-            return $response;
+            // به کاوه‌نگار نرسیدیم: DNS، فایروال خروجی سرور، یا تایم‌اوت.
+            return self::fail($response);
         }
 
-        $body = json_decode((string) wp_remote_retrieve_body($response));
+        $raw = (string) wp_remote_retrieve_body($response);
+        $body = json_decode($raw);
         $status = isset($body->return->status) ? (int) $body->return->status : 0;
 
         if (200 === $status) {
+            delete_option(self::LAST_ERROR_OPTION);
+
             return true;
         }
 
@@ -79,12 +99,45 @@ final class Kavenegar
         $message = isset($body->return->message) && '' !== (string) $body->return->message
             ? (string) $body->return->message
             : sprintf(
-                /* translators: %d: HTTP status code */
-                __('پاسخ نامعتبر از کاوه‌نگار (کد %d).', 'bakery-widgets'),
-                (int) wp_remote_retrieve_response_code($response)
+                /* translators: 1: HTTP status code, 2: first part of the response body */
+                __('پاسخ نامعتبر از کاوه‌نگار (کد HTTP %1$d): %2$s', 'bakery-widgets'),
+                (int) wp_remote_retrieve_response_code($response),
+                // تکهٔ اول بدنه معمولاً می‌گوید چه چیزی به‌جای JSON آمده
+                // — صفحهٔ خطای پروکسی، بلاک فایروال، یا HTML کاوه‌نگار.
+                mb_substr(trim(wp_strip_all_tags($raw)), 0, 200)
             );
 
-        return new WP_Error('bkw_sms_rejected', $message, ['status' => $status]);
+        return self::fail(new WP_Error('bkw_sms_rejected', $message, ['status' => $status]));
+    }
+
+    /**
+     * خطا را برای صفحهٔ تنظیمات نگه می‌دارد و خودش را برمی‌گرداند.
+     *
+     * کد وضعیت کاوه‌نگار هم ذخیره می‌شود چون معمولاً گویاتر از متنش
+     * است: ۴۱۸ یعنی اعتبار حساب کافی نیست، ۴۲۴ یعنی قالب پیدا نشد،
+     * ۴۰۷ یعنی کلید API را نپذیرفته.
+     */
+    private static function fail(WP_Error $error): WP_Error
+    {
+        update_option(self::LAST_ERROR_OPTION, [
+            'message' => $error->get_error_message(),
+            'status' => (int) ($error->get_error_data()['status'] ?? 0),
+            'at' => time(),
+        ], false);
+
+        return $error;
+    }
+
+    /**
+     * آخرین خطای ارسال، یا null اگر آخرین ارسال موفق بوده.
+     *
+     * @return array{message:string,status:int,at:int}|null
+     */
+    public static function last_error(): ?array
+    {
+        $saved = get_option(self::LAST_ERROR_OPTION);
+
+        return is_array($saved) && isset($saved['message']) ? $saved : null;
     }
 
     /* ---------------------------------------------------------------------

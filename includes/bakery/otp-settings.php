@@ -32,11 +32,14 @@ final class Otp_Settings
     /** فیلد کلید API با این رشته نمایش داده می‌شود تا کلید واقعی در HTML نیفتد. */
     private const MASK = '••••••••';
 
+    private const TEST_ACTION = 'bkw_otp_test_send';
+
     public function register(): void
     {
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('admin_notices', [$this, 'maybe_warn']);
+        add_action('admin_post_' . self::TEST_ACTION, [$this, 'handle_test_send']);
     }
 
     /** @return array{enabled:bool,api_key:string,template:string} */
@@ -177,8 +180,119 @@ final class Otp_Settings
 
                 <?php submit_button(); ?>
             </form>
+
+            <hr>
+
+            <h2><?php esc_html_e('ارسال آزمایشی', 'bakery-widgets'); ?></h2>
+
+            <?php $this->render_last_error(); ?>
+            <?php $this->render_test_result(); ?>
+
+            <p>
+                <?php esc_html_e('یک کد تصادفی به شمارهٔ زیر می‌فرستد و پاسخ خام کاوه‌نگار را همین‌جا نشان می‌دهد. سریع‌ترین راه فهمیدن این‌که کلید، قالب یا دسترسی خروجی سرور کدام‌شان مشکل دارد. تنظیمات را اول ذخیره کنید.', 'bakery-widgets'); ?>
+            </p>
+
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <input type="hidden" name="action" value="<?php echo esc_attr(self::TEST_ACTION); ?>">
+                <?php wp_nonce_field(self::TEST_ACTION); ?>
+
+                <input
+                    type="text"
+                    name="mobile"
+                    class="regular-text"
+                    dir="ltr"
+                    placeholder="09121234567"
+                    value="<?php echo esc_attr((string) get_user_meta(get_current_user_id(), 'bkw_mobile', true)); ?>"
+                    required>
+
+                <?php submit_button(__('ارسال آزمایشی', 'bakery-widgets'), 'secondary', 'submit', false); ?>
+            </form>
         </div>
         <?php
+    }
+
+    /**
+     * آخرین خطای ارسال واقعی.
+     *
+     * این همان چیزی است که کاربرِ در حال ورود هرگز نمی‌بیند (به او فقط
+     * پیام عمومی داده می‌شود) و مدیر برای عیب‌یابی لازمش دارد.
+     */
+    private function render_last_error(): void
+    {
+        $error = Kavenegar::last_error();
+        if (null === $error) {
+            return;
+        }
+
+        printf(
+            '<div class="notice notice-error"><p><strong>%s</strong> %s%s<br><em>%s</em></p></div>',
+            esc_html__('آخرین ارسال ناموفق:', 'bakery-widgets'),
+            esc_html((string) $error['message']),
+            $error['status'] > 0 ? esc_html(sprintf(' (کد %d)', (int) $error['status'])) : '',
+            esc_html(sprintf(
+                /* translators: %s: human-readable time difference */
+                __('%s پیش', 'bakery-widgets'),
+                human_time_diff((int) $error['at'])
+            ))
+        );
+    }
+
+    /** نتیجهٔ آخرین «ارسال آزمایشی» که با ریدایرکت به این صفحه برگشته. */
+    private function render_test_result(): void
+    {
+        if (!isset($_GET['bkw_test'])) {
+            return;
+        }
+
+        $ok = '1' === $_GET['bkw_test'];
+        $message = isset($_GET['bkw_msg']) ? sanitize_text_field(wp_unslash($_GET['bkw_msg'])) : '';
+
+        printf(
+            '<div class="notice notice-%s"><p>%s</p></div>',
+            $ok ? 'success' : 'error',
+            esc_html($ok ? __('پیامک آزمایشی ارسال شد.', 'bakery-widgets') : $message)
+        );
+    }
+
+    /**
+     * ارسال آزمایشی. عمداً از Otp_Store عبور نمی‌کند: نه ردیفی در جدول
+     * می‌سازد، نه سقف ساعتی کاربر را می‌خورد، نه مهلت ارسال مجددش را
+     * جلو می‌اندازد. فقط همان یک درخواست به کاوه‌نگار.
+     */
+    public function handle_test_send(): void
+    {
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_die(esc_html__('دسترسی ندارید.', 'bakery-widgets'));
+        }
+
+        check_admin_referer(self::TEST_ACTION);
+
+        $raw = isset($_POST['mobile']) ? sanitize_text_field(wp_unslash($_POST['mobile'])) : '';
+        $mobile = Mobile_Login::normalize($raw);
+
+        if (null === $mobile) {
+            $this->redirect_back(false, __('شمارهٔ موبایل معتبر نیست.', 'bakery-widgets'));
+        }
+
+        $result = Kavenegar::send($mobile, Otp_Policy::generate_code());
+
+        $this->redirect_back(
+            !is_wp_error($result),
+            is_wp_error($result) ? $result->get_error_message() : ''
+        );
+    }
+
+    private function redirect_back(bool $ok, string $message): void
+    {
+        wp_safe_redirect(add_query_arg(
+            [
+                'page' => self::SLUG,
+                'bkw_test' => $ok ? '1' : '0',
+                'bkw_msg' => rawurlencode($message),
+            ],
+            admin_url('options-general.php')
+        ));
+        exit;
     }
 
     /**
