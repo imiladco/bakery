@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Widgets\Widgets\Traits;
 
+use Bakery_Widgets\Account_Balance;
 use Bakery_Widgets\Svg;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Background;
@@ -959,7 +960,7 @@ trait Account_Actions_Controls
 
             echo '<span class="bkw-account-bar__balance">';
             printf('<span class="bkw-account-bar__balance-label">%s</span>', esc_html((string) $settings['balance_label']));
-            printf('<span class="bkw-account-bar__balance-amount">%s</span>', esc_html($amount));
+            printf('<span class="bkw-account-bar__balance-amount">%s</span>', $amount); // phpcs:ignore WordPress.Security.EscapeOutput -- Account_Balance::fragment_html خودش escape می‌کند
             printf('<span class="bkw-account-bar__balance-currency">%s</span>', esc_html((string) $settings['balance_currency']));
             echo '</span>';
         }
@@ -976,27 +977,36 @@ trait Account_Actions_Controls
      */
     private function render_user_item_compact(array $settings, WP_User $user, string $name): void
     {
-        $amount = $this->format_balance($settings, $user);
-        $balance_text = trim(sprintf(
-            '%s %s %s',
-            (string) $settings['balance_label'],
-            $amount,
-            (string) $settings['balance_currency'],
-        ));
-
         $greeting = trim($name . ' ' . (string) $settings['greeting_suffix']);
 
         echo '<div class="bkw-account-bar__item bkw-account-bar__user bkw-account-bar__user--compact">';
         printf('<span class="bkw-account-bar__greeting">%s</span>', esc_html($greeting));
-        printf('<span class="bkw-account-bar__balance-compact">%s</span>', esc_html($balance_text));
+
+        // برخلاف حالت کامل، این‌جا کل رشته یک متن است؛ ولی عدد باید
+        // عنصر جدای خودش بماند وگرنه فرگمنتِ بعد از خرید نمی‌تواند
+        // فقط همان را عوض کند و ناچار است کل رشته (شامل برچسب و واحد
+        // پول که از تنظیمات ویجت می‌آیند) را بازسازی کند.
+        printf(
+            '<span class="bkw-account-bar__balance-compact">%s %s %s</span>',
+            esc_html((string) $settings['balance_label']),
+            $this->format_balance($settings, $user), // phpcs:ignore WordPress.Security.EscapeOutput -- Account_Balance::fragment_html خودش escape می‌کند
+            esc_html((string) $settings['balance_currency'])
+        );
+
         echo '</div>';
     }
 
+    /**
+     * عدد موجودی، داخل عنصری که فرگمنتِ بعد از ثبت سفارش هدفش می‌گیرد.
+     *
+     * قالب‌بندی عمداً این‌جا انجام نمی‌شود بلکه از Account_Balance
+     * می‌آید — همان جایی که Cart_Fragments هم از آن می‌خواند. دو
+     * قالب‌بندی جدا یعنی عددی که بعد از خرید جای عدد قبلی می‌نشیند
+     * می‌تواند شکل دیگری داشته باشد.
+     */
     private function format_balance(array $settings, WP_User $user): string
     {
-        $balance = $this->resolve_balance((float) $settings['balance_fallback'], $user->ID);
-
-        return $this->to_persian_digits(number_format($balance, 0, '.', ','));
+        return Account_Balance::fragment_html((int) $user->ID, (float) $settings['balance_fallback']);
     }
 
     private function render_logout_item(array $settings): void

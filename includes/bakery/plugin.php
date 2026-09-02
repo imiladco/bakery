@@ -27,6 +27,7 @@ final class Plugin
     {
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/svg.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/purchase-limit.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/account-balance.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/site-gate.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/mobile-login.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-policy.php';

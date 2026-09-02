@@ -21,10 +21,18 @@ if (!defined('ABSPATH')) {
  * سبد در جای دیگر صفحه) دوباره رندر می‌شود — یک تابع، نه دو کپیِ
  * هم‌زمان‌نگه‌داشتنی.
  *
- * سه کلید فرگمنت ثبت می‌شود:
- *   [data-bkw-cart-items]  — کل فهرست ردیف‌های سبد (یا پیام «سبد خالی است»)
- *   [data-bkw-cart-total]  — فقط مقدار «جمع کل این سفارش»
- *   [data-bkw-cart-credit] — عدد «باقی‌مانده اعتبار شما»
+ * چهار کلید فرگمنت ثبت می‌شود:
+ *   [data-bkw-cart-items]      — کل فهرست ردیف‌های سبد (یا پیام «سبد خالی است»)
+ *   [data-bkw-cart-total]      — فقط مقدار «جمع کل این سفارش»
+ *   [data-bkw-cart-credit]     — عدد «باقی‌مانده اعتبار شما» داخل سایدبار
+ *   [data-bkw-account-balance] — همان عدد در نوار حساب کاربری و هدر
+ *
+ * کلید چهارم بعداً اضافه شد و دلیلش یک باگ واقعی بود: بعد از ثبت
+ * سفارش، عدد داخل سایدبار درست می‌شد ولی موجودیِ نوار حساب/هدر —
+ * همان عددی که کاربر معمولاً نگاه می‌کند، چون سایدبار همان لحظه
+ * پیام موفقیت نشان می‌دهد — تا رفرش صفحه دست‌نخورده می‌ماند. سرور
+ * درست کسر کرده بود؛ فقط هیچ‌کس به آن عدد خبر نمی‌داد.
+ *
  * جایگزینی همیشه با replaceWith کل عنصر انجام می‌شود (رجوع کن به
  * assets/js/bakery-cart-sidebar.js)، نه نوشتن innerHTML — پس افزودن یا
  * حذف کامل یک ردیف (رسیدن تعداد به صفر) نیازی به منطق DOM جداگانه ندارد.
@@ -41,6 +49,7 @@ final class Cart_Fragments
         $fragments[self::ITEMS_SELECTOR] = self::items_html();
         $fragments[self::TOTAL_SELECTOR] = self::total_html();
         $fragments[self::CREDIT_SELECTOR] = self::credit_html();
+        $fragments[Account_Balance::SELECTOR] = Account_Balance::fragment_html(get_current_user_id());
 
         return $fragments;
     }
