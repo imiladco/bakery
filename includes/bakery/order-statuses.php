@@ -15,13 +15,14 @@ if (!defined('ABSPATH')) {
  *
  * از پنج حالتی که طراحی نشان می‌دهد، ووکامرس سه‌تایش را از قبل دارد:
  *
- *   سفارش ثبت شد   → processing   (payment_complete خودش این را می‌گذارد)
+ *   ثبت سفارش      → processing   (payment_complete خودش این را می‌گذارد)
  *   تحویل داده شد   → completed
- *   لغو شد          → cancelled
+ *   لغو سفارش       → cancelled
  *
- * ولی «در حال آماده‌سازی» و «آماده تحویل» معادلی ندارند — نزدیک‌ترین
- * چیز، on-hold است که معنایش «در انتظار پرداخت/بررسی» است و نه
- * «داخل فر». پس همین دو وضعیت این‌جا ثبت می‌شوند.
+ * ولی «درحال آماده سازی»، «در حال بسته بندی» و «آماده تحویل» معادلی
+ * ندارند — نزدیک‌ترین چیز، on-hold است که معنایش «در انتظار
+ * پرداخت/بررسی» است و نه «داخل فر». پس این سه وضعیت این‌جا ثبت
+ * می‌شوند.
  *
  * سه نکته که ثبت‌کردن یک وضعیت سفارشی معمولاً در آن‌ها اشتباه می‌شود:
  *
@@ -47,6 +48,7 @@ if (!defined('ABSPATH')) {
 final class Order_Statuses
 {
     public const PREPARING = 'bkw-preparing';
+    public const PACKING = 'bkw-packing';
     public const READY = 'bkw-ready';
 
     /**
@@ -57,8 +59,9 @@ final class Order_Statuses
     public static function chain(): array
     {
         return [
-            'processing' => __('سفارش ثبت شد', 'bakery-widgets'),
+            'processing' => __('ثبت سفارش', 'bakery-widgets'),
             self::PREPARING => __('درحال آماده سازی', 'bakery-widgets'),
+            self::PACKING => __('در حال بسته بندی', 'bakery-widgets'),
             self::READY => __('آماده تحویل', 'bakery-widgets'),
             'completed' => __('تحویل داده شد', 'bakery-widgets'),
         ];
@@ -69,6 +72,7 @@ final class Order_Statuses
     {
         return match ($status) {
             self::PREPARING => 'flame',
+            self::PACKING => 'package',
             self::READY => 'truck',
             'completed' => 'check',
             'cancelled' => 'cross',
@@ -162,6 +166,7 @@ final class Order_Statuses
     {
         return [
             self::PREPARING => __('درحال آماده سازی', 'bakery-widgets'),
+            self::PACKING => __('در حال بسته بندی', 'bakery-widgets'),
             self::READY => __('آماده تحویل', 'bakery-widgets'),
         ];
     }

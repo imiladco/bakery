@@ -1847,7 +1847,7 @@ html.bkw-panel-open {
  */
 .bkw-order-history__row {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 420px 120px;
+	grid-template-columns: minmax(0, 1fr) 520px 120px;
 	align-items: center;
 	gap: 16px;
 	width: 100%;
@@ -2179,60 +2179,134 @@ html.bkw-panel-open {
  * هم‌تراز بماند.
  */
 @media (max-width: 767px) {
-	/* گرید تک‌ستونه؛ flex-direction روی گرید اثری ندارد. */
+	/*
+	 * چیدمان موبایل — فیگما، نود 298:7555.
+	 *
+	 * ترتیب دیده‌شده با ترتیب DOM فرق دارد: شمارهٔ سفارش بالا، بعد
+	 * مراحل، بعد اقلام، بعد مبلغ. به‌جای دو مارک‌آپ جدا (که یعنی هر
+	 * اصلاح آینده دو بار)، همان DOM با display: contents تخت می‌شود و
+	 * با order مرتب — پس بلوک متا از میان برمی‌دارد و چهار فرزندش
+	 * مستقیم فرزند گرید می‌شوند.
+	 */
+	.bkw-order-history__card {
+		padding: 16px;
+		border-radius: 20px;
+		gap: 16px;
+	}
+
 	.bkw-order-history__row {
 		grid-template-columns: minmax(0, 1fr);
-		justify-items: start;
-		gap: 12px;
+		gap: 16px;
 	}
 
 	.bkw-order-history__meta {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 12px;
+		display: contents;
+	}
+
+	.bkw-order-history__order {
+		order: 1;
+	}
+
+	.bkw-order-history__stepper {
+		order: 2;
+	}
+
+	.bkw-order-history__items-block {
+		order: 3;
 	}
 
 	.bkw-order-history__price {
-		width: auto;
-		align-items: flex-start;
-		text-align: right;
+		order: 4;
+	}
+
+	/* شمارهٔ سفارش راست، تاریخ چپ — یک سطر، نه دو. */
+	.bkw-order-history__order {
+		flex-direction: row;
+		align-items: baseline;
+		justify-content: space-between;
+		width: 100%;
+		gap: 8px;
+	}
+
+	.bkw-order-history__number {
+		font-size: 15px;
+	}
+
+	.bkw-order-history__date,
+	.bkw-order-history__caption {
+		font-size: 12px;
+	}
+
+	/*
+	 * دو خط جداکنندهٔ بالا و پایین مراحل، با border و نه دو عنصر
+	 * اضافه در DOM — چیزی که فقط در یک بریک‌پوینت دیده می‌شود نباید
+	 * در مارک‌آپ باشد.
+	 */
+	.bkw-order-history__stepper {
+		width: 100%;
+		padding: 16px 0;
+		border-top: 1px solid #eaded6;
+		border-bottom: 1px solid #eaded6;
+	}
+
+	.bkw-order-history__items-block,
+	.bkw-order-history__price {
+		width: 100%;
 	}
 
 	.bkw-order-history__items {
 		max-width: none;
+		font-size: 14px;
 	}
 
-	.bkw-order-history__stepper {
-		width: 100%;
+	/* «مبلغ کل» راست، عدد و واحد چپ — یک سطر. */
+	.bkw-order-history__price {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		text-align: right;
 	}
 
 	/*
-	 * روی موبایل هم مرحله‌ها و هم رابط‌ها عرض ثابت دارند و مجموعشان
-	 * عمداً از باریک‌ترین کارت کمتر است: ۴×۵۶ + ۳×۱۶ = ۲۷۲.
+	 * مرحله‌ها عرض ثابت دارند و رابط‌ها فضای باقی‌مانده را پر می‌کنند —
+	 * همان چیزی که خودِ رفرنس می‌کند (flex: 1 0 0 روی رابط).
 	 *
-	 * چرا ثابت و نه کشسان: هر اندازه‌ای که به محتوا یا به فضای
-	 * باقی‌مانده وابسته باشد، بین کارت چهارمرحله‌ای و کارت لغوشده
-	 * (دو مرحله) فرق می‌کند — یکی فشرده می‌شود و دیگری نه، یا رابطِ
-	 * کارت لغوشده تا ته عرض کش می‌آید. هر دو حالت را دیدیم و نتیجه‌اش
-	 * همان بی‌نظمی‌ای بود که قرار بود برطرف شود. با اندازهٔ ثابت،
-	 * اولین دایره در همهٔ کارت‌ها دقیقاً روی یک خط عمودی می‌نشیند و
-	 * رابط‌ها همه‌جا یک طول دارند.
+	 * قبلاً این کار نمی‌کرد چون کارت لغوشده تعداد مرحلهٔ کمتری داشت و
+	 * رابطش تا ته عرض کش می‌آمد. حالا هر دو حالت پنج موقعیت دارند، پس
+	 * کشسان بودن رابط‌ها بین کارت‌ها تفاوتی نمی‌سازد و مرحله‌ها همیشه
+	 * زیر هم می‌افتند.
+	 */
+	/*
+	 * حداقل ۵۶ (اندازهٔ رفرنس) ولی اگر برچسب پهن‌تر بود، همان‌قدر.
 	 *
-	 * برچسب‌های بلند در این عرض چند خط می‌شوند؛ روی موبایل پذیرفتنی‌تر
-	 * از فشرده‌کردن یا سرریز افقی است.
+	 * رفرنس عرض را ثابت ۵۶ و برچسب را nowrap گذاشته، یعنی دو برچسب
+	 * بلند از جعبه‌شان بیرون می‌زنند و در مرورگر تا ۳ پیکسلی هم
+	 * می‌رسند — با فونت واقعی سایت می‌تواند به هم برسند. با حداقل‌عرض،
+	 * هر برچسب جعبهٔ خودش را دارد و فاصله تضمین می‌شود.
+	 *
+	 * تراز بین کارت‌ها از دست نمی‌رود: چیدن از لبهٔ راست است، پس
+	 * اولین دایره در همهٔ کارت‌ها سر جای خودش می‌ماند.
 	 */
 	.bkw-order-history__step {
-		flex: 0 0 56px;
-		min-width: 0;
+		min-width: 56px;
+		gap: 4px;
+	}
+
+	.bkw-order-history__step-circle svg {
+		width: 12px;
+		height: 12px;
 	}
 
 	.bkw-order-history__step-label {
-		white-space: normal;
+		font-size: 8px;
+		line-height: normal;
+		color: #231912;
+		white-space: nowrap;
 	}
 
 	.bkw-order-history__step-connector {
-		flex: 0 0 16px;
-		width: 16px;
-		min-width: 0;
+		flex: 1 1 0;
+		width: auto;
+		min-width: 1px;
 	}
 }
