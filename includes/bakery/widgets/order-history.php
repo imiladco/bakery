@@ -294,15 +294,17 @@ final class Order_History extends Widget_Base
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 0, 'max' => 48]],
             'default' => ['unit' => 'px', 'size' => 20],
+            'mobile_default' => ['unit' => 'px', 'size' => 16],
             'selectors' => ['{{WRAPPER}} .bkw-order-history__card' => 'gap: {{SIZE}}{{UNIT}};'],
         ]);
 
-        $this->add_control('card_radius', [
+        $this->add_responsive_control('card_radius', [
             'label' => __('رادیوس', 'bakery-widgets'),
             'type' => Controls_Manager::SLIDER,
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 0, 'max' => 60]],
             'default' => ['unit' => 'px', 'size' => 24],
+            'mobile_default' => ['unit' => 'px', 'size' => 20],
             'selectors' => ['{{WRAPPER}} .bkw-order-history__card' => 'border-radius: {{SIZE}}{{UNIT}};'],
         ]);
 
@@ -453,7 +455,7 @@ final class Order_History extends Widget_Base
             'range' => ['px' => ['min' => 120, 'max' => 700]],
             'default' => ['unit' => 'px', 'size' => 400],
             'mobile_default' => ['unit' => '%', 'size' => 100],
-            'description' => __('متن بلندتر از این با «…» کوتاه می‌شود — مطابق رفرنس فیگما.', 'bakery-widgets'),
+            'description' => __('متن بلندتر از این به خط بعد می‌رود. روی موبایل تمام عرض کارت است.', 'bakery-widgets'),
             'selectors' => ['{{WRAPPER}} .bkw-order-history__items' => 'max-width: {{SIZE}}{{UNIT}};'],
         ]);
 
@@ -514,12 +516,22 @@ final class Order_History extends Widget_Base
             'selectors' => ['{{WRAPPER}} .bkw-order-history__currency' => 'color: {{VALUE}};'],
         ]);
 
+        /*
+         * روی موبایل ۱۰۰٪ است و نه ۱۲۰ پیکسل.
+         *
+         * آن‌جا برچسب و مبلغ یک سطرند با تمام فضای بینشان، پس این بلوک
+         * باید کل عرض کارت را بگیرد. mobile_default لازم است و نه فقط
+         * قاعده در شیت: سلکتور المنتور خاص‌تر است و مقدار دسکتاپش
+         * width را روی ۱۲۰ قفل می‌کرد، یعنی برچسب و مبلغ در گوشهٔ چپ
+         * کارت به هم می‌چسبیدند.
+         */
         $this->add_responsive_control('price_width', [
             'label' => __('عرض ستون مبلغ', 'bakery-widgets'),
             'type' => Controls_Manager::SLIDER,
-            'size_units' => ['px'],
-            'range' => ['px' => ['min' => 80, 'max' => 260]],
+            'size_units' => ['px', '%'],
+            'range' => ['px' => ['min' => 80, 'max' => 260], '%' => ['min' => 20, 'max' => 100]],
             'default' => ['unit' => 'px', 'size' => 120],
+            'mobile_default' => ['unit' => '%', 'size' => 100],
             'selectors' => ['{{WRAPPER}} .bkw-order-history__price' => 'width: {{SIZE}}{{UNIT}};'],
         ]);
 
