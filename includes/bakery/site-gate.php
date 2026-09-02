@@ -9,12 +9,23 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * دروازهٔ ورود کل سایت: هر بازدیدکنندهٔ صفحات جلوی سایت باید یا واقعاً
- * در وردپرس لاگین باشد (مدیر/کاربر واقعی) یا کوکی «دسترسی» را داشته
- * باشد که Widgets\Login + Traits\Terms_Modal_Controls بعد از تأیید کد
- * OTP و پذیرفتن قوانین ست می‌کنند (assets/js/bakery-login.js،
- * assets/js/bakery-terms-modal.js) — وگرنه به صفحه‌ای که ویجت Login
- * رویش قرار دارد ریدایرکت می‌شود.
+ * دروازهٔ ورود کل سایت: هر بازدیدکنندهٔ صفحات جلوی سایت باید واقعاً در
+ * وردپرس لاگین باشد، وگرنه به صفحه‌ای که ویجت Login رویش قرار دارد
+ * ریدایرکت می‌شود.
+ *
+ * تنها معیار، نشست واقعی وردپرس است و بس.
+ *
+ * قبلاً یک کوکی «دسترسی» هم پذیرفته می‌شد که جاوااسکریپت بعد از ورود
+ * ست می‌کرد. آن کوکی از دوره‌ای مانده بود که ورود واقعی هنوز وصل نشده
+ * بود و هیچ نشستی وجود نداشت که بشود به آن تکیه کرد. حالا که
+ * Mobile_Login::ajax_complete() نشست واقعی می‌سازد، آن کوکی نه‌تنها
+ * اضافه بود بلکه یک در پشتی بود: یک سال اعتبار داشت، فقط سمت مرورگر
+ * نوشته می‌شد و هیچ چیزی — نه دکمهٔ خروج، نه پایان‌دادن نشست‌ها توسط
+ * مدیر، نه حذف خودِ کاربر — باطلش نمی‌کرد. یعنی کاربرِ خارج‌شده
+ * همچنان از دروازه رد می‌شد.
+ *
+ * کوکی‌های باقی‌مانده در مرورگرها هم موقع خروج پاک می‌شوند
+ * (clear_legacy_cookie) تا چیزی از آن دوره باقی نماند.
  *
  * صفحات مدیریتی وردپرس (/wp-admin، /wp-login.php، REST، admin-ajax)
  * نیازی به معافیت دستی ندارند: آن‌ها اصلاً از قلاب `template_redirect`
@@ -27,7 +38,7 @@ if (!defined('ABSPATH')) {
  */
 final class Site_Gate
 {
-    /** باید دقیقاً با assets/js/bakery-login.js و bakery-terms-modal.js یکی باشد */
+    /** کوکی دورهٔ قبل؛ فقط برای پاک‌کردنش مانده — رجوع کن به توضیح بالای کلاس. */
     public const COOKIE_NAME = 'bkw_site_access';
 
     private const LOGIN_PAGE_OPTION = 'bkw_login_page_id';
@@ -35,11 +46,12 @@ final class Site_Gate
     public function register(): void
     {
         add_action('template_redirect', [$this, 'maybe_redirect']);
+        add_action('wp_logout', [$this, 'clear_legacy_cookie']);
     }
 
     public function maybe_redirect(): void
     {
-        if (is_admin() || is_user_logged_in() || $this->has_access_cookie()) {
+        if (is_admin() || is_user_logged_in()) {
             return;
         }
 
@@ -84,9 +96,29 @@ final class Site_Gate
         return untrailingslashit($target_path) === untrailingslashit($current_path);
     }
 
-    private function has_access_cookie(): bool
+    /**
+     * کوکی دسترسیِ دورهٔ قبل را از مرورگر پاک می‌کند.
+     *
+     * دروازه دیگر نگاهش نمی‌کند، پس ماندنش خطری ندارد؛ ولی یک کوکی
+     * یک‌سالهٔ بی‌مصرف روی مرورگر همهٔ کاربران به‌جا گذاشتن هم درست
+     * نیست. خروج دقیقاً همان لحظه‌ای است که باید برود.
+     */
+    public function clear_legacy_cookie(): void
     {
-        return isset($_COOKIE[self::COOKIE_NAME]) && '1' === $_COOKIE[self::COOKIE_NAME];
+        if (!isset($_COOKIE[self::COOKIE_NAME])) {
+            return;
+        }
+
+        setcookie(self::COOKIE_NAME, '', [
+            'expires' => time() - YEAR_IN_SECONDS,
+            'path' => COOKIEPATH ?: '/',
+            'domain' => COOKIE_DOMAIN,
+            'secure' => is_ssl(),
+            'httponly' => false,
+            'samesite' => 'Lax',
+        ]);
+
+        unset($_COOKIE[self::COOKIE_NAME]);
     }
 
     /**

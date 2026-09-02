@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bakery_Widgets;
 
+use WHW\Admin\PersianCalendarFormat;
+use WHW\Domain\JalaliDate;
 use WP_Error;
 use WP_User;
 
@@ -66,6 +68,19 @@ final class Mobile_Login
     private const META_NATIONAL_ID = 'bkw_national_id';
     private const META_PERSONNEL = 'bkw_personnel_code';
 
+    /**
+     * لحظهٔ پذیرفتن قوانین — تایم‌استمپ یونیکس، یک بار برای همیشه.
+     *
+     * قبلاً این فقط در localStorage مرورگر بود، که یعنی «یک بار تأیید و
+     * تمام» در عمل «یک بار به‌ازای هر مرورگر و هر دستگاه» بود و هیچ
+     * ردی هم در دیتابیس نمی‌ماند. حالا روی خودِ کاربر می‌نشیند.
+     *
+     * یونیکس‌تایم ذخیره می‌شود و نه رشتهٔ تاریخ: مقدارِ خام مستقل از
+     * منطقهٔ زمانی و قالب نمایش است، و نمایش شمسی‌اش کارِ لحظهٔ نشان
+     * دادن است نه لحظهٔ ثبت.
+     */
+    private const META_TERMS_ACCEPTED = 'bkw_terms_accepted_at';
+
     private const NONCE_ACTION = 'bkw_login';
 
     public function register(): void
@@ -79,7 +94,7 @@ final class Mobile_Login
         add_filter('manage_users_columns', [$this, 'add_columns']);
         add_filter('manage_users_custom_column', [$this, 'render_column'], 10, 3);
 
-        foreach (['check', 'verify', 'complete'] as $step) {
+        foreach (['check', 'verify', 'terms', 'complete'] as $step) {
             add_action('wp_ajax_bkw_login_' . $step, [$this, 'ajax_' . $step]);
             add_action('wp_ajax_nopriv_bkw_login_' . $step, [$this, 'ajax_' . $step]);
         }
@@ -159,6 +174,20 @@ final class Mobile_Login
                 esc_html($field['description'])
             );
         }
+
+        // فقط-خواندنی: پذیرش قوانین رویدادی است که خودِ کاربر انجام
+        // داده، نه مقداری که مدیر تعیین کند. اگر لازم شد پس گرفته شود،
+        // حذف متای bkw_terms_accepted_at کافی است — دفعهٔ بعدِ ورود
+        // دوباره پرسیده می‌شود.
+        $accepted_at = self::terms_accepted_at((int) $user->ID);
+
+        printf(
+            '<tr><th>%s</th><td>%s</td></tr>',
+            esc_html__('پذیرش قوانین', 'bakery-widgets'),
+            null === $accepted_at
+                ? '<span style="color:#b32d2e">' . esc_html__('هنوز نپذیرفته', 'bakery-widgets') . '</span>'
+                : esc_html(self::format_jalali($accepted_at))
+        );
 
         echo '</table>';
 
@@ -272,11 +301,21 @@ final class Mobile_Login
             $columns[$key] = $field['label'];
         }
 
+        $columns[self::META_TERMS_ACCEPTED] = __('پذیرش قوانین', 'bakery-widgets');
+
         return $columns;
     }
 
     public function render_column(string $output, string $column, int $user_id): string
     {
+        if (self::META_TERMS_ACCEPTED === $column) {
+            $at = self::terms_accepted_at($user_id);
+
+            return null === $at
+                ? '<span style="color:#b32d2e">' . esc_html__('نپذیرفته', 'bakery-widgets') . '</span>'
+                : esc_html(self::format_jalali($at));
+        }
+
         if (!array_key_exists($column, self::fields())) {
             return $output;
         }
@@ -370,7 +409,10 @@ final class Mobile_Login
         [$mobile, $user_id] = $this->resolve_identity();
 
         if (!Kavenegar::is_active()) {
-            wp_send_json_success(['ticket' => self::issue_ticket($user_id)]);
+            wp_send_json_success([
+                'ticket' => self::issue_ticket($user_id),
+                'termsAccepted' => self::has_accepted_terms($user_id),
+            ]);
         }
 
         $code = self::normalize_digits(
@@ -405,7 +447,55 @@ final class Mobile_Login
             wp_send_json_error(['message' => __('این کد قبلاً استفاده شده است. کد تازه بگیرید.', 'bakery-widgets'), 'expired' => true]);
         }
 
-        wp_send_json_success(['ticket' => self::issue_ticket($challenge->user_id)]);
+        // termsAccepted تصمیم می‌گیرد مودال قوانین اصلاً باز شود یا نه.
+        // این پاسخ سرور است و نه حافظهٔ مرورگر، پس کاربری که قبلاً
+        // پذیرفته روی هر دستگاه و هر مرورگری دیگر آن را نمی‌بیند.
+        wp_send_json_success([
+            'ticket' => self::issue_ticket($challenge->user_id),
+            'termsAccepted' => self::has_accepted_terms($challenge->user_id),
+        ]);
+    }
+
+    /**
+     * پذیرفتن قوانین را ثبت می‌کند — تاریخ و ساعتش روی خودِ کاربر.
+     *
+     * بلیت را می‌خواند ولی خرجش نمی‌کند؛ همان بلیت بلافاصله بعد در
+     * ajax_complete() لازم است. یعنی این اکشن فقط برای کسی کار می‌کند
+     * که همین حالا کد تأییدش را درست وارد کرده.
+     *
+     * اگر قبلاً ثبت شده باشد دست نمی‌خورد: «یک بار تأیید و تمام» یعنی
+     * تاریخِ ثبت‌شده همان بارِ اول است، نه آخرین باری که کسی دکمه را
+     * زده.
+     */
+    public function ajax_terms(): void
+    {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+        $ticket = isset($_POST['ticket']) ? sanitize_text_field(wp_unslash($_POST['ticket'])) : '';
+        $user_id = self::peek_ticket($ticket);
+
+        if (null === $user_id) {
+            wp_send_json_error(['message' => __('اعتبار ورود منقضی شده است. از ابتدا تلاش کنید.', 'bakery-widgets'), 'expired' => true]);
+        }
+
+        if (!self::has_accepted_terms($user_id)) {
+            update_user_meta($user_id, self::META_TERMS_ACCEPTED, time());
+        }
+
+        wp_send_json_success();
+    }
+
+    public static function has_accepted_terms(int $user_id): bool
+    {
+        return (int) get_user_meta($user_id, self::META_TERMS_ACCEPTED, true) > 0;
+    }
+
+    /** لحظهٔ پذیرش قوانین، یا null اگر هنوز نپذیرفته. */
+    public static function terms_accepted_at(int $user_id): ?int
+    {
+        $at = (int) get_user_meta($user_id, self::META_TERMS_ACCEPTED, true);
+
+        return $at > 0 ? $at : null;
     }
 
     /**
@@ -425,6 +515,13 @@ final class Mobile_Login
         $user = get_userdata($user_id);
         if (!$user instanceof WP_User) {
             wp_send_json_error(['message' => __('حساب کاربری یافت نشد.', 'bakery-widgets'), 'expired' => true]);
+        }
+
+        // بدون پذیرش ثبت‌شدهٔ قوانین، نشستی ساخته نمی‌شود. تا پیش از
+        // این، پنهان‌کردن مودال تنها چیزی بود که جلوی ورود را می‌گرفت —
+        // یعنی هیچ چیز، چون آن سمت مرورگر است.
+        if (!self::has_accepted_terms($user_id)) {
+            wp_send_json_error(['message' => __('برای ورود باید قوانین و مقررات را بپذیرید.', 'bakery-widgets')]);
         }
 
         wp_clear_auth_cookie();
@@ -513,6 +610,23 @@ final class Mobile_Login
         return $ticket;
     }
 
+    /**
+     * بلیت را می‌خواند بدون آنکه خرجش کند.
+     *
+     * فقط برای ثبت پذیرش قوانین است که بین verify و complete می‌نشیند و
+     * نباید بلیتی را که complete لازم دارد از بین ببرد.
+     */
+    private static function peek_ticket(string $ticket): ?int
+    {
+        if ('' === $ticket) {
+            return null;
+        }
+
+        $user_id = get_transient(self::ticket_key($ticket));
+
+        return is_numeric($user_id) && (int) $user_id > 0 ? (int) $user_id : null;
+    }
+
     /** بلیت را می‌خواند و بی‌درنگ حذفش می‌کند — دقیقاً یک بار قابل استفاده. */
     private static function claim_ticket(string $ticket): ?int
     {
@@ -555,6 +669,27 @@ final class Mobile_Login
     /* ---------------------------------------------------------------------
      * کمکی‌ها
      * ------------------------------------------------------------------- */
+
+    /**
+     * تاریخ و ساعت شمسی برای نمایش در پیشخوان.
+     *
+     * setTimezone و نه پارامتر سازنده: با فرمت '@timestamp' آرگومان
+     * منطقهٔ زمانی بی‌صدا نادیده گرفته می‌شود و تاریخِ نزدیک نیمه‌شب یک
+     * روز عقب‌تر نشان داده می‌شود.
+     */
+    private static function format_jalali(int $timestamp): string
+    {
+        $local = (new \DateTimeImmutable('@' . $timestamp))->setTimezone(wp_timezone());
+        $jalali = JalaliDate::fromGregorian($local);
+
+        return PersianCalendarFormat::digits(sprintf(
+            '%04d/%02d/%02d — %s',
+            $jalali->year,
+            $jalali->month,
+            $jalali->day,
+            $local->format('H:i')
+        ));
+    }
 
     /**
      * ارقام فارسی و عربی را به لاتین برمی‌گرداند و هر چیز دیگری را دور

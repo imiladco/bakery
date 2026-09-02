@@ -25,26 +25,17 @@
  * assets/js/bakery-terms-modal.js از طریق data-bkw-login-ticket روی
  * ریشهٔ ویجت به آن می‌رسد.
  *
- * هر جا کاربر واقعاً از این ویجت رد می‌شود، کوکی دسترسی سایت
- * (Bakery_Widgets\Site_Gate::COOKIE_NAME) هم ست می‌شود — همان کوکی‌ای که
- * دروازهٔ سمت PHP روی هر صفحهٔ دیگر سایت چک می‌کند.
+ * چیزی سمت مرورگر ذخیره نمی‌شود که «دسترسی» بدهد. تنها نتیجهٔ ورود،
+ * نشست واقعی وردپرس است — همان که Site_Gate نگاه می‌کند و دکمهٔ خروج
+ * از بینش می‌برد. قبلاً یک کوکی یک‌ساله هم اینجا ست می‌شد که خروج
+ * باطلش نمی‌کرد؛ رجوع کن به توضیح بالای includes/bakery/site-gate.php.
+ *
+ * «قوانین را قبلاً پذیرفته یا نه» را هم سرور می‌گوید (پاسخ
+ * bkw_login_verify) و نه localStorage: پذیرش روی خودِ کاربر ثبت
+ * می‌شود، پس یک بار تأیید روی هر دستگاهی کافی است.
  */
 (function () {
     'use strict';
-
-    var SITE_ACCESS_COOKIE = 'bkw_site_access';
-    var SITE_ACCESS_MAX_AGE = 60 * 60 * 24 * 365; // یک سال
-
-    function grantSiteAccess() {
-        try {
-            var secure = 'https:' === window.location.protocol ? '; Secure' : '';
-            document.cookie = SITE_ACCESS_COOKIE + '=1; path=/; max-age=' + SITE_ACCESS_MAX_AGE + '; SameSite=Lax' + secure;
-        } catch (e) {
-            // اگر کوکی به هر دلیلی قابل نوشتن نباشد، ریدایرکت همچنان انجام
-            // می‌شود؛ فقط دفعهٔ بعد دوباره به صفحهٔ ورود هدایت می‌شود —
-            // مسدودکننده نیست.
-        }
-    }
 
     /**
      * به اکشن‌های Mobile_Login وصل می‌شود. bkwLogin از
@@ -340,7 +331,6 @@
         function completeAndRedirect() {
             callLoginAjax('bkw_login_complete', { ticket: root.getAttribute('data-bkw-login-ticket') || '' }, function (json) {
                 if (json.success) {
-                    grantSiteAccess();
                     window.location.href = redirectUrl;
                     return;
                 }
@@ -383,23 +373,10 @@
                     storeTicket(payload(json).ticket);
 
                     var termsOverlay = root.querySelector('[data-bkw-terms]');
-                    if (!termsOverlay) {
-                        completeAndRedirect();
-                        return;
-                    }
 
-                    var storageKey = termsOverlay.getAttribute('data-storage-key');
-                    var alreadyAccepted = false;
-
-                    try {
-                        alreadyAccepted = 'accepted' === window.localStorage.getItem(storageKey);
-                    } catch (e) {
-                        // localStorage در دسترس نیست؛ فرض می‌شود هنوز
-                        // پذیرفته نشده — مودال دوباره نشان داده می‌شود،
-                        // مسدودکننده نیست.
-                    }
-
-                    if (alreadyAccepted) {
+                    // سرور می‌گوید این کاربر قوانین را پذیرفته یا نه —
+                    // مقدارش روی خودِ حساب ثبت شده، نه در این مرورگر.
+                    if (!termsOverlay || payload(json).termsAccepted) {
                         completeAndRedirect();
                         return;
                     }
