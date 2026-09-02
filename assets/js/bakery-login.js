@@ -317,6 +317,7 @@
                         step2SubmitBtn.disabled = false;
                         showError(codeError, payload(json).message, '');
                         clearCode();
+                        focusFirstEmpty();
 
                         // سرور کد را کشته (منقضی یا سقف تلاش) — تایمر
                         // ارسال مجدد باید همین حالا آزاد شود، وگرنه کاربر
@@ -328,8 +329,6 @@
                             if (resendBtn) {
                                 resendBtn.disabled = false;
                             }
-                        } else if (otpInputs.length > 0) {
-                            otpInputs[0].focus();
                         }
 
                         return;
@@ -368,7 +367,53 @@
             });
         }
 
+        /** اولین خانهٔ خالی، یا -۱ اگر همه پر باشند. */
+        function firstEmptyIndex() {
+            for (var i = 0; i < otpInputs.length; i++) {
+                if ('' === otpInputs[i].value) {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        function focusFirstEmpty() {
+            var index = firstEmptyIndex();
+            var target = otpInputs[-1 === index ? otpInputs.length - 1 : index];
+
+            if (target) {
+                target.focus();
+                target.select();
+            }
+        }
+
         otpInputs.forEach(function (input, index) {
+            /*
+             * قاعده: کسی نباید در خانه‌ای بنویسد که جلوترش خانهٔ خالی
+             * مانده. گذاشتن رقم در خانهٔ چهارم وقتی سومی خالی است، کدی
+             * می‌سازد که هرگز درست نخواهد بود.
+             *
+             * پس فقط وقتی فوکوس جابه‌جا می‌شود که واقعاً خانهٔ خالیِ
+             * عقب‌تری وجود داشته باشد. اگر همهٔ خانه‌ها پر باشند
+             * (firstEmptyIndex برابر -۱) دست نمی‌زنیم — وگرنه کاربر
+             * نمی‌توانست روی یک رقمِ غلط کلیک کند و اصلاحش کند.
+             *
+             * روی focus و نه click، تا رسیدن با Tab یا ضربهٔ لمسی هم
+             * همین رفتار را داشته باشد. setTimeout لازم است چون
+             * جابه‌جا کردن فوکوس وسط خودِ رویداد focus را بعضی
+             * مرورگرها نادیده می‌گیرند.
+             */
+            input.addEventListener('focus', function () {
+                var target = firstEmptyIndex();
+
+                if (-1 === target || target >= index) {
+                    return;
+                }
+
+                window.setTimeout(focusFirstEmpty, 0);
+            });
+
             input.addEventListener('input', function () {
                 var digits = input.value.replace(/[^0-9۰-۹]/g, '');
                 input.value = digits.slice(-1);
@@ -379,9 +424,21 @@
             });
 
             input.addEventListener('keydown', function (event) {
-                if ('Backspace' === event.key && '' === input.value && index > 0) {
-                    otpInputs[index - 1].focus();
+                if ('Backspace' !== event.key) {
+                    return;
+                }
+
+                // خانهٔ پرشده اول خودش خالی می‌شود؛ فقط وقتی از قبل
+                // خالی بوده به عقب می‌رویم. بدون این، یک Backspace دو
+                // رقم را می‌برد.
+                if ('' !== input.value) {
+                    return;
+                }
+
+                if (index > 0) {
+                    event.preventDefault();
                     otpInputs[index - 1].value = '';
+                    otpInputs[index - 1].focus();
                 }
             });
 
@@ -395,12 +452,15 @@
 
                 event.preventDefault();
 
-                for (var i = 0; i < digits.length && index + i < otpInputs.length; i++) {
-                    otpInputs[index + i].value = digits[i];
+                // چسباندن همیشه از خانهٔ اول شروع می‌شود، نه از خانه‌ای
+                // که کلیک شده: چیزی که کاربر می‌چسباند کلِ کد است.
+                clearCode();
+
+                for (var i = 0; i < digits.length && i < otpInputs.length; i++) {
+                    otpInputs[i].value = digits[i];
                 }
 
-                var nextIndex = Math.min(index + digits.length, otpInputs.length - 1);
-                otpInputs[nextIndex].focus();
+                focusFirstEmpty();
             });
         });
     }
