@@ -91,6 +91,10 @@ final class Mobile_Login
         add_action('personal_options_update', [$this, 'save_fields']);
         add_action('edit_user_profile_update', [$this, 'save_fields']);
 
+        // صفحهٔ «افزودن کاربر» هیچ‌کدام از قلاب‌های بالا را شلیک نمی‌کند.
+        add_action('user_new_form', [$this, 'render_new_user_fields']);
+        add_action('user_register', [$this, 'save_fields']);
+
         add_filter('manage_users_columns', [$this, 'add_columns']);
         add_filter('manage_users_custom_column', [$this, 'render_column'], 10, 3);
 
@@ -152,9 +156,29 @@ final class Mobile_Login
         ];
     }
 
+    /** صفحهٔ ویرایش کاربر و پروفایل خودِ کاربر. */
     public function render_fields(WP_User $user): void
     {
-        if (!current_user_can('edit_users')) {
+        $this->render_identity_table((int) $user->ID);
+    }
+
+    /**
+     * صفحهٔ «افزودن کاربر».
+     *
+     * بدون این، سه فیلد هویت فقط بعد از ساخته‌شدن کاربر و در ویرایش
+     * دوباره‌اش قابل پر کردن بودند — یعنی هر کاربر تازه لحظه‌ای وجود
+     * داشت که نمی‌توانست وارد شود. قلاب user_new_form مقدار رشته‌ای
+     * می‌فرستد، نه کاربر؛ اینجا لازمش نداریم.
+     */
+    public function render_new_user_fields(string $type = ''): void
+    {
+        $this->render_identity_table(0);
+    }
+
+    /** @param int $user_id صفر یعنی کاربر هنوز ساخته نشده (فرم افزودن) */
+    private function render_identity_table(int $user_id): void
+    {
+        if (!current_user_can('edit_users') && !current_user_can('create_users')) {
             return;
         }
 
@@ -162,7 +186,7 @@ final class Mobile_Login
         echo '<table class="form-table" role="presentation">';
 
         foreach (self::fields() as $key => $field) {
-            $value = (string) get_user_meta($user->ID, $key, true);
+            $value = $user_id > 0 ? (string) get_user_meta($user_id, $key, true) : '';
 
             printf(
                 '<tr><th><label for="%1$s">%2$s</label></th><td>'
@@ -178,32 +202,54 @@ final class Mobile_Login
         // فقط-خواندنی: پذیرش قوانین رویدادی است که خودِ کاربر انجام
         // داده، نه مقداری که مدیر تعیین کند. اگر لازم شد پس گرفته شود،
         // حذف متای bkw_terms_accepted_at کافی است — دفعهٔ بعدِ ورود
-        // دوباره پرسیده می‌شود.
-        $accepted_at = self::terms_accepted_at((int) $user->ID);
+        // دوباره پرسیده می‌شود. روی کاربری که هنوز ساخته نشده معنا
+        // ندارد، پس نشان داده نمی‌شود.
+        if ($user_id > 0) {
+            $accepted_at = self::terms_accepted_at($user_id);
 
-        printf(
-            '<tr><th>%s</th><td>%s</td></tr>',
-            esc_html__('پذیرش قوانین', 'bakery-widgets'),
-            null === $accepted_at
-                ? '<span style="color:#b32d2e">' . esc_html__('هنوز نپذیرفته', 'bakery-widgets') . '</span>'
-                : esc_html(self::format_jalali($accepted_at))
-        );
+            printf(
+                '<tr><th>%s</th><td>%s</td></tr>',
+                esc_html__('پذیرش قوانین', 'bakery-widgets'),
+                null === $accepted_at
+                    ? '<span style="color:#b32d2e">' . esc_html__('هنوز نپذیرفته', 'bakery-widgets') . '</span>'
+                    : esc_html(self::format_jalali($accepted_at))
+            );
+        }
 
         echo '</table>';
 
-        wp_nonce_field('bkw_identity_' . $user->ID, 'bkw_identity_nonce');
+        wp_nonce_field(self::nonce_for($user_id), 'bkw_identity_nonce');
+    }
+
+    /**
+     * نانس فرم هویت. کاربر تازه هنوز شناسه ندارد، پس فرم افزودن نانس
+     * مشترک خودش را دارد.
+     */
+    private static function nonce_for(int $user_id): string
+    {
+        return $user_id > 0 ? 'bkw_identity_' . $user_id : 'bkw_identity_new';
     }
 
     /**
      * قبل از ذخیره‌شدن پروفایل اجرا می‌شود؛ افزودن خطا به همین شیء یعنی
      * کل ذخیرهٔ پروفایل (نه فقط این فیلد) متوقف و پیام روی همان صفحه
      * نشان داده می‌شود — رفتار استاندارد خودِ وردپرس برای این قلاب.
+     *
+     * $user عمداً تایپ‌هینت ندارد. وردپرس در edit_user() آن را با
+     * `new stdClass()` می‌سازد و همان را به این قلاب می‌دهد — نه یک
+     * WP_User. این فایل declare(strict_types=1) دارد، پس هر تایپ‌هینتی
+     * اینجا یعنی TypeError و خطای مرگبار روی *هر* ساخت و ویرایش کاربر.
+     * شناسه هم موقع ساختِ کاربر تازه اصلاً روی این شیء نیست.
+     *
+     * @param object $user شیء در حال ساخت وردپرس (stdClass، نه WP_User)
      */
-    public function validate_fields(WP_Error $errors, bool $update, WP_User $user): void
+    public function validate_fields(WP_Error $errors, bool $update, $user): void
     {
-        if (!current_user_can('edit_users')) {
+        if (!current_user_can('edit_users') && !current_user_can('create_users')) {
             return;
         }
+
+        $user_id = isset($user->ID) ? (int) $user->ID : 0;
 
         foreach (self::fields() as $key => $field) {
             if (!isset($_POST[$key])) {
@@ -229,7 +275,7 @@ final class Mobile_Login
                 continue;
             }
 
-            if ($field['unique'] && null !== self::find_by($key, $normalized, (int) $user->ID)) {
+            if ($field['unique'] && null !== self::find_by($key, $normalized, $user_id)) {
                 $errors->add(
                     $key . '_duplicate',
                     sprintf(
@@ -242,14 +288,26 @@ final class Mobile_Login
         }
     }
 
+    /**
+     * روی ذخیرهٔ پروفایل و روی ساخت کاربر تازه (user_register) اجرا
+     * می‌شود. دومی لازم است چون قلاب‌های ذخیرهٔ پروفایل روی صفحهٔ
+     * «افزودن کاربر» اصلاً شلیک نمی‌شوند و بدون آن، فیلدهای هویتِ یک
+     * کاربر تازه بی‌صدا دور ریخته می‌شدند.
+     */
     public function save_fields(int $user_id): void
     {
-        if (!current_user_can('edit_users')) {
+        if (!current_user_can('edit_users') && !current_user_can('create_users')) {
             return;
         }
 
         $nonce = isset($_POST['bkw_identity_nonce']) ? sanitize_text_field(wp_unslash($_POST['bkw_identity_nonce'])) : '';
-        if (!wp_verify_nonce($nonce, 'bkw_identity_' . $user_id)) {
+
+        // فرم افزودن کاربر نانسِ «new» دارد چون آن لحظه هنوز شناسه‌ای
+        // وجود نداشت؛ فرم ویرایش نانسِ همان شناسه را دارد.
+        if (
+            !wp_verify_nonce($nonce, self::nonce_for($user_id))
+            && !wp_verify_nonce($nonce, self::nonce_for(0))
+        ) {
             return;
         }
 
