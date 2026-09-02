@@ -29,6 +29,14 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/purchase-limit.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/site-gate.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/mobile-login.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-policy.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-schema.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-store.php';
+
+        // همان الگوی Bakery_Credit\Plugin: نصب/ارتقای جدول روی init و نه
+        // روی قلاب فعال‌سازی، چون افزونه ممکن است با آپلود فایل
+        // به‌روزرسانی شود و آن قلاب اصلاً اجرا نشود.
+        add_action('init', [Otp_Schema::class, 'maybe_install'], 5);
 
         add_action('init', [$this, 'maybe_flush_after_update'], 20);
 

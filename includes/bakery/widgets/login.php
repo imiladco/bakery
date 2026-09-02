@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Widgets\Widgets;
 
+use Bakery_Widgets\Otp_Policy;
 use Bakery_Widgets\Site_Gate;
 use Bakery_Widgets\Svg;
 use Bakery_Widgets\Widgets\Traits\Terms_Modal_Controls;
@@ -1193,6 +1194,13 @@ final class Login extends Widget_Base
 
         $otp_length = max(3, min(8, (int) $settings['otp_length']));
         $countdown = max(10, (int) $settings['countdown_seconds']);
+
+        // به سرور اعلام می‌کند کاربر چه چیزی می‌بیند: کد چند رقمی است و
+        // شمارش معکوس چند ثانیه. سرور نمی‌تواند این دو را از درخواست
+        // مرورگر بگیرد (هر کسی می‌تواند «طول کد = ۳» بفرستد)، پس همان
+        // الگوی Site_Gate::remember_login_page() اینجا هم تکرار شده —
+        // رجوع کن به Otp_Policy::remember().
+        Otp_Policy::remember($otp_length, $countdown);
         $redirect_url = !empty($settings['redirect_url']['url']) ? (string) $settings['redirect_url']['url'] : home_url('/');
 
         $bg_url = (string) ($settings['page_background_image']['url'] ?? '');
