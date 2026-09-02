@@ -111,6 +111,7 @@
         var step1 = root.querySelector('.bkw-login__step[data-step="1"]');
         var step2 = root.querySelector('.bkw-login__step[data-step="2"]');
         var mobileInput = root.querySelector('[data-bkw-login-field="mobile"]');
+        var nationalIdInput = root.querySelector('[data-bkw-login-field="national-id"]');
         var numberDisplay = root.querySelector('[data-bkw-login-number-display]');
         var otpInputs = Array.prototype.slice.call(root.querySelectorAll('[data-bkw-otp-digit]'));
         var countdownValue = root.querySelector('[data-bkw-countdown-value]');
@@ -149,6 +150,20 @@
             return mobileInput ? mobileInput.value.trim() : '';
         }
 
+        function currentNationalId() {
+            return nationalIdInput ? nationalIdInput.value.trim() : '';
+        }
+
+        /*
+         * هر سه اکشنی که کاربر را می‌شناسند هر دو فیلد را می‌فرستند.
+         * سرور کاربری را می‌خواهد که هر دو متعلق به اوست — رجوع کن به
+         * Mobile_Login::resolve_identity(). فرستادن فقط موبایل یعنی
+         * قاعده سمت سرور هست ولی هیچ‌وقت برآورده نمی‌شود.
+         */
+        function identity() {
+            return { national_id: currentNationalId(), mobile: currentMobile() };
+        }
+
         function currentCode() {
             return otpInputs
                 .map(function (input) {
@@ -162,6 +177,34 @@
                 input.value = '';
             });
         }
+
+        /*
+         * هر دو فیلد مرحلهٔ ۱ فقط رقم می‌پذیرند و ارقام فارسی/عربی
+         * همان‌جا به لاتین تبدیل می‌شوند — همان کاری که
+         * Mobile_Login::normalize_digits() سمت سرور می‌کند. بدون این،
+         * کاربری که با صفحه‌کلید فارسی «۱۲۳» می‌زند خطای «معتبر نیست»
+         * می‌گیرد بی‌آنکه بفهمد چرا.
+         */
+        [nationalIdInput, mobileInput].forEach(function (input) {
+            if (!input) {
+                return;
+            }
+
+            input.addEventListener('input', function () {
+                var latin = input.value
+                    .replace(/[۰-۹]/g, function (d) {
+                        return String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+                    })
+                    .replace(/[٠-٩]/g, function (d) {
+                        return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+                    })
+                    .replace(/\D+/g, '');
+
+                if (latin !== input.value) {
+                    input.value = latin;
+                }
+            });
+        });
 
         var countdownTimer = null;
         var remainingSeconds = countdownSeconds;
@@ -238,7 +281,7 @@
         function requestCode(button, onSent) {
             button.disabled = true;
 
-            callLoginAjax('bkw_login_check', { mobile: currentMobile() }, function (json) {
+            callLoginAjax('bkw_login_check', identity(), function (json) {
                 button.disabled = false;
 
                 if (json.success) {
@@ -312,7 +355,10 @@
                 hideError(codeError);
                 step2SubmitBtn.disabled = true;
 
-                callLoginAjax('bkw_login_verify', { mobile: currentMobile(), code: currentCode() }, function (json) {
+                var params = identity();
+                params.code = currentCode();
+
+                callLoginAjax('bkw_login_verify', params, function (json) {
                     if (!json.success) {
                         step2SubmitBtn.disabled = false;
                         showError(codeError, payload(json).message, '');

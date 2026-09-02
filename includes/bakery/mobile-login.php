@@ -59,16 +59,25 @@ if (!defined('ABSPATH')) {
  */
 final class Mobile_Login
 {
-    private const META_KEY = 'bkw_mobile';
+    // کلید موبایل عمداً همان 'bkw_mobile' قبلی مانده — شماره‌هایی که
+    // مدیر تا امروز ثبت کرده در همین کلید نشسته‌اند و عوض کردنش یعنی
+    // همه‌شان بی‌صدا ناپدید شوند.
+    private const META_MOBILE = 'bkw_mobile';
+    private const META_NATIONAL_ID = 'bkw_national_id';
+    private const META_PERSONNEL = 'bkw_personnel_code';
+
     private const NONCE_ACTION = 'bkw_login';
 
     public function register(): void
     {
-        add_action('show_user_profile', [$this, 'render_field']);
-        add_action('edit_user_profile', [$this, 'render_field']);
-        add_action('user_profile_update_errors', [$this, 'validate_field'], 10, 3);
-        add_action('personal_options_update', [$this, 'save_field']);
-        add_action('edit_user_profile_update', [$this, 'save_field']);
+        add_action('show_user_profile', [$this, 'render_fields']);
+        add_action('edit_user_profile', [$this, 'render_fields']);
+        add_action('user_profile_update_errors', [$this, 'validate_fields'], 10, 3);
+        add_action('personal_options_update', [$this, 'save_fields']);
+        add_action('edit_user_profile_update', [$this, 'save_fields']);
+
+        add_filter('manage_users_columns', [$this, 'add_columns']);
+        add_filter('manage_users_custom_column', [$this, 'render_column'], 10, 3);
 
         foreach (['check', 'verify', 'complete'] as $step) {
             add_action('wp_ajax_bkw_login_' . $step, [$this, 'ajax_' . $step]);
@@ -86,32 +95,74 @@ final class Mobile_Login
     }
 
     /* ---------------------------------------------------------------------
-     * فیلد صفحهٔ ویرایش کاربر
+     * هویت کاربر: کد ملی، شمارهٔ موبایل، کد پرسنلی
      * ------------------------------------------------------------------- */
 
-    public function render_field(WP_User $user): void
+    /**
+     * تعریف هر سه فیلد در یک جا.
+     *
+     * رندر، اعتبارسنجی، ذخیره و ستون‌های فهرست کاربران همگی روی همین
+     * آرایه می‌چرخند. اضافه‌کردن فیلد چهارم یعنی یک سطر اینجا، نه چهار
+     * جای پراکنده که سومی‌شان دیر یا زود جا می‌ماند.
+     *
+     * unique یعنی دو کاربر نمی‌توانند یک مقدار داشته باشند — هر سهٔ این
+     * فیلدها یک آدم را می‌شناسانند، پس تکراری بودنشان بی‌معناست.
+     *
+     * digits یعنی مقدار باید دقیقاً همین تعداد رقم باشد؛ null یعنی
+     * متن آزاد.
+     *
+     * @return array<string,array{label:string,description:string,digits:?int,unique:bool}>
+     */
+    private static function fields(): array
+    {
+        return [
+            self::META_NATIONAL_ID => [
+                'label' => __('کد ملی', 'bakery-widgets'),
+                'description' => __('دقیقاً ۱۰ رقم. کاربر همین را در مرحلهٔ اول ویجت ورود وارد می‌کند و باید با شمارهٔ موبایل پایین متعلق به همین حساب باشد.', 'bakery-widgets'),
+                'digits' => 10,
+                'unique' => true,
+            ],
+            self::META_MOBILE => [
+                'label' => __('شمارهٔ موبایل', 'bakery-widgets'),
+                'description' => __('کد تأیید ورود به همین شماره پیامک می‌شود. خالی یعنی این کاربر نمی‌تواند وارد شود.', 'bakery-widgets'),
+                'digits' => null,
+                'unique' => true,
+            ],
+            self::META_PERSONNEL => [
+                'label' => __('کد پرسنلی', 'bakery-widgets'),
+                'description' => __('در ورود نقشی ندارد؛ فقط روی حساب کاربر نگه داشته می‌شود.', 'bakery-widgets'),
+                'digits' => null,
+                'unique' => true,
+            ],
+        ];
+    }
+
+    public function render_fields(WP_User $user): void
     {
         if (!current_user_can('edit_users')) {
             return;
         }
 
-        $value = (string) get_user_meta($user->ID, self::META_KEY, true);
+        echo '<h2>' . esc_html__('ورود بیکری عظام', 'bakery-widgets') . '</h2>';
+        echo '<table class="form-table" role="presentation">';
 
-        ?>
-        <h2><?php esc_html_e('ورود بیکری عظام', 'bakery-widgets'); ?></h2>
-        <table class="form-table" role="presentation">
-            <tr>
-                <th><label for="bkw_mobile"><?php esc_html_e('شمارهٔ موبایل', 'bakery-widgets'); ?></label></th>
-                <td>
-                    <input type="text" name="bkw_mobile" id="bkw_mobile" value="<?php echo esc_attr($value); ?>" class="regular-text" dir="ltr">
-                    <p class="description">
-                        <?php esc_html_e('کاربری که با این شماره در ویجت ورود سایت وارد می‌شود، همین حساب محسوب می‌شود. خالی یعنی این کاربر نمی‌تواند از ویجت ورود سایت استفاده کند.', 'bakery-widgets'); ?>
-                    </p>
-                </td>
-            </tr>
-        </table>
-        <?php
-        wp_nonce_field('bkw_mobile_' . $user->ID, 'bkw_mobile_nonce');
+        foreach (self::fields() as $key => $field) {
+            $value = (string) get_user_meta($user->ID, $key, true);
+
+            printf(
+                '<tr><th><label for="%1$s">%2$s</label></th><td>'
+                . '<input type="text" name="%1$s" id="%1$s" value="%3$s" class="regular-text" dir="ltr">'
+                . '<p class="description">%4$s</p></td></tr>',
+                esc_attr($key),
+                esc_html($field['label']),
+                esc_attr($value),
+                esc_html($field['description'])
+            );
+        }
+
+        echo '</table>';
+
+        wp_nonce_field('bkw_identity_' . $user->ID, 'bkw_identity_nonce');
     }
 
     /**
@@ -119,54 +170,126 @@ final class Mobile_Login
      * کل ذخیرهٔ پروفایل (نه فقط این فیلد) متوقف و پیام روی همان صفحه
      * نشان داده می‌شود — رفتار استاندارد خودِ وردپرس برای این قلاب.
      */
-    public function validate_field(WP_Error $errors, bool $update, WP_User $user): void
+    public function validate_fields(WP_Error $errors, bool $update, WP_User $user): void
     {
-        if (!isset($_POST['bkw_mobile']) || !current_user_can('edit_users')) {
+        if (!current_user_can('edit_users')) {
             return;
         }
 
-        $raw = sanitize_text_field(wp_unslash($_POST['bkw_mobile']));
-        if ('' === $raw) {
-            return;
-        }
+        foreach (self::fields() as $key => $field) {
+            if (!isset($_POST[$key])) {
+                continue;
+            }
 
-        $normalized = self::normalize($raw);
-        if (null === $normalized) {
-            $errors->add('bkw_mobile_invalid', __('شمارهٔ موبایل نامعتبر است.', 'bakery-widgets'));
-            return;
-        }
+            $raw = sanitize_text_field(wp_unslash($_POST[$key]));
+            if ('' === $raw) {
+                continue;
+            }
 
-        if (null !== self::find_user_id($normalized, (int) $user->ID)) {
-            $errors->add('bkw_mobile_duplicate', __('این شمارهٔ موبایل قبلاً برای کاربر دیگری ثبت شده است.', 'bakery-widgets'));
+            $normalized = self::normalize_field($key, $raw);
+
+            if (null === $normalized) {
+                $errors->add(
+                    $key . '_invalid',
+                    sprintf(
+                        /* translators: %s: field label */
+                        __('مقدار «%s» معتبر نیست.', 'bakery-widgets'),
+                        $field['label']
+                    )
+                );
+                continue;
+            }
+
+            if ($field['unique'] && null !== self::find_by($key, $normalized, (int) $user->ID)) {
+                $errors->add(
+                    $key . '_duplicate',
+                    sprintf(
+                        /* translators: %s: field label */
+                        __('این «%s» قبلاً برای کاربر دیگری ثبت شده است.', 'bakery-widgets'),
+                        $field['label']
+                    )
+                );
+            }
         }
     }
 
-    public function save_field(int $user_id): void
+    public function save_fields(int $user_id): void
     {
-        if (!current_user_can('edit_users') || !isset($_POST['bkw_mobile'])) {
+        if (!current_user_can('edit_users')) {
             return;
         }
 
-        $nonce = isset($_POST['bkw_mobile_nonce']) ? sanitize_text_field(wp_unslash($_POST['bkw_mobile_nonce'])) : '';
-        if (!wp_verify_nonce($nonce, 'bkw_mobile_' . $user_id)) {
+        $nonce = isset($_POST['bkw_identity_nonce']) ? sanitize_text_field(wp_unslash($_POST['bkw_identity_nonce'])) : '';
+        if (!wp_verify_nonce($nonce, 'bkw_identity_' . $user_id)) {
             return;
         }
 
-        $raw = sanitize_text_field(wp_unslash($_POST['bkw_mobile']));
-        if ('' === $raw) {
-            delete_user_meta($user_id, self::META_KEY);
-            return;
+        foreach (self::fields() as $key => $field) {
+            if (!isset($_POST[$key])) {
+                continue;
+            }
+
+            $raw = sanitize_text_field(wp_unslash($_POST[$key]));
+
+            if ('' === $raw) {
+                delete_user_meta($user_id, $key);
+                continue;
+            }
+
+            // اگر نامعتبر یا تکراری بود، validate_fields() از قبل جلوی کل
+            // ذخیرهٔ پروفایل را گرفته و اینجا اصلاً اجرا نمی‌شود؛ این فقط
+            // یک لایهٔ دفاعیِ اضافه است.
+            $normalized = self::normalize_field($key, $raw);
+            if (null === $normalized) {
+                continue;
+            }
+
+            if ($field['unique'] && null !== self::find_by($key, $normalized, $user_id)) {
+                continue;
+            }
+
+            update_user_meta($user_id, $key, $normalized);
+        }
+    }
+
+    /* ---------------------------------------------------------------------
+     * ستون‌های فهرست کاربران
+     * ------------------------------------------------------------------- */
+
+    /**
+     * سه ستون تازه در «کاربران».
+     *
+     * چرا لازم است: از وقتی ورود هم کد ملی می‌خواهد و هم شمارهٔ موبایل،
+     * حسابی که یکی‌شان را نداشته باشد اصلاً نمی‌تواند وارد شود. بدون
+     * این ستون‌ها تنها راه پیدا کردنشان باز کردن تک‌تک پروفایل‌هاست.
+     *
+     * @param array<string,string> $columns
+     * @return array<string,string>
+     */
+    public function add_columns(array $columns): array
+    {
+        foreach (self::fields() as $key => $field) {
+            $columns[$key] = $field['label'];
         }
 
-        // اگر نامعتبر یا تکراری بود، validate_field() از قبل جلوی کل
-        // ذخیرهٔ پروفایل را گرفته و اینجا اصلاً اجرا نمی‌شود؛ این فقط
-        // یک لایهٔ دفاعیِ اضافه است.
-        $normalized = self::normalize($raw);
-        if (null === $normalized || null !== self::find_user_id($normalized, $user_id)) {
-            return;
+        return $columns;
+    }
+
+    public function render_column(string $output, string $column, int $user_id): string
+    {
+        if (!array_key_exists($column, self::fields())) {
+            return $output;
         }
 
-        update_user_meta($user_id, self::META_KEY, $normalized);
+        $value = (string) get_user_meta($user_id, $column, true);
+
+        // خالی بودن یعنی این کاربر نمی‌تواند وارد شود؛ خط تیرهٔ خاکستری
+        // این را نمی‌رساند، پس صریح گفته می‌شود.
+        if ('' === $value) {
+            return '<span style="color:#b32d2e">' . esc_html__('ثبت نشده', 'bakery-widgets') . '</span>';
+        }
+
+        return '<span dir="ltr">' . esc_html($value) . '</span>';
     }
 
     /* ---------------------------------------------------------------------
@@ -183,7 +306,7 @@ final class Mobile_Login
     {
         check_ajax_referer(self::NONCE_ACTION, 'nonce');
 
-        [$mobile, $user_id] = $this->resolve_mobile();
+        [$mobile, $user_id] = $this->resolve_identity();
 
         // کدِ زندهٔ قبلی هنوز کار می‌کند و مهلت ارسال مجدد نرسیده: بدون
         // پیامک تازه، همان شمارش معکوسِ باقی‌مانده برگردانده می‌شود.
@@ -244,7 +367,7 @@ final class Mobile_Login
     {
         check_ajax_referer(self::NONCE_ACTION, 'nonce');
 
-        [$mobile, $user_id] = $this->resolve_mobile();
+        [$mobile, $user_id] = $this->resolve_identity();
 
         if (!Kavenegar::is_active()) {
             wp_send_json_success(['ticket' => self::issue_ticket($user_id)]);
@@ -317,23 +440,38 @@ final class Mobile_Login
      * ------------------------------------------------------------------- */
 
     /**
-     * شماره را از درخواست می‌خواند، عادی‌سازی می‌کند و کاربرش را پیدا
-     * می‌کند. هر شکستی همین‌جا پاسخ خطا می‌فرستد و اجرا را تمام می‌کند.
+     * کد ملی و شمارهٔ موبایل را از درخواست می‌خواند و کاربری را پیدا
+     * می‌کند که *هر دو* متعلق به اوست. هر شکستی همین‌جا پاسخ خطا
+     * می‌فرستد و اجرا را تمام می‌کند.
+     *
+     * پیام «مطابقت ندارند» عمداً یکی است و نمی‌گوید کدام‌شان غلط بوده.
+     * تفکیکش («این کد ملی هست ولی موبایلش این نیست») به کسی که فهرست
+     * کد ملی دارد می‌گوید کدام‌ها در این سایت حساب دارند — و ثبت‌نام
+     * بسته است، پس تنها استفادهٔ این اطلاعات جازدن به‌جای دیگری است.
      *
      * @return array{0:string,1:int}
      */
-    private function resolve_mobile(): array
+    private function resolve_identity(): array
     {
-        $raw = isset($_POST['mobile']) ? sanitize_text_field(wp_unslash($_POST['mobile'])) : '';
-        $mobile = self::normalize($raw);
+        $national_id = self::normalize_national_id(
+            isset($_POST['national_id']) ? sanitize_text_field(wp_unslash($_POST['national_id'])) : ''
+        );
+
+        if (null === $national_id) {
+            wp_send_json_error(['message' => __('کد ملی باید ۱۰ رقم باشد.', 'bakery-widgets')]);
+        }
+
+        $mobile = self::normalize(
+            isset($_POST['mobile']) ? sanitize_text_field(wp_unslash($_POST['mobile'])) : ''
+        );
 
         if (null === $mobile) {
             wp_send_json_error(['message' => __('شمارهٔ موبایل واردشده معتبر نیست.', 'bakery-widgets')]);
         }
 
-        $user_id = self::find_user_id($mobile);
+        $user_id = self::find_user_by_identity($national_id, $mobile);
         if (null === $user_id) {
-            wp_send_json_error(['message' => __('این شماره برای هیچ حسابی در سایت ثبت نشده است.', 'bakery-widgets')]);
+            wp_send_json_error(['message' => __('کد ملی و شمارهٔ موبایل با هیچ حسابی در سایت مطابقت ندارند.', 'bakery-widgets')]);
         }
 
         return [$mobile, $user_id];
@@ -466,13 +604,72 @@ final class Mobile_Login
         return $digits;
     }
 
-    /** @param int $exclude_user_id شناسهٔ کاربری که از جست‌وجو کنار گذاشته می‌شود (۰ یعنی هیچ‌کدام) */
-    private static function find_user_id(string $normalized_mobile, int $exclude_user_id = 0): ?int
+    /**
+     * کد ملی: دقیقاً ۱۰ رقم، پس از تبدیل ارقام فارسی/عربی.
+     *
+     * عمداً فقط طول بررسی می‌شود و نه رقم کنترلیِ استاندارد کد ملی
+     * ایران. کارفرما قاعده را «حداقل و حداکثر ۱۰ رقم» تعریف کرده و
+     * افزودن بررسی سخت‌گیرانه‌تر از آنچه خواسته شده یعنی ریسکِ رد شدن
+     * داده‌ای که در عمل درست است. اگر لازم شد، همین‌جا یک نقطهٔ اضافه
+     * کردنش است.
+     */
+    public static function normalize_national_id(string $raw): ?string
+    {
+        $digits = self::normalize_digits($raw);
+
+        return 10 === strlen($digits) ? $digits : null;
+    }
+
+    /**
+     * عادی‌سازی بر اساس تعریف همان فیلد. null یعنی نامعتبر.
+     *
+     * کد پرسنلی متن آزاد است — قالبش را کارفرما تعیین نکرده، پس فقط
+     * فاصله‌های اضافه‌اش گرفته می‌شود و هر چیزی که ادمین نوشته همان
+     * می‌ماند.
+     */
+    private static function normalize_field(string $key, string $raw): ?string
+    {
+        return match ($key) {
+            self::META_NATIONAL_ID => self::normalize_national_id($raw),
+            self::META_MOBILE => self::normalize($raw),
+            default => '' === trim($raw) ? null : trim($raw),
+        };
+    }
+
+    /**
+     * کاربری که مقدار این فیلدش دقیقاً همین است.
+     *
+     * @param int $exclude_user_id شناسهٔ کاربری که از جست‌وجو کنار گذاشته می‌شود (۰ یعنی هیچ‌کدام)
+     */
+    private static function find_by(string $meta_key, string $value, int $exclude_user_id = 0): ?int
     {
         $users = get_users([
-            'meta_key' => self::META_KEY,
-            'meta_value' => $normalized_mobile,
+            'meta_key' => $meta_key,
+            'meta_value' => $value,
             'exclude' => $exclude_user_id > 0 ? [$exclude_user_id] : [],
+            'number' => 1,
+            'fields' => 'ID',
+        ]);
+
+        return !empty($users) ? (int) $users[0] : null;
+    }
+
+    /**
+     * کاربری که *هر دو* مقدار متعلق به اوست.
+     *
+     * قاعدهٔ اصلی ورود همین است: کد ملی و شمارهٔ موبایل باید روی یک
+     * حساب نشسته باشند. جست‌وجو با meta_query و relation=AND انجام
+     * می‌شود و نه با دو جست‌وجوی جدا و مقایسهٔ نتیجه‌شان — یک کوئری،
+     * یک پاسخ، بدون حالت میانی که بشود اشتباه تفسیرش کرد.
+     */
+    private static function find_user_by_identity(string $national_id, string $mobile): ?int
+    {
+        $users = get_users([
+            'meta_query' => [
+                'relation' => 'AND',
+                ['key' => self::META_NATIONAL_ID, 'value' => $national_id],
+                ['key' => self::META_MOBILE, 'value' => $mobile],
+            ],
             'number' => 1,
             'fields' => 'ID',
         ]);

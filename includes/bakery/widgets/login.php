@@ -1374,12 +1374,16 @@ final class Login extends Widget_Base
         $this->render_icon_field(['url' => BAKERY_WIDGETS_URL . 'assets/icons/user.svg']);
         echo '</span>';
 
+        // کد ملی دقیقاً ۱۰ رقم است و موبایل ۱۱ — maxlength جلوی تایپ
+        // اضافه را همان‌جا می‌گیرد. اعتبارسنجی واقعی سمت سرور است
+        // (Mobile_Login::resolve_identity)؛ این فقط راحتی کاربر است.
         printf(
-            '<input type="text" inputmode="%1$s" class="bkw-login__input" id="bkw-login-%2$s-%3$s" placeholder="%4$s" data-bkw-login-field="%2$s">',
+            '<input type="text" inputmode="%1$s" maxlength="%5$d" class="bkw-login__input" id="bkw-login-%2$s-%3$s" placeholder="%4$s" data-bkw-login-field="%2$s">',
             'mobile' === $key ? 'tel' : 'numeric',
             esc_attr($key),
             esc_attr((string) $this->get_id()),
             esc_attr($placeholder),
+            'mobile' === $key ? 11 : 10,
         );
 
         echo '</span>';
