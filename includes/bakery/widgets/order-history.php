@@ -1047,25 +1047,46 @@ final class Order_History extends Widget_Base
     {
         echo '<div class="bkw-order-history__stepper" data-bkw-order-stepper>';
 
-        if (Order_Statuses::is_cancelled($order)) {
-            $this->render_step('processing', __('سفارش ثبت شد', 'bakery-widgets'), true, false);
-            $this->render_connector(false, true);
-            $this->render_step('cancelled', __('لغو شد', 'bakery-widgets'), true, true);
-        } else {
-            $current = Order_Statuses::current_index($order);
-            $index = 0;
+        $cancelled = Order_Statuses::is_cancelled($order);
 
-            foreach (Order_Statuses::chain() as $status => $label) {
-                // رابط پیش از هر مرحله (نه پیش از اولی) و «رسیده» بودنش
-                // تابع خودِ همان مرحله است: خطی که به یک مرحلهٔ طی‌شده
-                // می‌رسد پررنگ است.
-                if ($index > 0) {
-                    $this->render_connector($index <= $current, false);
-                }
+        /*
+         * سفارش لغوشده هم همان چهار موقعیت را می‌گیرد و نه دو تا.
+         *
+         * «لغو شد» جای مرحلهٔ پایانی می‌نشیند — سفارشِ لغوشده هرگز
+         * تحویل نشده، پس نشان‌دادن هم‌زمان «تحویل داده شد» و «لغو شد»
+         * تکراری است؛ آخرین موقعیت همان حالت پایانی را می‌گوید، فقط
+         * این بار لغو به‌جای تحویل.
+         *
+         * مرحله‌های میانی عمداً «طی‌نشده» می‌مانند: ووکامرس نگه نمی‌دارد
+         * سفارش پیش از لغو تا کجا رفته بود، و رنگ‌کردنشان یعنی ادعای
+         * چیزی که نمی‌دانیم.
+         *
+         * سود جانبی‌اش این است که کارت لغوشده دقیقاً هم‌عرض کارت عادی
+         * می‌ماند و تراز ستون مراحل بین کارت‌ها به‌هم نمی‌خورد.
+         */
+        $steps = Order_Statuses::chain();
 
-                $this->render_step($status, $label, $index <= $current, false);
-                $index++;
+        if ($cancelled) {
+            array_pop($steps);
+            $steps['cancelled'] = __('لغو شد', 'bakery-widgets');
+        }
+
+        $current = $cancelled ? 0 : Order_Statuses::current_index($order);
+        $last = array_key_last($steps);
+        $index = 0;
+
+        foreach ($steps as $status => $label) {
+            $is_cancelled_step = $cancelled && $status === $last;
+
+            // رابط پیش از هر مرحله (نه پیش از اولی) و «رسیده» بودنش
+            // تابع خودِ همان مرحله است: خطی که به یک مرحلهٔ طی‌شده
+            // می‌رسد پررنگ است.
+            if ($index > 0) {
+                $this->render_connector($index <= $current, $is_cancelled_step);
             }
+
+            $this->render_step($status, $label, $index <= $current || $is_cancelled_step, $is_cancelled_step);
+            $index++;
         }
 
         echo '</div>';
