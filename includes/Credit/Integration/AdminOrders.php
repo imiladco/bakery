@@ -34,8 +34,6 @@ if (!defined('ABSPATH')) {
  */
 final class AdminOrders
 {
-    private const PAID_STATUSES = ['processing', 'completed'];
-
     public function __construct(private readonly CreditAccount $account)
     {
     }
@@ -47,7 +45,16 @@ final class AdminOrders
 
     public function maybe_debit(int $orderId, string $from, string $to, WC_Order $order): void
     {
-        if (!in_array($to, self::PAID_STATUSES, true) || Gateway::ID !== $order->get_payment_method()) {
+        /*
+         * فهرست وضعیت‌های «پرداخت‌شده» از خودِ ووکامرس گرفته می‌شود و نه
+         * از یک ثابت محلی. پیش‌فرضش همان processing و completed است، ولی
+         * سایت وضعیت‌های سفارشی هم دارد («درحال آماده سازی»، «آماده
+         * تحویل») که روی همان فیلتر ووکامرس ثبت شده‌اند. با ثابت محلی،
+         * سفارشی که ادمین مستقیم روی یکی از آن‌ها می‌گذاشت هرگز کسر
+         * نمی‌شد — و این ماژول برای فهمیدنش باید نام کلاس ویجت‌ها را
+         * می‌دانست، که عمداً نمی‌داند.
+         */
+        if (!in_array($to, wc_get_is_paid_statuses(), true) || Gateway::ID !== $order->get_payment_method()) {
             return;
         }
 

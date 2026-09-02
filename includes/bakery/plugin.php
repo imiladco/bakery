@@ -60,9 +60,11 @@ final class Plugin
             require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-ajax.php';
             require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-fragments.php';
             require_once BAKERY_WIDGETS_PATH . 'includes/bakery/order-cancellation.php';
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/order-statuses.php';
 
             new Cart_Ajax();
             (new Order_Cancellation())->register();
+            (new Order_Statuses())->register();
 
             // اتصال محتوای زندهٔ سایدبار سبد به همان فیلتر فرگمنت استاندارد
             // ووکامرس — Cart_Ajax و Widgets\Cart_Sidebar هیچ‌کدام از وجود

@@ -6,6 +6,7 @@ namespace Bakery_Widgets\Widgets;
 
 use Bakery_Widgets\Cart_Fragments;
 use Bakery_Widgets\Order_Cancellation;
+use Bakery_Widgets\Order_Statuses;
 use Bakery_Widgets\Widgets\Traits\Confirm_Modal_Controls;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Background;
@@ -538,18 +539,184 @@ final class Order_History extends Widget_Base
 
         $this->add_control('stepper_notice', [
             'type' => Controls_Manager::RAW_HTML,
-            'raw' => __('این بخش فعلاً عمداً خالی است و فقط جایش رزرو شده. وقتی مراحل واقعی سفارش (پخت، بسته‌بندی، تحویل) تعریف شوند، همین‌جا پر می‌شود. تا آن‌وقت می‌توانید ارتفاعش را صفر بگذارید تا اصلاً فضایی نگیرد.', 'bakery-widgets'),
+            'raw' => __('مرحله از وضعیت خودِ سفارش در ووکامرس خوانده می‌شود. «در حال انجام» یعنی سفارش ثبت شد، «تکمیل‌شده» یعنی تحویل داده شد، و دو وضعیت «درحال آماده سازی» و «آماده تحویل» را همین افزونه به ووکامرس اضافه کرده. سفارش لغوشده به‌جای زنجیره، دو دایرهٔ ثبت‌شده ← لغو شد را نشان می‌دهد.', 'bakery-widgets'),
             'content_classes' => 'elementor-descriptor',
         ]);
 
-        $this->add_responsive_control('stepper_height', [
-            'label' => __('ارتفاع جای رزروشده', 'bakery-widgets'),
+        $this->add_responsive_control('step_width', [
+            'label' => __('عرض هر مرحله', 'bakery-widgets'),
             'type' => Controls_Manager::SLIDER,
             'size_units' => ['px'],
-            'range' => ['px' => ['min' => 0, 'max' => 120]],
-            'default' => ['unit' => 'px', 'size' => 50],
-            'mobile_default' => ['unit' => 'px', 'size' => 0],
-            'selectors' => ['{{WRAPPER}} .bkw-order-history__stepper' => 'height: {{SIZE}}{{UNIT}};'],
+            'range' => ['px' => ['min' => 40, 'max' => 140]],
+            'default' => ['unit' => 'px', 'size' => 72],
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step' => 'width: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_responsive_control('step_gap', [
+            'label' => __('فاصلهٔ دایره تا برچسب', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 24]],
+            'default' => ['unit' => 'px', 'size' => 6],
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step' => 'gap: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_control('heading_step_circle', [
+            'label' => __('دایره', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        /*
+         * اندازهٔ دایره هم‌زمان تراز عمودی رابط را هم عوض می‌کند: رابط با
+         * margin-top به مرکز دایره می‌چسبد و آن مرکز نصف همین اندازه
+         * است. اگر جدا تنظیم می‌شدند، هر بار که ادمین دایره را بزرگ
+         * می‌کرد خط از وسط دایره‌ها می‌افتاد.
+         */
+        $this->add_responsive_control('step_circle_size', [
+            'label' => __('اندازهٔ دایره', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 16, 'max' => 56]],
+            'default' => ['unit' => 'px', 'size' => 24],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-order-history__step-circle' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}}; border-radius: calc({{SIZE}}{{UNIT}} / 2);',
+                '{{WRAPPER}} .bkw-order-history__step-connector' => 'margin-top: calc(({{SIZE}}{{UNIT}} - 2px) / 2);',
+            ],
+        ]);
+
+        $this->add_responsive_control('step_icon_size', [
+            'label' => __('اندازهٔ آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 8, 'max' => 32]],
+            'default' => ['unit' => 'px', 'size' => 14],
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step-circle svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_control('step_icon_stroke', [
+            'label' => __('ضخامت خط آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => [''],
+            'range' => ['' => ['min' => 0.5, 'max' => 3, 'step' => 0.1]],
+            'default' => ['size' => 1],
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step-circle svg [stroke]' => 'stroke-width: {{SIZE}};'],
+        ]);
+
+        $this->add_control('heading_step_done', [
+            'label' => __('مرحلهٔ طی‌شده', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_control('step_done_bg', [
+            'label' => __('رنگ دایره', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#8c583a',
+            'selectors' => [
+                '{{WRAPPER}} .bkw-order-history__step.is-reached .bkw-order-history__step-circle' => 'background-color: {{VALUE}};',
+                '{{WRAPPER}} .bkw-order-history__step-connector.is-reached' => 'background-color: {{VALUE}};',
+            ],
+        ]);
+
+        $this->add_control('step_done_icon', [
+            'label' => __('رنگ آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#ffffff',
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step.is-reached .bkw-order-history__step-circle' => 'color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('heading_step_pending', [
+            'label' => __('مرحلهٔ طی‌نشده', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_control('step_pending_bg', [
+            'label' => __('رنگ دایره', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#f0e1c5',
+            'selectors' => [
+                '{{WRAPPER}} .bkw-order-history__step-circle' => 'background-color: {{VALUE}};',
+                '{{WRAPPER}} .bkw-order-history__step-connector' => 'background-color: {{VALUE}};',
+            ],
+        ]);
+
+        $this->add_control('step_pending_icon', [
+            'label' => __('رنگ آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#8c583a',
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step-circle' => 'color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('heading_step_cancelled', [
+            'label' => __('سفارش لغوشده', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_control('step_cancelled_bg', [
+            'label' => __('رنگ دایره و خط', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#c30f0f',
+            'selectors' => [
+                '{{WRAPPER}} .bkw-order-history__step.is-cancelled .bkw-order-history__step-circle' => 'background-color: {{VALUE}};',
+                '{{WRAPPER}} .bkw-order-history__step-connector.is-cancelled' => 'background-color: {{VALUE}};',
+            ],
+        ]);
+
+        $this->add_control('step_cancelled_icon', [
+            'label' => __('رنگ آیکون', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#ffffff',
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step.is-cancelled .bkw-order-history__step-circle' => 'color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('heading_step_connector', [
+            'label' => __('خط رابط', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_responsive_control('step_connector_width', [
+            'label' => __('طول', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 8, 'max' => 80]],
+            'default' => ['unit' => 'px', 'size' => 32],
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step-connector' => 'width: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_control('step_connector_thickness', [
+            'label' => __('ضخامت', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 1, 'max' => 8]],
+            'default' => ['unit' => 'px', 'size' => 2],
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step-connector' => 'height: {{SIZE}}{{UNIT}}; border-radius: calc({{SIZE}}{{UNIT}} / 2);'],
+        ]);
+
+        $this->add_control('heading_step_label', [
+            'label' => __('برچسب', 'bakery-widgets'),
+            'type' => Controls_Manager::HEADING,
+            'separator' => 'before',
+        ]);
+
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'step_label_typography',
+            'selector' => '{{WRAPPER}} .bkw-order-history__step-label',
+            'fields_options' => [
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 11]],
+                'font_weight' => ['default' => '700'],
+                'line_height' => ['default' => ['unit' => 'px', 'size' => 18]],
+            ],
+        ]);
+
+        $this->add_control('step_label_color', [
+            'label' => __('رنگ برچسب', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#615249',
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step-label' => 'color: {{VALUE}};'],
         ]);
 
         $this->end_controls_section();
@@ -827,8 +994,7 @@ final class Order_History extends Widget_Base
         $this->render_items_summary($order, $settings);
         echo '</div>';
 
-        // جای رزروشدهٔ «مراحل سفارش» — عمداً خالی (رجوع کن به یادداشت بالای کلاس).
-        echo '<div class="bkw-order-history__stepper" data-bkw-order-stepper></div>';
+        $this->render_stepper($order);
 
         $this->render_price($order, $settings);
 
@@ -840,6 +1006,97 @@ final class Order_History extends Widget_Base
         }
 
         echo '</div>';
+    }
+
+    /**
+     * مراحل سفارش (فیگما، نودهای 289:7463 و 289:7495).
+     *
+     * دو چیدمان دارد و نه یکی: زنجیرهٔ خطی چهار مرحله‌ای، و حالت لغو که
+     * فقط دو دایره است (ثبت شد ← لغو شد). لغو مرحله‌ای بعد از تحویل
+     * نیست، یک انشعاب است — نمایشش داخل همان زنجیره یعنی جا زدنش
+     * به‌عنوان «پیشرفت».
+     *
+     * ترتیب DOM برعکس خروجی JSX فیگماست. آن فریم چیدمان LTR دارد پس
+     * ترتیبش «چپ به راست دیده‌شده» است؛ این‌جا زیر dir="rtl" فرزندِ اولِ
+     * ردیف فلکس سمت راست می‌نشیند، و مرحلهٔ اول باید سمت راست باشد.
+     */
+    private function render_stepper(WC_Order $order): void
+    {
+        echo '<div class="bkw-order-history__stepper" data-bkw-order-stepper>';
+
+        if (Order_Statuses::is_cancelled($order)) {
+            $this->render_step('processing', __('سفارش ثبت شد', 'bakery-widgets'), true, false);
+            $this->render_connector(false, true);
+            $this->render_step('cancelled', __('لغو شد', 'bakery-widgets'), true, true);
+        } else {
+            $current = Order_Statuses::current_index($order);
+            $index = 0;
+
+            foreach (Order_Statuses::chain() as $status => $label) {
+                // رابط پیش از هر مرحله (نه پیش از اولی) و «رسیده» بودنش
+                // تابع خودِ همان مرحله است: خطی که به یک مرحلهٔ طی‌شده
+                // می‌رسد پررنگ است.
+                if ($index > 0) {
+                    $this->render_connector($index <= $current, false);
+                }
+
+                $this->render_step($status, $label, $index <= $current, false);
+                $index++;
+            }
+        }
+
+        echo '</div>';
+    }
+
+    private function render_step(string $status, string $label, bool $reached, bool $cancelled): void
+    {
+        printf(
+            '<div class="bkw-order-history__step%s%s">',
+            $reached ? ' is-reached' : '',
+            $cancelled ? ' is-cancelled' : ''
+        );
+
+        echo '<span class="bkw-order-history__step-circle">';
+        $this->render_step_icon(Order_Statuses::icon($status));
+        echo '</span>';
+
+        printf('<span class="bkw-order-history__step-label">%s</span>', esc_html($label));
+
+        echo '</div>';
+    }
+
+    private function render_connector(bool $reached, bool $cancelled): void
+    {
+        printf(
+            '<span class="bkw-order-history__step-connector%s%s"></span>',
+            $reached ? ' is-reached' : '',
+            $cancelled ? ' is-cancelled' : ''
+        );
+    }
+
+    /**
+     * آیکون‌ها عیناً همان خروجی فیگما هستند؛ تنها تغییر، stroke ثابت به
+     * currentColor است. بدون آن، هر آیکون به یک حالت قفل می‌شد و برای
+     * دو حالتِ «طی‌شده» (سفید روی قهوه‌ای) و «طی‌نشده» (قهوه‌ای روی
+     * کرم) باید دو نسخه از هر کدام نگه می‌داشتیم.
+     */
+    private function render_step_icon(string $name): void
+    {
+        $icons = [
+            'clipboard' => '<path d="M9.33304 2.33302H10.4996C10.809 2.33302 11.1057 2.45595 11.3245 2.67476C11.5432 2.89356 11.6661 3.19033 11.6661 3.49978V11.6671C11.6661 11.9765 11.5432 12.2733 11.3245 12.4921C11.1057 12.7109 10.809 12.8339 10.4996 12.8339H3.50029C3.1909 12.8339 2.89419 12.7109 2.67541 12.4921C2.45664 12.2733 2.33374 11.9765 2.33374 11.6671V3.49978C2.33374 3.19033 2.45664 2.89356 2.67541 2.67476C2.89419 2.45595 3.1909 2.33302 3.50029 2.33302H4.66684M5.25011 1.16626H8.74976C9.0719 1.16626 9.33304 1.42745 9.33304 1.74964V2.9164C9.33304 3.23859 9.0719 3.49978 8.74976 3.49978H5.25011C4.92798 3.49978 4.66684 3.23859 4.66684 2.9164V1.74964C4.66684 1.42745 4.92798 1.16626 5.25011 1.16626Z" stroke="currentColor" stroke-linecap="round"/>',
+            'flame' => '<path d="M8.78572 4.76316C7.64286 3.79825 6.88095 2.54386 6.5 1C5.54762 1.77193 5.07143 2.54386 5.07143 3.31579C5.07143 4.47368 5.92857 5.05263 5.92857 6.21053C5.92857 6.59439 5.77806 6.96254 5.51015 7.23397C5.24224 7.50541 4.87888 7.6579 4.5 7.6579C4.12112 7.6579 3.75776 7.50541 3.48985 7.23397C3.22194 6.96254 3.07143 6.59439 3.07143 6.21053C2.70051 6.71159 2.5 7.32103 2.5 7.94737C2.5 9.02219 2.92143 10.053 3.67157 10.813C4.42172 11.573 5.43913 12 6.5 12C7.56087 12 8.57828 11.573 9.32843 10.813C10.0786 10.053 10.5 9.02219 10.5 7.94737C10.5 6.78947 9.92857 5.72807 8.78572 4.76316Z" stroke="currentColor" stroke-linecap="round"/>',
+            'truck' => '<path d="M8.16682 10.4996V3.50029C8.16682 3.1909 8.04389 2.89419 7.82508 2.67541C7.60627 2.45664 7.3095 2.33374 7.00006 2.33374H2.33302C2.02358 2.33374 1.72681 2.45664 1.508 2.67541C1.28919 2.89419 1.16626 3.1909 1.16626 3.50029V9.91632C1.16626 10.071 1.22772 10.2194 1.33713 10.3288C1.44653 10.4381 1.59492 10.4996 1.74964 10.4996H2.9164M2.9164 10.4996C2.9164 11.1439 3.43878 11.6661 4.08316 11.6661C4.72754 11.6661 5.24992 11.1439 5.24992 10.4996M2.9164 10.4996C2.9164 9.85532 3.43878 9.33304 4.08316 9.33304C4.72754 9.33304 5.24992 9.85532 5.24992 10.4996M5.24992 10.4996H8.7502M8.7502 10.4996C8.7502 11.1439 9.27258 11.6661 9.91696 11.6661C10.5613 11.6661 11.0837 11.1439 11.0837 10.4996M8.7502 10.4996C8.7502 9.85532 9.27258 9.33304 9.91696 9.33304C10.5613 9.33304 11.0837 9.85532 11.0837 10.4996M11.0837 10.4996H12.2505C12.4052 10.4996 12.5536 10.4381 12.663 10.3288C12.7724 10.2194 12.8339 10.071 12.8339 9.91632V7.78736C12.8336 7.655 12.7884 7.52664 12.7055 7.4234L10.6754 4.88615C10.6208 4.81784 10.5516 4.76266 10.4728 4.7247C10.394 4.68674 10.3078 4.66696 10.2203 4.66684H8.16682" stroke="currentColor" stroke-linecap="round"/>',
+            'check' => '<path d="M11.6661 3.5L5.25011 9.9162L2.33374 6.99974" stroke="currentColor" stroke-linecap="round"/>',
+            // ✕ در فیگما یک نویسهٔ متنی است، نه SVG. این‌جا کشیده شده تا
+            // به وجودِ آن نویسه در فونت سایت وابسته نباشد؛ نبودنش یعنی
+            // مربع خالی به‌جای علامت لغو.
+            'cross' => '<path d="M4 4L10 10M10 4L4 10" stroke="currentColor" stroke-linecap="round"/>',
+        ];
+
+        printf(
+            '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">%s</svg>',
+            $icons[$name] ?? $icons['clipboard'] // phpcs:ignore WordPress.Security.EscapeOutput -- مسیرهای ثابت داخلی، بدون ورودی کاربر
+        );
     }
 
     private function render_order_meta(WC_Order $order, array $settings): void
