@@ -36,7 +36,7 @@ final class Otp_Store
         global $wpdb;
 
         self::purge();
-        self::invalidate_live($mobile);
+        self::invalidate_all($mobile);
 
         $table = Otp_Schema::table();
 
@@ -207,9 +207,16 @@ final class Otp_Store
 
     /**
      * کدهای زندهٔ یک شماره را باطل می‌کند (verified = 0 می‌ماند، چون
-     * موفق نبوده‌اند). موقع صدور کد تازه صدا زده می‌شود.
+     * موفق نبوده‌اند).
+     *
+     * دو مصرف دارد: موقع صدور کد تازه، و وقتی ارسال پیامک شکست می‌خورد.
+     * دومی مهم است — ردیف عمداً حذف نمی‌شود تا هم در سقف ارسال ساعتی
+     * شمرده شود و هم مهلت ارسال مجدد سر جایش بماند (وگرنه یک سرویس
+     * پیامکِ از کار افتاده یعنی تلاش بی‌نهایت)، ولی باطل می‌شود تا
+     * درخواست بعدی کاربر را با «کد زنده داری» به مرحلهٔ ۲ نفرستد؛ کدی
+     * که هرگز به دستش نرسیده.
      */
-    private static function invalidate_live(string $mobile): void
+    public static function invalidate_all(string $mobile): void
     {
         global $wpdb;
 

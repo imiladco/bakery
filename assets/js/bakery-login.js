@@ -1,32 +1,33 @@
 /**
- * ویجت ورود — رفتار سمت کاربر (جابه‌جایی مرحله، پیش‌رفتن خودکار
- * خانه‌های کد تأیید، شمارش معکوس، ارسال مجدد). کد تأیید طبق درخواست
- * صریح کارفرما همچنان کاملاً شبیه‌سازی‌شده است (هر کدی قبول می‌شود، بدون
- * پیامک واقعی) — اما «این شماره متعلق به کیست» دیگر ظاهری نیست: دو
- * درخواست AJAX به Bakery_Widgets\Mobile_Login می‌رود:
+ * ویجت ورود — رفتار سمت کاربر و سه مرحلهٔ سرور.
  *
- *   - مرحلهٔ ۱ (bkw_login_check): فقط بررسی می‌کند شماره برای کاربری
- *     ثبت شده یا نه؛ اگر نه، همان‌جا خطا نشان داده می‌شود و کاربر وقتش
- *     با تئاتر کد تأیید تلف نمی‌شود (ثبت‌نام خودکار وجود ندارد — فقط
- *     شماره‌هایی که مدیر از قبل تعریف کرده).
- *   - لحظهٔ گرفتن دسترسی (bkw_login_complete): همان‌جا wp_set_auth_cookie
- *     واقعی هم زده می‌شود — عمداً نه زودتر از مرحلهٔ ۱، چون
- *     Site_Gate::maybe_redirect() هر کاربر واقعاً لاگین‌شده را بی‌قیدوشرط
- *     رد می‌کند و لاگین واقعی زودتر یعنی رد شدن از کنار مودال قوانین.
+ * کد تأیید دیگر شبیه‌سازی‌شده نیست؛ وقتی ورود پیامکی در تنظیمات فعال
+ * باشد (Bakery_Widgets\Otp_Settings) کد واقعاً با کاوه‌نگار فرستاده و
+ * سمت سرور سنجیده می‌شود. سه اکشن admin-ajax به
+ * Bakery_Widgets\Mobile_Login می‌رود:
  *
- * کلیک روی دکمهٔ مرحلهٔ ۲ مستقیم ریدایرکت نمی‌کند: اول مودال قوانینِ
- * تعبیه‌شده در همین صفحه (data-bkw-terms، رجوع کن به
- * Traits\Terms_Modal_Controls::render_terms_modal) را پیدا می‌کند. اگر
- * قبلاً در همین مرورگر پذیرفته شده (localStorage)، همین‌جا bkw_login_complete
- * را صدا می‌زند و بعد به data-redirect-url می‌رود؛ وگرنه مودال را
- * نمایان می‌کند و منتظر می‌ماند — خودِ assets/js/bakery-terms-modal.js
- * پس از چک‌باکس+تأیید هم bkw_login_complete و هم ریدایرکت را انجام
- * می‌دهد.
+ *   - bkw_login_check   مرحلهٔ ۱ و دکمهٔ «ارسال مجدد»: شماره را می‌شناسد
+ *                       و کد می‌فرستد. resendIn برمی‌گرداند — همان عددی
+ *                       که شمارش معکوس با آن شروع می‌شود، پس تایمرِ روی
+ *                       صفحه همان تایمری است که سرور اجرا می‌کند و این
+ *                       دو هرگز از هم جدا نمی‌افتند.
+ *   - bkw_login_verify  کد را می‌سنجد و یک «بلیت» یک‌بارمصرف می‌دهد. هنوز
+ *                       لاگین نکرده است.
+ *   - bkw_login_complete بلیت را خرج می‌کند و نشست واقعی وردپرس می‌سازد.
  *
- * هر جا کاربر واقعاً از این ویجت رد می‌شود (لاگین + تأیید قوانین)، کوکی
- * دسترسی سایت (Bakery_Widgets\Site_Gate::COOKIE_NAME) هم ست می‌شود —
- * همان کوکی‌ای که دروازهٔ سمت PHP (includes/bakery/site-gate.php) روی هر
- * صفحهٔ دیگر سایت چک می‌کند تا دیگر کاربر را دوباره به ورود نفرستد.
+ * چرا سنجش کد و لاگین از هم جدا شده‌اند: مودال قوانین باید بین‌شان
+ * بنشیند. اگر همان لحظهٔ درست‌بودن کد لاگین می‌کردیم، کاربر می‌توانست
+ * مودال را دور بزند (Site_Gate هر کاربر لاگین‌شده را رد می‌کند)؛ اگر
+ * سنجش را تا بعد از مودال عقب می‌انداختیم، کاربر تازه بعد از پذیرفتن
+ * قوانین می‌فهمید کدش غلط بوده. توضیح کاملش در داک‌بلاک Mobile_Login.
+ *
+ * بلیت در همین صفحه (متغیر loginTicket) نگه داشته می‌شود و
+ * assets/js/bakery-terms-modal.js از طریق data-bkw-login-ticket روی
+ * ریشهٔ ویجت به آن می‌رسد.
+ *
+ * هر جا کاربر واقعاً از این ویجت رد می‌شود، کوکی دسترسی سایت
+ * (Bakery_Widgets\Site_Gate::COOKIE_NAME) هم ست می‌شود — همان کوکی‌ای که
+ * دروازهٔ سمت PHP روی هر صفحهٔ دیگر سایت چک می‌کند.
  */
 (function () {
     'use strict';
@@ -46,21 +47,24 @@
     }
 
     /**
-     * به Mobile_Login::ajax_check/ajax_complete وصل می‌شود. bkwLogin از
+     * به اکشن‌های Mobile_Login وصل می‌شود. bkwLogin از
      * Plugin::register_scripts() (wp_localize_script) می‌آید. نبودش
-     * (مثلاً کش قدیمی اسکریپت) یعنی نمی‌توانیم شماره را تأیید کنیم —
+     * (مثلاً کش قدیمی اسکریپت) یعنی نمی‌توانیم چیزی را تأیید کنیم —
      * safe fail یعنی رد کردن، نه رد شدن بدون بررسی.
      */
-    function callLoginAjax(action, mobile, onDone) {
+    function callLoginAjax(action, params, onDone) {
         if (!window.bkwLogin || !window.bkwLogin.ajaxUrl) {
-            onDone(false);
+            onDone({ success: false });
             return;
         }
 
         var body = new URLSearchParams();
         body.set('action', action);
         body.set('nonce', window.bkwLogin.nonce);
-        body.set('mobile', mobile);
+
+        Object.keys(params).forEach(function (key) {
+            body.set(key, params[key]);
+        });
 
         fetch(window.bkwLogin.ajaxUrl, {
             method: 'POST',
@@ -72,11 +76,15 @@
                 return response.json();
             })
             .then(function (json) {
-                onDone(Boolean(json && json.success));
+                onDone(json && 'object' === typeof json ? json : { success: false });
             })
             .catch(function () {
-                onDone(false);
+                onDone({ success: false });
             });
+    }
+
+    function payload(json) {
+        return (json && json.data) || {};
     }
 
     var PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
@@ -111,25 +119,48 @@
         var step2SubmitBtn = root.querySelector('[data-bkw-login-step2-submit]');
         var editNumberBtn = root.querySelector('[data-bkw-login-edit-number]');
         var fieldError = root.querySelector('[data-bkw-login-error]');
+        var codeError = root.querySelector('[data-bkw-login-code-error]');
 
         if (!step1 || !step2) {
             return;
         }
 
-        function hideFieldError() {
-            if (fieldError) {
-                fieldError.hidden = true;
+        // متن پیش‌فرض «این شماره ثبت نشده» از تنظیمات ویجت می‌آید؛ وقتی
+        // سرور پیام دقیق‌تری دارد (سقف ارسال، خطای پیامک) جایش می‌نشیند
+        // و بعد دوباره به همین برمی‌گردد.
+        var defaultFieldError = fieldError ? fieldError.textContent : '';
+
+        function showError(element, message, fallback) {
+            if (!element) {
+                return;
             }
+
+            element.textContent = message || fallback || '';
+            element.hidden = false;
         }
 
-        function showFieldError() {
-            if (fieldError) {
-                fieldError.hidden = false;
+        function hideError(element) {
+            if (element) {
+                element.hidden = true;
             }
         }
 
         function currentMobile() {
             return mobileInput ? mobileInput.value.trim() : '';
+        }
+
+        function currentCode() {
+            return otpInputs
+                .map(function (input) {
+                    return input.value;
+                })
+                .join('');
+        }
+
+        function clearCode() {
+            otpInputs.forEach(function (input) {
+                input.value = '';
+            });
         }
 
         var countdownTimer = null;
@@ -148,9 +179,13 @@
             }
         }
 
-        function startCountdown() {
+        /**
+         * seconds از سرور می‌آید (resendIn). اگر نیامده باشد — پاسخ ناقص،
+         * سرور قدیمی — به مقدار تنظیم‌شدهٔ ویجت برمی‌گردد.
+         */
+        function startCountdown(seconds) {
             stopCountdown();
-            remainingSeconds = countdownSeconds;
+            remainingSeconds = 'number' === typeof seconds && seconds > 0 ? seconds : countdownSeconds;
             renderCountdown();
 
             if (resendBtn) {
@@ -174,15 +209,15 @@
             }, 1000);
         }
 
-        function goToStep2() {
+        function goToStep2(seconds) {
             if (numberDisplay) {
-                var mobileValue = mobileInput ? mobileInput.value.trim() : '';
+                var mobileValue = currentMobile();
                 numberDisplay.textContent = '' !== mobileValue ? toPersianDigits(mobileValue) : '';
             }
 
             step1.hidden = true;
             step2.hidden = false;
-            startCountdown();
+            startCountdown(seconds);
 
             if (otpInputs.length > 0) {
                 otpInputs[0].focus();
@@ -199,19 +234,30 @@
             }
         }
 
+        /** مرحلهٔ ۱ و دکمهٔ ارسال مجدد هر دو همین را صدا می‌زنند. */
+        function requestCode(button, onSent) {
+            button.disabled = true;
+
+            callLoginAjax('bkw_login_check', { mobile: currentMobile() }, function (json) {
+                button.disabled = false;
+
+                if (json.success) {
+                    onSent(payload(json).resendIn);
+                    return;
+                }
+
+                showError(fieldError, payload(json).message, defaultFieldError);
+            });
+        }
+
         if (step1SubmitBtn) {
             step1SubmitBtn.addEventListener('click', function () {
-                hideFieldError();
-                step1SubmitBtn.disabled = true;
+                hideError(fieldError);
+                hideError(codeError);
 
-                callLoginAjax('bkw_login_check', currentMobile(), function (ok) {
-                    step1SubmitBtn.disabled = false;
-
-                    if (ok) {
-                        goToStep2();
-                    } else {
-                        showFieldError();
-                    }
+                requestCode(step1SubmitBtn, function (resendIn) {
+                    clearCode();
+                    goToStep2(resendIn);
                 });
             });
         }
@@ -226,59 +272,99 @@
                     return;
                 }
 
-                startCountdown();
-                if (otpInputs.length > 0) {
-                    otpInputs[0].focus();
-                }
+                hideError(codeError);
+
+                requestCode(resendBtn, function (resendIn) {
+                    clearCode();
+                    startCountdown(resendIn);
+
+                    if (otpInputs.length > 0) {
+                        otpInputs[0].focus();
+                    }
+                });
             });
         }
 
-        function completeLoginAndRedirect() {
-            step2SubmitBtn.disabled = true;
+        /**
+         * بلیتِ «کد درست بود». روی ریشهٔ ویجت هم نوشته می‌شود تا
+         * assets/js/bakery-terms-modal.js — که کدِ جداگانه‌ای دارد —
+         * بتواند بعد از پذیرفتن قوانین همان را خرج کند.
+         */
+        function storeTicket(ticket) {
+            root.setAttribute('data-bkw-login-ticket', ticket || '');
+        }
 
-            callLoginAjax('bkw_login_complete', currentMobile(), function (ok) {
-                step2SubmitBtn.disabled = false;
-
-                if (ok) {
+        function completeAndRedirect() {
+            callLoginAjax('bkw_login_complete', { ticket: root.getAttribute('data-bkw-login-ticket') || '' }, function (json) {
+                if (json.success) {
                     grantSiteAccess();
                     window.location.href = redirectUrl;
-                } else {
-                    // خیلی نادر: شماره بین مرحلهٔ ۱ و همین لحظه از حساب
-                    // کاربری پاک/عوض شده. برمی‌گردد مرحلهٔ ۱ تا دوباره
-                    // بررسی شود، به‌جای ریدایرکت به صفحه‌ای که دوباره
-                    // قفلش می‌کند.
-                    goToStep1();
-                    showFieldError();
+                    return;
                 }
+
+                step2SubmitBtn.disabled = false;
+                showError(codeError, payload(json).message, '');
             });
         }
 
         if (step2SubmitBtn) {
             step2SubmitBtn.addEventListener('click', function () {
-                var termsOverlay = root.querySelector('[data-bkw-terms]');
+                hideError(codeError);
+                step2SubmitBtn.disabled = true;
 
-                if (!termsOverlay) {
-                    completeLoginAndRedirect();
-                    return;
-                }
+                callLoginAjax('bkw_login_verify', { mobile: currentMobile(), code: currentCode() }, function (json) {
+                    if (!json.success) {
+                        step2SubmitBtn.disabled = false;
+                        showError(codeError, payload(json).message, '');
+                        clearCode();
 
-                var storageKey = termsOverlay.getAttribute('data-storage-key');
-                var alreadyAccepted = false;
+                        // سرور کد را کشته (منقضی یا سقف تلاش) — تایمر
+                        // ارسال مجدد باید همین حالا آزاد شود، وگرنه کاربر
+                        // پشت شمارشی می‌ماند که دیگر معنایی ندارد.
+                        if (payload(json).expired) {
+                            stopCountdown();
+                            remainingSeconds = 0;
+                            renderCountdown();
+                            if (resendBtn) {
+                                resendBtn.disabled = false;
+                            }
+                        } else if (otpInputs.length > 0) {
+                            otpInputs[0].focus();
+                        }
 
-                try {
-                    alreadyAccepted = 'accepted' === window.localStorage.getItem(storageKey);
-                } catch (e) {
-                    // localStorage در دسترس نیست؛ فرض می‌شود هنوز پذیرفته
-                    // نشده — مودال دوباره نشان داده می‌شود، مسدودکننده نیست.
-                }
+                        return;
+                    }
 
-                if (alreadyAccepted) {
-                    completeLoginAndRedirect();
-                    return;
-                }
+                    storeTicket(payload(json).ticket);
 
-                termsOverlay.hidden = false;
-                document.documentElement.classList.add('bkw-panel-open');
+                    var termsOverlay = root.querySelector('[data-bkw-terms]');
+                    if (!termsOverlay) {
+                        completeAndRedirect();
+                        return;
+                    }
+
+                    var storageKey = termsOverlay.getAttribute('data-storage-key');
+                    var alreadyAccepted = false;
+
+                    try {
+                        alreadyAccepted = 'accepted' === window.localStorage.getItem(storageKey);
+                    } catch (e) {
+                        // localStorage در دسترس نیست؛ فرض می‌شود هنوز
+                        // پذیرفته نشده — مودال دوباره نشان داده می‌شود،
+                        // مسدودکننده نیست.
+                    }
+
+                    if (alreadyAccepted) {
+                        completeAndRedirect();
+                        return;
+                    }
+
+                    // بلیت ده دقیقه اعتبار دارد، پس باز ماندن مودال
+                    // مشکلی نمی‌سازد؛ دکمه هم قفل می‌ماند تا کسی دوباره
+                    // «تأیید» نزند و بلیت دوم بگیرد.
+                    termsOverlay.hidden = false;
+                    document.documentElement.classList.add('bkw-panel-open');
+                });
             });
         }
 

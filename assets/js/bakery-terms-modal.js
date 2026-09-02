@@ -15,10 +15,17 @@
  *
  * فقط در همین حالت دوم، تأیید همچنین Bakery_Widgets\Mobile_Login را
  * صدا می‌زند (bkw_login_complete — همان لحظه‌ای که wp_set_auth_cookie
- * واقعی زده می‌شود؛ رجوع کن به یادداشت assets/js/bakery-login.js) و
- * سپس کوکی دسترسی سایت (Bakery_Widgets\Site_Gate::COOKIE_NAME) را ست
- * می‌کند — همان کوکی‌ای که دروازهٔ سمت PHP (includes/bakery/site-gate.php)
- * روی هر صفحهٔ دیگر سایت چک می‌کند.
+ * واقعی زده می‌شود) و سپس کوکی دسترسی سایت
+ * (Bakery_Widgets\Site_Gate::COOKIE_NAME) را ست می‌کند — همان کوکی‌ای که
+ * دروازهٔ سمت PHP (includes/bakery/site-gate.php) روی هر صفحهٔ دیگر سایت
+ * چک می‌کند.
+ *
+ * چیزی که به آن اکشن فرستاده می‌شود «بلیت» است، نه شمارهٔ موبایل: کد
+ * تأیید پیش از باز شدن این مودال سنجیده و مصرف شده و سرور به‌جایش یک
+ * بلیت یک‌بارمصرف ده‌دقیقه‌ای داده است. assets/js/bakery-login.js آن را
+ * روی data-bkw-login-ticket ریشهٔ ویجت گذاشته و همین‌جا خوانده می‌شود.
+ * یعنی این مودال هیچ‌وقت خودش تصمیم نمی‌گیرد چه کسی وارد شود — فقط
+ * بلیتی را خرج می‌کند که سرور قبلاً صادر کرده.
  */
 (function () {
     'use strict';
@@ -43,7 +50,7 @@
      * data-redirect-url دارد که تعبیه‌شدهٔ همان ویجت Login باشد، آن
      * اسکریپت همیشه هم‌زمان در صفحه لود شده و window.bkwLogin موجود است.
      */
-    function callLoginAjax(action, mobile, onDone) {
+    function callLoginAjax(action, ticket, onDone) {
         if (!window.bkwLogin || !window.bkwLogin.ajaxUrl) {
             onDone(false);
             return;
@@ -52,7 +59,7 @@
         var body = new URLSearchParams();
         body.set('action', action);
         body.set('nonce', window.bkwLogin.nonce);
-        body.set('mobile', mobile);
+        body.set('ticket', ticket);
 
         fetch(window.bkwLogin.ajaxUrl, {
             method: 'POST',
@@ -120,22 +127,22 @@
             var redirectUrl = overlay.getAttribute('data-redirect-url');
             if (redirectUrl) {
                 var loginRoot = overlay.closest('.bkw-login');
-                var mobileInput = loginRoot ? loginRoot.querySelector('[data-bkw-login-field="mobile"]') : null;
-                var mobile = mobileInput ? mobileInput.value.trim() : '';
+                var ticket = loginRoot ? loginRoot.getAttribute('data-bkw-login-ticket') || '' : '';
 
                 acceptBtn.disabled = true;
 
-                callLoginAjax('bkw_login_complete', mobile, function (ok) {
+                callLoginAjax('bkw_login_complete', ticket, function (ok) {
                     if (ok) {
                         grantSiteAccess();
                         window.location.href = redirectUrl;
                         return;
                     }
 
-                    // خیلی نادر: شماره بین شروع لاگین و همین لحظه از
-                    // حساب کاربری پاک/عوض شده. مودال را می‌بندد و مسیر
-                    // عادی «شماره ثبت نشده» را در همان صفحهٔ ورود دوباره
-                    // نشان می‌دهد، به‌جای ریدایرکتی که دوباره قفلش می‌کند.
+                    // یا بلیت منقضی شده (کاربر مودال را خیلی طولانی
+                    // باز گذاشته) یا حساب بین سنجش کد و همین لحظه پاک
+                    // شده. مودال را می‌بندد و کاربر را در همان صفحهٔ ورود
+                    // با پیام خطا رها می‌کند تا از ابتدا تلاش کند، به‌جای
+                    // ریدایرکتی که دوباره قفلش می‌کند.
                     acceptBtn.disabled = false;
                     overlay.hidden = true;
                     overlay.style.display = 'none';

@@ -1340,6 +1340,12 @@ final class Login extends Widget_Base
         echo '</div>';
 
         echo '<div class="bkw-login__actions">';
+
+        // پیام‌های این عنصر همه از سرور می‌آیند (کد غلط، کد منقضی، سقف
+        // تلاش) — رجوع کن به Mobile_Login::ajax_verify. متن ثابتی ندارد
+        // و assets/js/bakery-login.js پرش می‌کند.
+        echo '<p class="bkw-login__field-error" data-bkw-login-code-error hidden></p>';
+
         echo '<button type="button" class="bkw-login__submit" data-bkw-login-step2-submit>';
         printf('<span class="bkw-login__submit-text-full">%s</span>', esc_html((string) $settings['step2_button_text']));
         printf('<span class="bkw-login__submit-text-short">%s</span>', esc_html((string) $settings['step2_button_text_mobile']));

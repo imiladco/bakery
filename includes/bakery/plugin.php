@@ -32,6 +32,8 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-policy.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-schema.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-store.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-settings.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/kavenegar.php';
 
         // همان الگوی Bakery_Credit\Plugin: نصب/ارتقای جدول روی init و نه
         // روی قلاب فعال‌سازی، چون افزونه ممکن است با آپلود فایل
@@ -49,6 +51,7 @@ final class Plugin
 
         (new Site_Gate())->register();
         (new Mobile_Login())->register();
+        (new Otp_Settings())->register();
 
         // فقط وقتی ووکامرس فعال است لازم است — ویجت‌های افزودن به سبد و
         // سایدبار سبد بدون آن اصلاً رندر نمی‌شوند.
