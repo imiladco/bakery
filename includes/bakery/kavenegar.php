@@ -54,7 +54,7 @@ final class Kavenegar
         $template = self::template();
 
         if ('' === $api_key || '' === $template) {
-            return self::fail(new WP_Error('bkw_sms_unconfigured', __('کلید API یا نام قالب خالی است.', 'bakery-widgets')));
+            return self::fail(new WP_Error('bkw_sms_unconfigured', __('کلید API یا نام قالب خالی است.', 'bakery-widgets')), '', '');
         }
 
         /*
@@ -89,7 +89,7 @@ final class Kavenegar
 
         if (is_wp_error($response)) {
             // به کاوه‌نگار نرسیدیم: DNS، فایروال خروجی سرور، یا تایم‌اوت.
-            return self::fail($response);
+            return self::fail($response, $url, '');
         }
 
         $raw = (string) wp_remote_retrieve_body($response);
@@ -116,7 +116,7 @@ final class Kavenegar
                 mb_substr(trim(wp_strip_all_tags($raw)), 0, 200)
             );
 
-        return self::fail(new WP_Error('bkw_sms_rejected', $message, ['status' => $status]));
+        return self::fail(new WP_Error('bkw_sms_rejected', $message, ['status' => $status]), $url, $raw);
     }
 
     /**
@@ -126,15 +126,46 @@ final class Kavenegar
      * است: ۴۱۸ یعنی اعتبار حساب کافی نیست، ۴۲۴ یعنی قالب پیدا نشد،
      * ۴۰۷ یعنی کلید API را نپذیرفته.
      */
-    private static function fail(WP_Error $error): WP_Error
+    private static function fail(WP_Error $error, string $url, string $raw): WP_Error
     {
         update_option(self::LAST_ERROR_OPTION, [
             'message' => $error->get_error_message(),
             'status' => (int) ($error->get_error_data()['status'] ?? 0),
+            'url' => self::redact($url),
+            'body' => mb_substr(trim($raw), 0, 300),
             'at' => time(),
         ], false);
 
         return $error;
+    }
+
+    /**
+     * آدرس درخواست با کلید پوشانده‌شده، برای نمایش به مدیر.
+     *
+     * جای کلید یک «اثر انگشت» می‌نشیند: طول، سه نویسهٔ اول و سه نویسهٔ
+     * آخر. همین برای تشخیص سه اشتباه پرتکرار کافی است بی‌آنکه کلید لو
+     * برود — کلیدِ خالی، کلیدی که هنوز همان ماسک ذخیره‌شده است، و
+     * کلیدی که «/» دارد و مسیر را می‌شکند (که کاوه‌نگار را به «متد
+     * نامشخص» می‌رساند).
+     */
+    private static function redact(string $url): string
+    {
+        $key = self::api_key();
+
+        if ('' === $url || '' === $key) {
+            return $url;
+        }
+
+        $length = mb_strlen($key);
+        $fingerprint = sprintf(
+            '<KEY len=%d %s…%s%s>',
+            $length,
+            mb_substr($key, 0, 3),
+            mb_substr($key, -3),
+            str_contains($key, '/') ? ' HAS-SLASH' : ''
+        );
+
+        return str_replace($key, $fingerprint, $url);
     }
 
     /**

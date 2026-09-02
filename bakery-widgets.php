@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Bakery Elementor Widgets
  * Description:       ویجت‌های اختصاصی المنتور برای بیکری عظام — آیکون/عنوان/توضیحات، قیمت، افزودن به سبد، و تعطیلات هفته (تقویم شمسی)
- * Version:           2.9.2
+ * Version:           2.9.3
  * Author:            Claude
  * Text Domain:       bakery-widgets
  * Requires PHP:      8.1
@@ -35,7 +35,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BAKERY_WIDGETS_VERSION', '2.9.2');
+define('BAKERY_WIDGETS_VERSION', '2.9.3');
 define('BAKERY_WIDGETS_FILE', __FILE__);
 define('BAKERY_WIDGETS_PATH', plugin_dir_path(__FILE__));
 define('BAKERY_WIDGETS_URL', plugin_dir_url(__FILE__));

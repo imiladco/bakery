@@ -224,17 +224,39 @@ final class Otp_Settings
             return;
         }
 
+        echo '<div class="notice notice-error">';
+
         printf(
-            '<div class="notice notice-error"><p><strong>%s</strong> %s%s<br><em>%s</em></p></div>',
+            '<p><strong>%s</strong> %s%s <em>(%s)</em></p>',
             esc_html__('آخرین ارسال ناموفق:', 'bakery-widgets'),
             esc_html((string) $error['message']),
-            $error['status'] > 0 ? esc_html(sprintf(' (کد %d)', (int) $error['status'])) : '',
+            $error['status'] > 0 ? esc_html(sprintf(' — کد %d', (int) $error['status'])) : '',
             esc_html(sprintf(
                 /* translators: %s: human-readable time difference */
                 __('%s پیش', 'bakery-widgets'),
                 human_time_diff((int) $error['at'])
             ))
         );
+
+        // آدرس درخواست و پاسخ خام — بدون این‌ها عیب‌یابی یعنی حدس زدن.
+        // کلید API پوشانده شده و فقط طول و سه نویسهٔ ابتدا/انتهایش
+        // می‌آید (رجوع کن به Kavenegar::redact).
+        if (!empty($error['url'])) {
+            printf(
+                '<p><code style="direction:ltr;display:block;word-break:break-all">%s</code></p>',
+                esc_html((string) $error['url'])
+            );
+        }
+
+        if (!empty($error['body'])) {
+            printf(
+                '<p><strong>%s</strong><br><code style="direction:ltr;display:block;word-break:break-all">%s</code></p>',
+                esc_html__('پاسخ خام:', 'bakery-widgets'),
+                esc_html((string) $error['body'])
+            );
+        }
+
+        echo '</div>';
     }
 
     /** نتیجهٔ آخرین «ارسال آزمایشی» که با ریدایرکت به این صفحه برگشته. */
