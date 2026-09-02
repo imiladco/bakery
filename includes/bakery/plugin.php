@@ -110,6 +110,7 @@ final class Plugin
     {
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/traits/account-actions-controls.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/traits/terms-modal-controls.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/traits/confirm-modal-controls.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/icon-box.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/price.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/account-bar.php';

@@ -93,7 +93,7 @@
             // تأیید سفارش قبلی.
             var success = sidebar.querySelector('[data-bkw-cart-success]');
             var error = sidebar.querySelector('[data-bkw-cart-error]');
-            var confirmModal = sidebar.querySelector('[data-bkw-cart-confirm]');
+            var confirmModal = sidebar.querySelector('[data-bkw-confirm="cart-checkout"]');
 
             sidebar.classList.remove('is-placed');
             if (success) {
@@ -123,7 +123,7 @@
             // وقتی مودال تأیید باز است، Escape فقط همان را می‌بندد — نه
             // اینکه سبد را هم پشت سرش ببندد و کاربر ندانَد سفارشش ثبت
             // شد یا نه. بستن خودِ مودال را setupPlaceOrder انجام می‌دهد.
-            var confirmModal = sidebar.querySelector('[data-bkw-cart-confirm]');
+            var confirmModal = sidebar.querySelector('[data-bkw-confirm="cart-checkout"]');
             if (confirmModal && !confirmModal.hidden) {
                 return;
             }
@@ -220,13 +220,22 @@
                 return;
             }
 
-            if (event.target.closest('[data-bkw-cart-confirm-cancel]')) {
+            /*
+             * دکمه‌های داخل مودال با ویجت سابقهٔ سفارش‌ها مشترک‌اند
+             * (Traits\Confirm_Modal_Controls یک مارکاپ برای هر دو
+             * می‌دهد)، پس صرفِ data-bkw-confirm-accept کافی نیست: بدون
+             * محدود کردن به مودالِ خودِ سبد، کلیک روی «بله، سفارش لغو
+             * شود» در آن ویجت همین‌جا یک سفارش ثبت می‌کرد.
+             */
+            var inCartConfirm = event.target.closest('[data-bkw-confirm="cart-checkout"]');
+
+            if (inCartConfirm && event.target.closest('[data-bkw-confirm-cancel]')) {
                 event.preventDefault();
                 closeConfirm(event.target.closest('[data-bkw-cart-sidebar]'));
                 return;
             }
 
-            var accept = event.target.closest('[data-bkw-cart-confirm-accept]');
+            var accept = inCartConfirm ? event.target.closest('[data-bkw-confirm-accept]') : null;
             if (accept && !accept.disabled) {
                 event.preventDefault();
                 placeOrder(accept);
@@ -235,9 +244,8 @@
 
             // کلیک روی خودِ پرده (نه کارت) مثل انصراف است — هیچ سفارشی
             // ثبت نشده، پس بستنش بی‌خطر است.
-            var overlay = event.target.closest('[data-bkw-cart-confirm]');
-            if (overlay && !event.target.closest('.bkw-cart-confirm__card')) {
-                closeConfirm(overlay.closest('[data-bkw-cart-sidebar]'));
+            if (inCartConfirm && !event.target.closest('.bkw-confirm__card')) {
+                closeConfirm(inCartConfirm.closest('[data-bkw-cart-sidebar]'));
             }
         });
 
@@ -246,7 +254,7 @@
                 return;
             }
 
-            document.querySelectorAll('[data-bkw-cart-confirm]').forEach(function (modal) {
+            document.querySelectorAll('[data-bkw-confirm="cart-checkout"]').forEach(function (modal) {
                 if (!modal.hidden) {
                     closeConfirm(modal.closest('[data-bkw-cart-sidebar]'));
                 }
@@ -265,7 +273,7 @@
             return;
         }
 
-        var modal = sidebar.querySelector('[data-bkw-cart-confirm]');
+        var modal = sidebar.querySelector('[data-bkw-confirm="cart-checkout"]');
         var errorBox = sidebar.querySelector('[data-bkw-cart-error]');
 
         if (!modal) {
@@ -284,7 +292,7 @@
             return;
         }
 
-        var modal = sidebar.querySelector('[data-bkw-cart-confirm]');
+        var modal = sidebar.querySelector('[data-bkw-confirm="cart-checkout"]');
         if (modal) {
             modal.hidden = true;
         }

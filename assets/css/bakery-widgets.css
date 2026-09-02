@@ -1615,7 +1615,7 @@ html.bkw-panel-open {
  * قدیمی نادیده گرفته می‌شود و فقط رنگ نیمه‌شفاف می‌ماند — که خودش
  * به‌تنهایی خواناست، پس تنزل بی‌خطر است.
  */
-.bkw-cart-confirm {
+.bkw-confirm {
 	position: fixed;
 	inset: 0;
 	z-index: 100002;
@@ -1629,16 +1629,16 @@ html.bkw-panel-open {
 	-webkit-backdrop-filter: blur(10px);
 }
 
-.bkw-cart-confirm[hidden] {
+.bkw-confirm[hidden] {
 	display: none !important;
 }
 
-.bkw-cart-confirm__card,
-.bkw-cart-confirm__card * {
+.bkw-confirm__card,
+.bkw-confirm__card * {
 	box-sizing: border-box;
 }
 
-.bkw-cart-confirm__card {
+.bkw-confirm__card {
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
@@ -1655,14 +1655,14 @@ html.bkw-panel-open {
 	box-shadow: 0 24px 24px rgba(26, 19, 14, 0.25);
 }
 
-.bkw-cart-confirm__header {
+.bkw-confirm__header {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	gap: 16px;
 }
 
-.bkw-cart-confirm__icon {
+.bkw-confirm__icon {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -1676,14 +1676,14 @@ html.bkw-panel-open {
  * اندازهٔ کل SVG تنظیم می‌شود و رنگ دایره/آیکون از تب استایل مستقیم روی
  * rect و path می‌نشیند.
  */
-.bkw-cart-confirm__icon svg,
-.bkw-cart-confirm__icon img {
+.bkw-confirm__icon svg,
+.bkw-confirm__icon img {
 	display: block;
 	width: 72px;
 	height: 72px;
 }
 
-.bkw-cart-confirm__title {
+.bkw-confirm__title {
 	margin: 0;
 	color: #8c583a;
 	font-size: 24px;
@@ -1691,7 +1691,7 @@ html.bkw-panel-open {
 	line-height: 1.4;
 }
 
-.bkw-cart-confirm__text {
+.bkw-confirm__text {
 	margin: 0;
 	color: #231912;
 	font-size: 16px;
@@ -1705,7 +1705,7 @@ html.bkw-panel-open {
  * برعکس دارد؛ اسکرین‌شات مرجع است، نه ترتیب خام JSX.) هر دو دکمه
  * هم‌عرض‌اند تا هیچ‌کدام با پهنای متنش برجسته‌تر از دیگری نشود.
  */
-.bkw-cart-confirm__actions {
+.bkw-confirm__actions {
 	display: flex;
 	flex-direction: row;
 	align-items: stretch;
@@ -1713,7 +1713,7 @@ html.bkw-panel-open {
 	width: 100%;
 }
 
-.bkw-cart-confirm__actions button {
+.bkw-confirm__actions button {
 	appearance: none;
 	flex: 1 1 0;
 	min-width: 0;
@@ -1730,35 +1730,46 @@ html.bkw-panel-open {
 	white-space: nowrap;
 }
 
-.bkw-cart-confirm__accept {
+.bkw-confirm__accept {
 	background-color: #8c583a;
 	color: #ffffff;
 }
 
-.bkw-cart-confirm__cancel {
+.bkw-confirm__cancel {
 	background-color: #ffffff;
 	color: #7d7065;
 	border: 1.5px solid #eaded6;
 }
 
-.bkw-cart-confirm__actions button:disabled {
+.bkw-confirm__actions button:disabled {
 	cursor: default;
 	opacity: 0.7;
 }
 
-.bkw-cart-confirm__accept-pending {
+.bkw-confirm__accept-pending {
 	display: none;
 }
 
-.bkw-cart-confirm__accept.is-pending .bkw-cart-confirm__accept-label {
+.bkw-confirm__accept.is-pending .bkw-confirm__accept-label {
 	display: none;
 }
 
-.bkw-cart-confirm__accept.is-pending .bkw-cart-confirm__accept-pending {
+.bkw-confirm__accept.is-pending .bkw-confirm__accept-pending {
 	display: inline;
 }
 
-.bkw-cart-confirm .bkw-cart-sidebar__error {
+.bkw-order-history__confirm-error {
+	margin: 0;
+	text-align: center;
+	color: #ba291e;
+	font-size: 13px;
+}
+
+.bkw-order-history__confirm-error[hidden] {
+	display: none !important;
+}
+
+.bkw-confirm .bkw-cart-sidebar__error {
 	margin: 0;
 }
 

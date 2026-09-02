@@ -6,6 +6,7 @@ namespace Bakery_Widgets\Widgets;
 
 use Bakery_Widgets\Cart_Fragments;
 use Bakery_Widgets\Order_Cancellation;
+use Bakery_Widgets\Widgets\Traits\Confirm_Modal_Controls;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Background;
 use Elementor\Group_Control_Border;
@@ -43,6 +44,8 @@ if (!defined('ABSPATH')) {
  */
 final class Order_History extends Widget_Base
 {
+    use Confirm_Modal_Controls;
+
     private const PAGE_QUERY_ARG = 'bkw_orders_page';
 
     #[\Override]
@@ -97,6 +100,14 @@ final class Order_History extends Widget_Base
         $this->register_list_controls();
         $this->register_labels_controls();
         $this->register_cancel_controls();
+        $this->register_confirm_modal_controls([
+            'section_label' => __('مودال تأیید لغو', 'bakery-widgets'),
+            'notice' => __('لغو سفارش برگشت‌پذیر نیست و اعتبار همان لحظه به کاربر برمی‌گردد، پس پیش از آن یک تأیید نهایی گرفته می‌شود. دکمهٔ «لغو سفارش» روی کارت فقط همین مودال را باز می‌کند.', 'bakery-widgets'),
+            'title' => __('لغو سفارش', 'bakery-widgets'),
+            'text' => __('آیا از لغو این سفارش اطمینان دارید؟', 'bakery-widgets'),
+            'accept_text' => __('بله، سفارش لغو شود', 'bakery-widgets'),
+            'cancel_text' => __('انصراف', 'bakery-widgets'),
+        ]);
         $this->register_pagination_controls();
 
         $this->register_card_style_controls();
@@ -104,6 +115,13 @@ final class Order_History extends Widget_Base
         $this->register_price_style_controls();
         $this->register_stepper_style_controls();
         $this->register_cancel_style_controls();
+        // رنگ پیش‌فرض دکمهٔ تأیید همان رنگ دکمهٔ «لغو سفارش» روی کارت
+        // است، تا مودال ادامهٔ همان کنش دیده شود نه یک عنصر جدا.
+        $this->register_confirm_modal_style_controls([
+            'section_label' => __('مودال تأیید لغو', 'bakery-widgets'),
+            'accept_bg' => '#ba291e',
+            'accept_color' => '#ffffff',
+        ]);
         $this->register_pagination_style_controls();
     }
 
@@ -768,6 +786,19 @@ final class Order_History extends Widget_Base
             }
 
             $this->render_pagination($page, $max_pages, $settings);
+
+            /*
+             * یک مودال برای کل ویجت و نه یکی به‌ازای هر کارت: مارکاپش
+             * ثابت است و فقط شناسهٔ سفارش عوض می‌شود، که
+             * assets/js/bakery-order-history.js موقع باز کردن رویش
+             * می‌نویسد. تکرارش به‌ازای هر سفارش یعنی ده پرده و ده کارت
+             * پنهان در DOM بدون هیچ سودی.
+             */
+            $this->render_confirm_modal($settings, [
+                'hook' => 'order-cancel',
+                'pending_text' => (string) $settings['cancel_pending_text'],
+                'extra_html' => '<p class="bkw-order-history__confirm-error" data-bkw-order-confirm-error role="alert" hidden></p>',
+            ]);
         }
 
         echo '</div>';
