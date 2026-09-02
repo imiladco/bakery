@@ -545,9 +545,14 @@ final class Order_History extends Widget_Base
 
         /*
          * عرض ستونِ گرید، نه عرض خودِ استپر. همین است که استپرهای
-         * کارت‌های مختلف را زیر هم نگه می‌دارد؛ اگر از محتوا می‌آمد،
-         * کارت لغوشده (دو مرحله) ستون باریک‌تری می‌گرفت و از تراز خارج
-         * می‌شد. ستون سوم ۱۲۰ پیکسل ستون مبلغ است و دست‌نخورده می‌ماند.
+         * کارت‌های مختلف را زیر هم نگه می‌دارد.
+         *
+         * مقدار را در یک متغیر CSS می‌نویسد و نه مستقیم در
+         * grid-template-columns. سلکتور المنتور از سلکتور شیت افزونه
+         * خاص‌تر است، پس نوشتن مستقیمِ سه ستون یعنی همان سه ستون در
+         * هر عرضی برنده می‌شود و چیدمان تک‌ستونهٔ موبایل هرگز اجرا
+         * نمی‌شود. با متغیر، «چند ستون» در CSS می‌ماند و کنترل فقط
+         * اندازه را می‌دهد. رجوع کن به .bkw-order-history__row.
          */
         $this->add_responsive_control('stepper_width', [
             'label' => __('عرض ستون مراحل', 'bakery-widgets'),
@@ -555,7 +560,8 @@ final class Order_History extends Widget_Base
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 200, 'max' => 640]],
             'default' => ['unit' => 'px', 'size' => 420],
-            'selectors' => ['{{WRAPPER}} .bkw-order-history__row' => 'grid-template-columns: minmax(0, 1fr) {{SIZE}}{{UNIT}} 120px;'],
+            'description' => __('فقط روی دسکتاپ اثر دارد؛ روی موبایل کارت تک‌ستونه می‌شود.', 'bakery-widgets'),
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__row' => '--bkw-stepper-col: {{SIZE}}{{UNIT}};'],
         ]);
 
         $this->add_responsive_control('step_width', [
@@ -564,6 +570,7 @@ final class Order_History extends Widget_Base
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 40, 'max' => 140]],
             'default' => ['unit' => 'px', 'size' => 72],
+            'mobile_default' => ['unit' => 'px', 'size' => 56],
             'selectors' => ['{{WRAPPER}} .bkw-order-history__step' => 'min-width: {{SIZE}}{{UNIT}};'],
         ]);
 
@@ -573,6 +580,7 @@ final class Order_History extends Widget_Base
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 0, 'max' => 24]],
             'default' => ['unit' => 'px', 'size' => 6],
+            'mobile_default' => ['unit' => 'px', 'size' => 4],
             'selectors' => ['{{WRAPPER}} .bkw-order-history__step' => 'gap: {{SIZE}}{{UNIT}};'],
         ]);
 
@@ -606,6 +614,7 @@ final class Order_History extends Widget_Base
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 8, 'max' => 32]],
             'default' => ['unit' => 'px', 'size' => 14],
+            'mobile_default' => ['unit' => 'px', 'size' => 12],
             'selectors' => ['{{WRAPPER}} .bkw-order-history__step-circle svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};'],
         ]);
 
@@ -707,6 +716,8 @@ final class Order_History extends Widget_Base
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 8, 'max' => 80]],
             'default' => ['unit' => 'px', 'size' => 32],
+            'mobile_default' => ['unit' => 'px', 'size' => 16],
+            'description' => __('روی موبایل فقط کف طول است — رابط‌ها فضای باقی‌مانده را پر می‌کنند.', 'bakery-widgets'),
             'selectors' => ['{{WRAPPER}} .bkw-order-history__step-connector' => 'width: {{SIZE}}{{UNIT}};'],
         ]);
 
@@ -725,20 +736,33 @@ final class Order_History extends Widget_Base
             'separator' => 'before',
         ]);
 
+        /*
+         * اندازهٔ قلم و ارتفاع خط مقدار موبایل جدا دارند (رفرنس موبایل
+         * ۸ پیکسل است، دسکتاپ ۱۱). این‌ها باید روی خودِ کنترل بنشینند
+         * نه در شیت افزونه: سلکتور المنتور خاص‌تر است و مقدار دسکتاپش
+         * هر چیزی را که در مدیا-کوئری شیت بنویسیم می‌پوشاند.
+         */
         $this->add_group_control(Group_Control_Typography::get_type(), [
             'name' => 'step_label_typography',
             'selector' => '{{WRAPPER}} .bkw-order-history__step-label',
             'fields_options' => [
-                'font_size' => ['default' => ['unit' => 'px', 'size' => 11]],
+                'font_size' => [
+                    'default' => ['unit' => 'px', 'size' => 11],
+                    'mobile_default' => ['unit' => 'px', 'size' => 8],
+                ],
                 'font_weight' => ['default' => '700'],
-                'line_height' => ['default' => ['unit' => 'px', 'size' => 18]],
+                'line_height' => [
+                    'default' => ['unit' => 'px', 'size' => 18],
+                    'mobile_default' => ['unit' => 'em', 'size' => 1.2],
+                ],
             ],
         ]);
 
-        $this->add_control('step_label_color', [
+        $this->add_responsive_control('step_label_color', [
             'label' => __('رنگ برچسب', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
             'default' => '#615249',
+            'mobile_default' => '#231912',
             'selectors' => ['{{WRAPPER}} .bkw-order-history__step-label' => 'color: {{VALUE}};'],
         ]);
 
