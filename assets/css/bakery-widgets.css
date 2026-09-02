@@ -2207,9 +2207,17 @@ html.bkw-panel-open {
 		gap: 16px;
 	}
 
+	/*
+	 * gap صفر است و هر عنصر margin خودش را دارد.
+	 *
+	 * فاصله‌های عمودی رفرنس یکسان نیستند — ۱۶ بین بلوک‌ها ولی ۱۰ بین
+	 * اقلام و مبلغ (که در رفرنس هر دو داخل یک بلوک‌اند). با gap
+	 * یکنواخت یکی‌شان همیشه غلط می‌ماند.
+	 */
 	.bkw-order-history__row {
 		grid-template-columns: minmax(0, 1fr);
-		gap: 16px;
+		justify-items: start;
+		gap: 0;
 	}
 
 	.bkw-order-history__meta {
@@ -2254,10 +2262,15 @@ html.bkw-panel-open {
 	 * دو خط جداکنندهٔ بالا و پایین مراحل، با border و نه دو عنصر
 	 * اضافه در DOM — چیزی که فقط در یک بریک‌پوینت دیده می‌شود نباید
 	 * در مارک‌آپ باشد.
+	 *
+	 * پدینگ ۲۰ است و نه ۱۶: در رفرنس، خط ۱۶ پیکسل با بلوک بالایی
+	 * فاصله دارد و خودِ ظرف مراحل ۴ پیکسل پدینگ عمودی — یعنی از خط تا
+	 * دایره‌ها ۲۰ می‌شود.
 	 */
 	.bkw-order-history__stepper {
 		width: 100%;
-		padding: 16px 0;
+		margin-top: 16px;
+		padding: 20px 0;
 		border-top: 1px solid #eaded6;
 		border-bottom: 1px solid #eaded6;
 	}
@@ -2265,6 +2278,23 @@ html.bkw-panel-open {
 	.bkw-order-history__items-block,
 	.bkw-order-history__price {
 		width: 100%;
+	}
+
+	.bkw-order-history__items-block {
+		margin-top: 16px;
+	}
+
+	/* اقلام تا مبلغ ۱۰ است و نه ۱۶ — هر دو داخل یک بلوک‌اند در رفرنس. */
+	.bkw-order-history__price {
+		margin-top: 10px;
+	}
+
+	/*
+	 * رفرنس موبایل پیش از دکمهٔ لغو خط جداکننده ندارد؛ فقط دو خط
+	 * بالا و پایین مراحل. آن خط مالِ چیدمان دسکتاپ است.
+	 */
+	.bkw-order-history__card > .bkw-order-history__divider {
+		display: none;
 	}
 
 	.bkw-order-history__items {
