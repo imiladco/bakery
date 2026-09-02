@@ -543,13 +543,28 @@ final class Order_History extends Widget_Base
             'content_classes' => 'elementor-descriptor',
         ]);
 
+        /*
+         * عرض ستونِ گرید، نه عرض خودِ استپر. همین است که استپرهای
+         * کارت‌های مختلف را زیر هم نگه می‌دارد؛ اگر از محتوا می‌آمد،
+         * کارت لغوشده (دو مرحله) ستون باریک‌تری می‌گرفت و از تراز خارج
+         * می‌شد. ستون سوم ۱۲۰ پیکسل ستون مبلغ است و دست‌نخورده می‌ماند.
+         */
+        $this->add_responsive_control('stepper_width', [
+            'label' => __('عرض ستون مراحل', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 200, 'max' => 640]],
+            'default' => ['unit' => 'px', 'size' => 420],
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__row' => 'grid-template-columns: minmax(0, 1fr) {{SIZE}}{{UNIT}} 120px;'],
+        ]);
+
         $this->add_responsive_control('step_width', [
-            'label' => __('عرض هر مرحله', 'bakery-widgets'),
+            'label' => __('حداقل عرض هر مرحله', 'bakery-widgets'),
             'type' => Controls_Manager::SLIDER,
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 40, 'max' => 140]],
             'default' => ['unit' => 'px', 'size' => 72],
-            'selectors' => ['{{WRAPPER}} .bkw-order-history__step' => 'width: {{SIZE}}{{UNIT}};'],
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step' => 'min-width: {{SIZE}}{{UNIT}};'],
         ]);
 
         $this->add_responsive_control('step_gap', [
@@ -624,6 +639,14 @@ final class Order_History extends Widget_Base
             'type' => Controls_Manager::COLOR,
             'default' => '#ffffff',
             'selectors' => ['{{WRAPPER}} .bkw-order-history__step.is-reached .bkw-order-history__step-circle' => 'color: {{VALUE}};'],
+        ]);
+
+        $this->add_control('step_delivered_bg', [
+            'label' => __('رنگ دایرهٔ «تحویل داده شد»', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#398032',
+            'description' => __('مرحلهٔ پایانی وقتی واقعاً طی شده رنگ خودش را دارد، نه رنگ بقیهٔ مرحله‌های طی‌شده.', 'bakery-widgets'),
+            'selectors' => ['{{WRAPPER}} .bkw-order-history__step.is-delivered.is-reached .bkw-order-history__step-circle' => 'background-color: {{VALUE}};'],
         ]);
 
         $this->add_control('heading_step_pending', [
@@ -1051,9 +1074,12 @@ final class Order_History extends Widget_Base
     private function render_step(string $status, string $label, bool $reached, bool $cancelled): void
     {
         printf(
-            '<div class="bkw-order-history__step%s%s">',
+            '<div class="bkw-order-history__step%s%s%s">',
             $reached ? ' is-reached' : '',
-            $cancelled ? ' is-cancelled' : ''
+            $cancelled ? ' is-cancelled' : '',
+            // مرحلهٔ پایانی رنگ خودش را دارد (سبز، نه قهوه‌ای) ولی فقط
+            // وقتی واقعاً طی شده باشد — رجوع کن به CSS و رفرنس 291:7525.
+            'completed' === $status ? ' is-delivered' : ''
         );
 
         echo '<span class="bkw-order-history__step-circle">';
