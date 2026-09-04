@@ -104,20 +104,6 @@ final class UsersSheetTest extends TestCase
         self::assertSame([], $plan['rows']);
     }
 
-    /** فایلی که فقط شناسه و نام دارد کاملاً معتبر است: «فقط نام‌ها را عوض کن». */
-    public function test_a_file_with_only_ids_and_names_is_accepted(): void
-    {
-        $id = WordPress::seedUser(['user_login' => '0012345678'], [
-            Mobile_Login::META_NATIONAL_ID => '0012345678',
-        ]);
-
-        $plan = $this->plan([[(string) $id, 'علی', 'رضایی']], ['شناسه', 'نام', 'نام خانوادگی']);
-
-        self::assertSame('', $plan['fatal']);
-        self::assertSame('update', $plan['rows'][0]['action']);
-        self::assertSame([], $plan['rows'][0]['errors']);
-    }
-
     /** مدیر یک سطر را کپی می‌کند و یادش می‌رود شماره را عوض کند. */
     public function test_two_rows_sharing_a_mobile_number_collide_with_each_other(): void
     {
@@ -131,13 +117,18 @@ final class UsersSheetTest extends TestCase
         self::assertStringContainsString('سطر 2', $plan['rows'][1]['errors'][0]);
     }
 
-    public function test_a_mobile_number_already_owned_by_another_user_is_refused(): void
+    /**
+     * شمارهٔ تماس هم کلید است، پس سطری که فقط با آن می‌خورد کاربر تازه
+     * نمی‌سازد — همان کاربر را کامل می‌کند.
+     */
+    public function test_a_row_found_only_by_its_phone_number_updates_that_user(): void
     {
-        WordPress::seedUser(['user_login' => 'other'], [Mobile_Login::META_MOBILE => '09121234567']);
+        $id = WordPress::seedUser(['user_login' => 'other'], [Mobile_Login::META_MOBILE => '09121234567']);
 
         $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '']]);
 
-        self::assertSame('error', $plan['rows'][0]['action']);
+        self::assertSame('update', $plan['rows'][0]['action']);
+        self::assertSame($id, $plan['rows'][0]['user_id']);
     }
 
     /** همان شماره روی همان کاربر، تکراری نیست. */
@@ -185,26 +176,26 @@ final class UsersSheetTest extends TestCase
         self::assertSame('0012345678', $plan['rows'][0]['values'][Mobile_Login::META_NATIONAL_ID]);
     }
 
-    /* ------------------------------------------------- شناسه به‌عنوان کلید */
+    /* ----------------------------------------------------- تطبیق دو کلیدی */
 
     /**
-     * دلیل وجود ستون شناسه.
+     * دلیل وجودِ تطبیق دو کلیدی.
      *
-     * تا وقتی کلید، کد ملی بود، کد ملیِ اشتباهِ ثبت‌شده از راه فایل
+     * تا وقتی فقط کد ملی کلید بود، کد ملیِ اشتباهِ ثبت‌شده از راه فایل
      * اصلاح‌شدنی نبود: مدیر درستش می‌کرد و نتیجه یک کاربر *تازه* بود،
-     * چون سطر دیگر به هیچ‌کس نمی‌خورد. با شناسه، کد ملی از کلید به یک
-     * مقدار قابل ویرایش تبدیل می‌شود.
+     * چون سطر دیگر به هیچ‌کس نمی‌خورد. حالا شمارهٔ تماس همان سطر را پیدا
+     * می‌کند و کد ملی فقط یک مقدار است که نوشته می‌شود.
      */
-    public function test_a_national_id_can_be_corrected_when_the_row_carries_its_user_id(): void
+    public function test_a_national_id_can_be_corrected_because_the_phone_still_matches(): void
     {
         $id = WordPress::seedUser(['user_login' => '0012345678'], [
             Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121234567',
             'first_name' => 'علی',
             'last_name' => 'رضایی',
         ]);
 
-        $header = array_merge(['شناسه'], self::HEADER);
-        $plan = $this->apply([[(string) $id, 'علی', 'رضایی', '09121234567', '9998887776', '']], $header);
+        $plan = $this->apply([['علی', 'رضایی', '09121234567', '9998887776', '']]);
 
         self::assertSame('update', $plan['rows'][0]['action']);
         self::assertSame([], $plan['rows'][0]['errors']);
@@ -212,52 +203,94 @@ final class UsersSheetTest extends TestCase
         self::assertSame('9998887776', WordPress::meta($id, Mobile_Login::META_NATIONAL_ID));
     }
 
-    /** شناسهٔ بی‌صاحب یعنی اشتباه، نه دعوت به ساختن کاربر تازه. */
-    public function test_a_row_naming_a_user_id_that_does_not_exist_is_an_error(): void
-    {
-        $header = array_merge(['شناسه'], self::HEADER);
-        $plan = $this->plan([['999', 'علی', 'رضایی', '09121234567', '0012345678', '']], $header);
-
-        self::assertSame('error', $plan['rows'][0]['action']);
-        self::assertStringContainsString('999', $plan['rows'][0]['errors'][0]);
-    }
-
-    /** کد ملیِ یک کاربر را نمی‌شود روی کاربر دیگری نشاند. */
-    public function test_moving_a_national_id_onto_another_user_is_refused(): void
-    {
-        WordPress::seedUser(['user_login' => 'a'], [Mobile_Login::META_NATIONAL_ID => '0012345678']);
-        $second = WordPress::seedUser(['user_login' => 'b'], [Mobile_Login::META_NATIONAL_ID => '1234567890']);
-
-        $header = array_merge(['شناسه'], self::HEADER);
-        $plan = $this->plan([[(string) $second, 'مریم', 'احمدی', '09121234568', '0012345678', '']], $header);
-
-        self::assertSame('error', $plan['rows'][0]['action']);
-    }
-
-    /** سطری که مدیر خودش اضافه کرده شناسه ندارد و همان مسیر قبلی را می‌رود. */
-    public function test_a_row_without_a_user_id_still_matches_on_national_id(): void
+    /** و در جهت مخالف: شمارهٔ عوض‌شده با کد ملی پیدا می‌شود. */
+    public function test_a_phone_number_can_be_corrected_because_the_national_id_still_matches(): void
     {
         $id = WordPress::seedUser(['user_login' => '0012345678'], [
             Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121234567',
         ]);
 
-        $header = array_merge(['شناسه'], self::HEADER);
-        $plan = $this->plan([['', 'علی', 'رضایی', '09121234567', '0012345678', '']], $header);
+        $this->apply([['علی', 'رضایی', '09350000000', '0012345678', '']]);
 
-        self::assertSame('update', $plan['rows'][0]['action']);
-        self::assertSame($id, $plan['rows'][0]['user_id']);
+        self::assertCount(1, WordPress::$users);
+        self::assertSame('09350000000', WordPress::meta($id, Mobile_Login::META_MOBILE));
     }
 
-    public function test_the_export_carries_each_user_id_in_the_first_column(): void
+    /**
+     * کد ملی به یک نفر می‌خورد و شماره به یکی دیگر.
+     *
+     * حدس‌زدن این‌جا خطرناک است — هر انتخابی یعنی نوشتن روی حسابی که
+     * ممکن است اشتباه باشد. معمول‌ترین علتش جابه‌جا شدن دو سطر است.
+     */
+    public function test_a_row_pointing_at_two_different_users_is_refused(): void
     {
-        $id = WordPress::seedUser(['user_login' => '0012345678'], [
+        WordPress::seedUser(['user_login' => 'a', 'display_name' => 'علی رضایی'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+        ]);
+        WordPress::seedUser(['user_login' => 'b', 'display_name' => 'مریم احمدی'], [
+            Mobile_Login::META_MOBILE => '09121234567',
+        ]);
+
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '']]);
+
+        self::assertSame('error', $plan['rows'][0]['action']);
+        self::assertStringContainsString('علی رضایی', $plan['rows'][0]['errors'][0]);
+        self::assertStringContainsString('مریم احمدی', $plan['rows'][0]['errors'][0]);
+    }
+
+    /**
+     * دو سطری که شماره‌هایشان جابه‌جا تایپ شده — هر دو رد می‌شوند و هیچ
+     * حسابی روی دیگری نوشته نمی‌شود.
+     */
+    public function test_two_rows_with_swapped_phone_numbers_are_both_refused(): void
+    {
+        WordPress::seedUser(['user_login' => 'a', 'display_name' => 'علی'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121111111',
+        ]);
+        WordPress::seedUser(['user_login' => 'b', 'display_name' => 'مریم'], [
+            Mobile_Login::META_NATIONAL_ID => '1234567890',
+            Mobile_Login::META_MOBILE => '09122222222',
+        ]);
+
+        $plan = $this->plan([
+            ['علی', 'رضایی', '09122222222', '0012345678', ''],
+            ['مریم', 'احمدی', '09121111111', '1234567890', ''],
+        ]);
+
+        self::assertSame('error', $plan['rows'][0]['action']);
+        self::assertSame('error', $plan['rows'][1]['action']);
+    }
+
+    /** کد پرسنلی کلید نیست: مال سازمان است و می‌تواند به کارمند تازه برسد. */
+    public function test_a_personnel_code_alone_never_matches_an_existing_user(): void
+    {
+        WordPress::seedUser(['user_login' => 'old'], [
+            Mobile_Login::META_NATIONAL_ID => '1111111111',
+            Mobile_Login::META_PERSONNEL => 'A-1',
+        ]);
+
+        $plan = $this->plan([['رضا', 'کریمی', '09359999999', '2222222222', 'A-2']]);
+
+        self::assertSame('create', $plan['rows'][0]['action']);
+    }
+
+    /** فایل هیچ ستون شناسه‌ای ندارد؛ روی هر نصبی همان معنا را می‌دهد. */
+    public function test_the_export_carries_no_internal_identifier(): void
+    {
+        WordPress::seedUser(['user_login' => '0012345678'], [
             Mobile_Login::META_NATIONAL_ID => '0012345678',
         ]);
 
-        $rows = Users_Sheet::exportRows();
+        $labels = array_map(
+            static fn ($column): string => $column->label,
+            Users_Sheet::sheetColumns()
+        );
 
-        self::assertSame((string) $id, $rows[0][0]);
-        self::assertSame('شناسه', Users_Sheet::sheetColumns()[0]->label);
+        self::assertNotContains('شناسه', $labels);
+        self::assertSame('نام', $labels[0]);
+        self::assertSame('0012345678', Users_Sheet::exportRows()[0][3]);
     }
 
     /* ---------------------------------------------------------- سرستون */

@@ -25,18 +25,24 @@ if (!defined('ABSPATH')) {
  * خروجی گرفتن، تطبیق سرستون‌های فایل ورودی، و نوشتن. پس ستون تازه یعنی
  * یک ورودی در همین آرایه و نه سه جای پراکنده.
  *
- * ستون «شناسه» کلیدِ واقعیِ هر سطر است و نه کد ملی.
+ * هر سطر با کد ملی *یا* شمارهٔ موبایل به کاربرش وصل می‌شود.
  *
- * اولش کد ملی این نقش را داشت، و یک محدودیت جدی می‌ساخت: کد ملیِ
+ * اولش فقط کد ملی این نقش را داشت و یک محدودیت جدی می‌ساخت: کد ملیِ
  * اشتباهِ ثبت‌شده از راه فایل قابل اصلاح نبود. مدیر آن را در اکسل درست
- * می‌کرد و نتیجه یک کاربر *تازه* بود، چون سطر دیگر به هیچ کاربری
- * نمی‌خورد. کلید نباید چیزی باشد که خودش داده است و عوض می‌شود.
+ * می‌کرد و نتیجه یک کاربر *تازه* بود، چون سطر دیگر به هیچ‌کس نمی‌خورد.
  *
- * پس خروجی، شناسهٔ خودِ کاربر وردپرس را در ستون اول می‌گذارد و ورودی
- * اول از همان می‌خواند. مدیر هیچ‌وقت این ستون را پر نمی‌کند — خودش پر
- * آمده — و در عوض می‌تواند هر ستون دیگری، از جمله کد ملی، را آزادانه
- * عوض کند. سطر بدون شناسه (سطری که مدیر خودش اضافه کرده) همچنان با کد
- * ملی تطبیق داده می‌شود و اگر نبود، کاربر تازه می‌سازد.
+ * راه‌حل بعدی یک ستون «شناسهٔ کاربر وردپرس» بود که کنار گذاشته شد. دو
+ * ایراد داشت که هیچ‌کدام با قفل‌کردن ستون حل نمی‌شد: عددی بی‌معنا جلوی
+ * چشم مدیر می‌گذاشت، و مهم‌تر، فایل را به یک دیتابیس مشخص گره می‌زد —
+ * همان فایل روی سایت آزمایشی یا نصب تازه به کاربرهای دیگری اشاره
+ * می‌کرد.
+ *
+ * حالا تطبیق روی دو فیلدی انجام می‌شود که هر دو یک آدم را می‌شناسانند و
+ * هیچ‌وقت بین دو نفر جابه‌جا نمی‌شوند: کد ملی و شمارهٔ موبایل. اصلاح
+ * یکی، با آن‌یکی پیدا می‌شود. اگر هر دو به دو کاربر *مختلف* بخورند،
+ * سطر خطا می‌گیرد و نوشته نمی‌شود — چون آن‌وقت معلوم نیست منظور کدام
+ * بوده. کد پرسنلی عمداً کلید نیست: مال سازمان است و نه شخص، و
+ * جابه‌جا شدنش بین دو کارمند اتفاق طبیعی‌ای‌ست.
  *
  * سقف اعتبار عمداً این‌جا نیست. آن مال ماژول اعتبار است و خودش با فیلتر
  * `bkw_user_sheet_columns` ستونش را اضافه می‌کند
@@ -65,22 +71,6 @@ final class Users_Sheet
     public static function columns(): array
     {
         $columns = [
-            'id' => [
-                'label' => __('شناسه', 'bakery-widgets'),
-                'aliases' => ['شناسه کاربر', 'user_id', 'id'],
-                'store' => 'id',
-                'required' => false,
-                'unique' => false,
-                'width' => 9,
-                'muted' => true,
-                'hint' => __('شناسهٔ کاربر در وردپرس. خودِ خروجی پرش می‌کند و دست‌کاری لازم ندارد؛ وجودش همان چیزی‌ست که اجازه می‌دهد بقیهٔ ستون‌ها — حتی کد ملی — را عوض کنید. برای کاربر تازه خالی بگذارید.', 'bakery-widgets'),
-                'read' => static fn (int $id): string => (string) $id,
-                'parse' => static function (string $raw): ?string {
-                    $digits = Mobile_Login::normalize_digits($raw);
-
-                    return '' !== $digits && (int) $digits > 0 ? $digits : null;
-                },
-            ],
             'first_name' => [
                 'label' => __('نام', 'bakery-widgets'),
                 'aliases' => ['نام کوچک', 'first_name'],
@@ -238,18 +228,17 @@ final class Users_Sheet
         $map = self::mapHeader($header);
         $columns = self::columns();
 
-        // یکی از این دو کافی‌ست: شناسه سطر را قطعی وصل می‌کند، و کد ملی
-        // سطرهایی را که مدیر خودش اضافه کرده. هیچ‌کدام نباشد، هیچ سطری
-        // به هیچ کاربری نمی‌خورد.
-        if (!in_array('id', $map, true) && !in_array(self::KEY_COLUMN, $map, true)) {
+        // یکی از این دو کافی‌ست؛ هیچ‌کدام نباشد، هیچ سطری به هیچ کاربری
+        // نمی‌خورد و فایل اصلاً قابل پردازش نیست.
+        if ([] === array_intersect(self::matchKeys(), $map)) {
             return [
                 'columns' => [],
                 'rows' => [],
                 'fatal' => sprintf(
-                    /* translators: 1: ID column label, 2: national ID column label */
+                    /* translators: 1: national ID column label, 2: mobile column label */
                     __('فایل نه ستون «%1$s» دارد و نه «%2$s»، پس معلوم نیست هر سطر مال کدام کاربر است. یک بار خروجی بگیرید و همان فایل را ویرایش کنید.', 'bakery-widgets'),
-                    $columns['id']['label'],
-                    $columns[self::KEY_COLUMN]['label']
+                    $columns[self::KEY_COLUMN]['label'],
+                    $columns[Mobile_Login::META_MOBILE]['label']
                 ),
             ];
         }
@@ -305,40 +294,38 @@ final class Users_Sheet
         }
 
         $nationalId = $values[self::KEY_COLUMN] ?? '';
-        $explicitId = (int) ($values['id'] ?? 0);
+        $matched = self::matchUsers($values);
 
-        /*
-         * شناسه اول، کد ملی دوم.
-         *
-         * ترتیب مهم است و همان چیزی‌ست که اصلاح کد ملی را ممکن می‌کند:
-         * وقتی سطر شناسه دارد، کد ملیِ داخلش یک *مقدار* است که نوشته
-         * می‌شود، نه کلیدی که سطر با آن پیدا شده. سطر بدون شناسه —
-         * سطری که مدیر خودش اضافه کرده — همان رفتار قبلی را دارد.
-         */
-        if ($explicitId > 0) {
-            if (!get_userdata($explicitId)) {
-                return self::row($line, 'error', 0, '', $nationalId, $values, array_merge($errors, [
-                    sprintf(
-                        /* translators: %d: user ID from the file */
-                        __('کاربری با شناسهٔ %d وجود ندارد. اگر می‌خواهید کاربر تازه ساخته شود، ستون شناسه را خالی بگذارید.', 'bakery-widgets'),
-                        $explicitId
-                    ),
-                ]));
-            }
-
-            $userId = $explicitId;
-        } elseif ('' !== $nationalId) {
-            $userId = self::findUser($nationalId);
-        } else {
+        if ([] === $matched && '' === $nationalId) {
+            // نه به کاربری خورد و نه کد ملی دارد که با آن ساخته شود.
             return self::row($line, 'error', 0, '', '', $values, array_merge($errors, [
                 sprintf(
-                    /* translators: %s: column label */
-                    __('این سطر نه شناسه دارد و نه «%s»؛ به هیچ کاربری وصل نمی‌شود.', 'bakery-widgets'),
-                    $columns[self::KEY_COLUMN]['label']
+                    /* translators: 1: national ID column label, 2: mobile column label */
+                    __('این سطر نه «%1$s» دارد و نه «%2$s»؛ به هیچ کاربری وصل نمی‌شود.', 'bakery-widgets'),
+                    $columns[self::KEY_COLUMN]['label'],
+                    $columns[Mobile_Login::META_MOBILE]['label']
                 ),
             ]));
         }
 
+        if (count($matched) > 1) {
+            /*
+             * کد ملی به یک نفر خورده و شماره به یکی دیگر.
+             *
+             * این‌جا حدس‌زدن خطرناک است: هر انتخابی یعنی نوشتن روی
+             * حسابِ ممکن است اشتباه. معمول‌ترین علتش هم جابه‌جا شدن دو
+             * سطر است، که با یک پیام صریح در چند ثانیه پیدا می‌شود.
+             */
+            return self::row($line, 'error', 0, '', $nationalId, $values, array_merge($errors, [
+                sprintf(
+                    /* translators: %s: comma-separated user names */
+                    __('ستون‌های این سطر به بیش از یک کاربر می‌خورند (%s). یعنی یا سطرها جابه‌جا شده‌اند یا مقداری اشتباه است.', 'bakery-widgets'),
+                    implode('، ', array_map(static fn (int $id): string => self::describe($id), $matched))
+                ),
+            ]));
+        }
+
+        $userId = (int) (reset($matched) ?: 0);
         $isNew = 0 === $userId;
 
         $errors = array_merge(
@@ -358,6 +345,62 @@ final class Users_Sheet
         }
 
         return self::row($line, $isNew ? 'create' : 'update', $userId, $name, $nationalId, $values, []);
+    }
+
+    /**
+     * فیلدهایی که یک سطر را به یک کاربر وصل می‌کنند.
+     *
+     * هر دو یک آدم را می‌شناسانند و هیچ‌وقت بین دو نفر جابه‌جا نمی‌شوند.
+     * کد پرسنلی عمداً این‌جا نیست — مال سازمان است و نه شخص، و اگر کلید
+     * می‌شد، کدی که به کارمند تازه واگذار شده سطرش را بی‌صدا روی
+     * کارمند قبلی می‌نوشت.
+     *
+     * @return array<int, string>
+     */
+    private static function matchKeys(): array
+    {
+        return [self::KEY_COLUMN, Mobile_Login::META_MOBILE];
+    }
+
+    /**
+     * کاربرانی که این سطر به آن‌ها می‌خورد — امیدواریم صفر یا یکی.
+     *
+     * @param array<string, string> $values
+     * @return array<int, int> شناسه‌های یکتا
+     */
+    private static function matchUsers(array $values): array
+    {
+        $found = [];
+
+        foreach (self::matchKeys() as $key) {
+            $value = $values[$key] ?? '';
+
+            if ('' === $value) {
+                continue;
+            }
+
+            $owner = Mobile_Login::find_by($key, $value);
+
+            if (null !== $owner) {
+                $found[$owner] = $owner;
+            }
+        }
+
+        return array_values($found);
+    }
+
+    /** نام کاربر برای پیام خطا؛ اگر نامی نداشت، نام کاربری‌اش. */
+    private static function describe(int $userId): string
+    {
+        $user = get_userdata($userId);
+
+        if (!$user) {
+            return (string) $userId;
+        }
+
+        $name = trim((string) $user->display_name);
+
+        return '' !== $name ? $name : (string) $user->user_login;
     }
 
     /**
@@ -631,7 +674,6 @@ final class Users_Sheet
                 (string) ($column['rule_message'] ?? ''),
                 (bool) ($column['flag_duplicates'] ?? false),
                 (int) ($column['width'] ?? 22),
-                (bool) ($column['muted'] ?? false),
             );
         }
 

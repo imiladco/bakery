@@ -354,6 +354,32 @@ final class ReaderTest extends TestCase
         self::assertSame([['کد ملی', 'مبلغ'], ['0012345678', '1200000']], Reader::grid($path, 'xlsx'));
     }
 
+    /**
+     * رنگ سرستون فقط روی ستون‌های واقعی، نه تا انتهای صفحه.
+     *
+     * s/customFormat روی خودِ عنصر <row> یعنی «کل این سطر این قالب را
+     * دارد» — و کل سطر در اکسل ۱۶٬۳۸۴ ستون است. نتیجه‌اش نواری رنگی
+     * بود که تا انتهای صفحه ادامه داشت. سبک باید فقط روی سلول‌ها بنشیند.
+     */
+    public function test_the_header_style_stops_at_the_last_real_column(): void
+    {
+        if (!Writer::canWriteXlsx()) {
+            self::markTestSkipped('افزونهٔ zip در دسترس نیست.');
+        }
+
+        $path = $this->file('xlsx');
+        Writer::xlsx($path, [new Column('نام'), new Column('کد ملی')], [['علی', '1']]);
+
+        $xml = $this->worksheetXml($path);
+
+        preg_match('/<row r="1"[^>]*>/', $xml, $match);
+
+        self::assertStringNotContainsString('customFormat', $match[0]);
+        self::assertStringNotContainsString(' s=', $match[0]);
+        // ولی خودِ سلول‌ها باید سبک سرستون را داشته باشند.
+        self::assertStringContainsString('<c r="A1" s="1"', $xml);
+    }
+
     /** سطر سرستون هنگام اسکرول سر جایش می‌ماند و فیلتر دارد. */
     public function test_the_header_row_is_frozen_and_filterable(): void
     {

@@ -40,7 +40,6 @@ final class Writer
     private const STYLE_TEXT = 0;
     private const STYLE_HEADER = 1;
     private const STYLE_NUMBER = 2;
-    private const STYLE_MUTED = 3;
 
     /**
      * چند سطر پایین‌تر از داده هم اعتبارسنجی و رنگ‌آمیزی می‌گیرند.
@@ -194,7 +193,12 @@ final class Writer
     /** @param array<int, Column> $columns */
     private static function headerRow(array $columns): string
     {
-        $xml = '<row r="1" ht="26" customHeight="1" s="' . self::STYLE_HEADER . '" customFormat="1">';
+        // سبک فقط روی سلول‌ها و نه روی خودِ <row>.
+        //
+        // s/customFormat روی عنصر row یعنی «کل این سطر این قالب را
+        // دارد» — و «کل سطر» در اکسل ۱۶٬۳۸۴ ستون است. نتیجه‌اش نواری
+        // رنگی بود که تا انتهای صفحه ادامه داشت، نه یک سرستون.
+        $xml = '<row r="1" ht="26" customHeight="1">';
 
         foreach ($columns as $index => $column) {
             $xml .= '<c r="' . self::letters($index) . '1" s="' . self::STYLE_HEADER . '" t="inlineStr">'
@@ -293,11 +297,7 @@ final class Writer
 
     private static function styleFor(Column $column): int
     {
-        if ($column->numeric) {
-            return self::STYLE_NUMBER;
-        }
-
-        return $column->muted ? self::STYLE_MUTED : self::STYLE_TEXT;
+        return $column->numeric ? self::STYLE_NUMBER : self::STYLE_TEXT;
     }
 
     /* ---------------------------------------------------------------------
@@ -376,10 +376,9 @@ final class Writer
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            . '<fonts count="3">'
+            . '<fonts count="2">'
             . '<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>'
             . '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
-            . '<font><sz val="11"/><color rgb="FF808080"/><name val="Calibri"/></font>'
             . '</fonts>'
             . '<fills count="3">'
             . '<fill><patternFill patternType="none"/></fill>'
@@ -394,7 +393,7 @@ final class Writer
             . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
             // بدون cellStyles، اکسل «سبک پیش‌فرضی ندارد» می‌گیرد و سبک
             // خودش را جای سبک‌های ما می‌نشاند.
-            . '<cellXfs count="4">'
+            . '<cellXfs count="3">'
             // ۰ — متن
             . '<xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>'
             // ۱ — سرستون
@@ -402,9 +401,6 @@ final class Writer
             . '<alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
             // ۲ — عدد با جداکنندهٔ سه‌رقمی
             . '<xf numFmtId="3" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>'
-            // ۳ — متنِ کم‌رنگ (ستون شناسه)
-            . '<xf numFmtId="49" fontId="2" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1">'
-            . '<alignment horizontal="center"/></xf>'
             . '</cellXfs>'
             . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
             // قالب سلول‌های تکراری: پس‌زمینهٔ صورتی، متن قرمز تیره —

@@ -27,7 +27,6 @@ final class Column
         public readonly string $ruleMessage = '',
         public readonly bool $flagDuplicates = false,
         public readonly int $width = 22,
-        public readonly bool $muted = false,
     ) {
     }
 }
