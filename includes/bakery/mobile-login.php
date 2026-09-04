@@ -64,9 +64,9 @@ final class Mobile_Login
     // کلید موبایل عمداً همان 'bkw_mobile' قبلی مانده — شماره‌هایی که
     // مدیر تا امروز ثبت کرده در همین کلید نشسته‌اند و عوض کردنش یعنی
     // همه‌شان بی‌صدا ناپدید شوند.
-    private const META_MOBILE = 'bkw_mobile';
-    private const META_NATIONAL_ID = 'bkw_national_id';
-    private const META_PERSONNEL = 'bkw_personnel_code';
+    public const META_MOBILE = 'bkw_mobile';
+    public const META_NATIONAL_ID = 'bkw_national_id';
+    public const META_PERSONNEL = 'bkw_personnel_code';
 
     /**
      * لحظهٔ پذیرفتن قوانین — تایم‌استمپ یونیکس، یک بار برای همیشه.
@@ -130,9 +130,14 @@ final class Mobile_Login
      * digits یعنی مقدار باید دقیقاً همین تعداد رقم باشد؛ null یعنی
      * متن آزاد.
      *
+     * عمومی است چون این تنها فهرست فیلدهای هویت در کل افزونه است و
+     * ورودی/خروجی اکسل (Users_Sheet) هم از همین می‌خواند. اگر روزی فیلد
+     * چهارمی اضافه شود، خودبه‌خود هم در پروفایل می‌آید، هم در ستون‌های
+     * فهرست کاربران، و هم در فایل اکسل — بدون اینکه کسی یادش بماند.
+     *
      * @return array<string,array{label:string,description:string,digits:?int,unique:bool}>
      */
-    private static function fields(): array
+    public static function fields(): array
     {
         return [
             self::META_NATIONAL_ID => [
@@ -820,7 +825,7 @@ final class Mobile_Login
      * فاصله‌های اضافه‌اش گرفته می‌شود و هر چیزی که ادمین نوشته همان
      * می‌ماند.
      */
-    private static function normalize_field(string $key, string $raw): ?string
+    public static function normalize_field(string $key, string $raw): ?string
     {
         return match ($key) {
             self::META_NATIONAL_ID => self::normalize_national_id($raw),
@@ -834,7 +839,7 @@ final class Mobile_Login
      *
      * @param int $exclude_user_id شناسهٔ کاربری که از جست‌وجو کنار گذاشته می‌شود (۰ یعنی هیچ‌کدام)
      */
-    private static function find_by(string $meta_key, string $value, int $exclude_user_id = 0): ?int
+    public static function find_by(string $meta_key, string $value, int $exclude_user_id = 0): ?int
     {
         $users = get_users([
             'meta_key' => $meta_key,

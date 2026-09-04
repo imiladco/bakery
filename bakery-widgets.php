@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Bakery Elementor Widgets
  * Description:       ویجت‌های اختصاصی المنتور برای بیکری عظام — آیکون/عنوان/توضیحات، قیمت، افزودن به سبد، و تعطیلات هفته (تقویم شمسی)
- * Version:           2.15.0
+ * Version:           2.16.0
  * Author:            Claude
  * Text Domain:       bakery-widgets
  * Requires PHP:      8.1
@@ -35,7 +35,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BAKERY_WIDGETS_VERSION', '2.15.0');
+define('BAKERY_WIDGETS_VERSION', '2.16.0');
 define('BAKERY_WIDGETS_FILE', __FILE__);
 define('BAKERY_WIDGETS_PATH', plugin_dir_path(__FILE__));
 define('BAKERY_WIDGETS_URL', plugin_dir_url(__FILE__));
@@ -53,9 +53,11 @@ const BAKERY_WIDGETS_MIN_ELEMENTOR = '3.13.0';
 spl_autoload_register(static function (string $class): void {
     // WHW\  -> includes/          (ویجت تعطیلات هفته)
     // Bakery_Credit\ -> includes/Credit/  (اعتبار ماهانه — منطق پول، لایه‌بندی‌شده و تست‌دار)
+    // Bakery_Sheet\   -> includes/Sheet/   (خواندن و نوشتن CSV/XLSX — خالص و تست‌دار)
     $prefixes = [
         'WHW\\' => 'includes/',
         'Bakery_Credit\\' => 'includes/Credit/',
+        'Bakery_Sheet\\' => 'includes/Sheet/',
     ];
 
     foreach ($prefixes as $prefix => $baseDir) {

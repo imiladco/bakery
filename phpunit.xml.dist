@@ -17,11 +17,15 @@
         <testsuite name="bakery">
             <directory>tests/Bakery</directory>
         </testsuite>
+        <testsuite name="sheet">
+            <directory>tests/Sheet</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
             <directory>includes/Domain</directory>
             <directory>includes/Credit</directory>
+            <directory>includes/Sheet</directory>
         </include>
     </source>
 </phpunit>

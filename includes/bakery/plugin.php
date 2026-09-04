@@ -35,6 +35,8 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-store.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-settings.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/kavenegar.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/users-sheet.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/users-sheet-page.php';
 
         // همان الگوی Bakery_Credit\Plugin: نصب/ارتقای جدول روی init و نه
         // روی قلاب فعال‌سازی، چون افزونه ممکن است با آپلود فایل
@@ -53,6 +55,12 @@ final class Plugin
         (new Site_Gate())->register();
         (new Mobile_Login())->register();
         (new Otp_Settings())->register();
+
+        // ورودی/خروجی اکسل کاربران — فقط در پیشخوان معنا دارد و همهٔ
+        // قلاب‌هایش (منوی کاربران و admin-post) هم همان‌جا هستند.
+        if (is_admin()) {
+            (new Users_Sheet_Page())->register();
+        }
 
         // فقط وقتی ووکامرس فعال است لازم است — ویجت‌های افزودن به سبد و
         // سایدبار سبد بدون آن اصلاً رندر نمی‌شوند.

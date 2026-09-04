@@ -13,6 +13,7 @@ use Bakery_Credit\Integration\Gateway;
 use Bakery_Credit\Integration\PurchaseLimit;
 use Bakery_Credit\Integration\Registration;
 use Bakery_Credit\Integration\Reversals;
+use Bakery_Credit\Integration\SheetColumn;
 use Bakery_Credit\Service\CreditAccount;
 use Bakery_Credit\Storage\Allowance;
 use Bakery_Credit\Storage\Ledger;
@@ -65,6 +66,12 @@ final class Plugin
         (new PurchaseLimit($this->account))->register();
         (new CheckoutGuard($this->account))->register();
         (new Reversals($this->account))->register();
+
+        // ستون «سقف اعتبار» در فایل ورودی/خروجی کاربران. عمداً بیرون از
+        // شرط is_admin نیست چون هر دو سرِ آن (صفحهٔ اکسل و این ستون) فقط
+        // در پیشخوان اجرا می‌شوند — ولی فیلترش باید پیش از رندر آن صفحه
+        // ثبت شده باشد، و ثبتش هزینه‌ای ندارد.
+        (new SheetColumn($this->allowances))->register();
 
         // مسیر اصلی پرداخت: یک کلیک از داخل سایدبار سبد، بدون صفحهٔ
         // تسویه‌حساب. عمداً بیرون از شرط is_admin ثبت می‌شود — اکشن روی
