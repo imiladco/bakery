@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bakery_Widgets;
 
+use Bakery_Sheet\Column as SheetColumnSpec;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -22,6 +24,19 @@ if (!defined('ABSPATH')) {
  * ستون‌ها یک‌جا تعریف می‌شوند و هر سه مصرف‌کننده از همین می‌خوانند:
  * خروجی گرفتن، تطبیق سرستون‌های فایل ورودی، و نوشتن. پس ستون تازه یعنی
  * یک ورودی در همین آرایه و نه سه جای پراکنده.
+ *
+ * ستون «شناسه» کلیدِ واقعیِ هر سطر است و نه کد ملی.
+ *
+ * اولش کد ملی این نقش را داشت، و یک محدودیت جدی می‌ساخت: کد ملیِ
+ * اشتباهِ ثبت‌شده از راه فایل قابل اصلاح نبود. مدیر آن را در اکسل درست
+ * می‌کرد و نتیجه یک کاربر *تازه* بود، چون سطر دیگر به هیچ کاربری
+ * نمی‌خورد. کلید نباید چیزی باشد که خودش داده است و عوض می‌شود.
+ *
+ * پس خروجی، شناسهٔ خودِ کاربر وردپرس را در ستون اول می‌گذارد و ورودی
+ * اول از همان می‌خواند. مدیر هیچ‌وقت این ستون را پر نمی‌کند — خودش پر
+ * آمده — و در عوض می‌تواند هر ستون دیگری، از جمله کد ملی، را آزادانه
+ * عوض کند. سطر بدون شناسه (سطری که مدیر خودش اضافه کرده) همچنان با کد
+ * ملی تطبیق داده می‌شود و اگر نبود، کاربر تازه می‌سازد.
  *
  * سقف اعتبار عمداً این‌جا نیست. آن مال ماژول اعتبار است و خودش با فیلتر
  * `bkw_user_sheet_columns` ستونش را اضافه می‌کند
@@ -50,6 +65,22 @@ final class Users_Sheet
     public static function columns(): array
     {
         $columns = [
+            'id' => [
+                'label' => __('شناسه', 'bakery-widgets'),
+                'aliases' => ['شناسه کاربر', 'user_id', 'id'],
+                'store' => 'id',
+                'required' => false,
+                'unique' => false,
+                'width' => 9,
+                'muted' => true,
+                'hint' => __('شناسهٔ کاربر در وردپرس. خودِ خروجی پرش می‌کند و دست‌کاری لازم ندارد؛ وجودش همان چیزی‌ست که اجازه می‌دهد بقیهٔ ستون‌ها — حتی کد ملی — را عوض کنید. برای کاربر تازه خالی بگذارید.', 'bakery-widgets'),
+                'read' => static fn (int $id): string => (string) $id,
+                'parse' => static function (string $raw): ?string {
+                    $digits = Mobile_Login::normalize_digits($raw);
+
+                    return '' !== $digits && (int) $digits > 0 ? $digits : null;
+                },
+            ],
             'first_name' => [
                 'label' => __('نام', 'bakery-widgets'),
                 'aliases' => ['نام کوچک', 'first_name'],
@@ -89,7 +120,7 @@ final class Users_Sheet
                 continue;
             }
 
-            $columns[$key] = [
+            $columns[$key] = array_merge([
                 'label' => $identity[$key]['label'],
                 'aliases' => self::identityAliases($key),
                 'store' => 'meta',
@@ -101,7 +132,7 @@ final class Users_Sheet
                 'hint' => $identity[$key]['description'],
                 'read' => static fn (int $id): string => (string) get_user_meta($id, $key, true),
                 'parse' => static fn (string $raw): ?string => self::parseIdentity($key, $raw),
-            ];
+            ], self::identityRule($key));
         }
 
         /**
@@ -112,14 +143,7 @@ final class Users_Sheet
         return (array) apply_filters('bkw_user_sheet_columns', $columns);
     }
 
-    /** @return array<int, string> سرستون‌های فایل، به همان ترتیب ستون‌ها */
-    public static function header(): array
-    {
-        return array_map(
-            static fn (array $column): string => (string) $column['label'],
-            array_values(self::columns())
-        );
-    }
+
 
     /** @return array<int, array<int, string>> یک سطر به‌ازای هر کاربر سایت */
     public static function exportRows(): array
@@ -214,13 +238,17 @@ final class Users_Sheet
         $map = self::mapHeader($header);
         $columns = self::columns();
 
-        if (!in_array(self::KEY_COLUMN, $map, true)) {
+        // یکی از این دو کافی‌ست: شناسه سطر را قطعی وصل می‌کند، و کد ملی
+        // سطرهایی را که مدیر خودش اضافه کرده. هیچ‌کدام نباشد، هیچ سطری
+        // به هیچ کاربری نمی‌خورد.
+        if (!in_array('id', $map, true) && !in_array(self::KEY_COLUMN, $map, true)) {
             return [
                 'columns' => [],
                 'rows' => [],
                 'fatal' => sprintf(
-                    /* translators: %s: column label */
-                    __('ستون «%s» در فایل پیدا نشد. بدون آن معلوم نیست هر سطر مال کدام کاربر است. یک بار خروجی بگیرید و همان فایل را ویرایش کنید.', 'bakery-widgets'),
+                    /* translators: 1: ID column label, 2: national ID column label */
+                    __('فایل نه ستون «%1$s» دارد و نه «%2$s»، پس معلوم نیست هر سطر مال کدام کاربر است. یک بار خروجی بگیرید و همان فایل را ویرایش کنید.', 'bakery-widgets'),
+                    $columns['id']['label'],
                     $columns[self::KEY_COLUMN]['label']
                 ),
             ];
@@ -277,18 +305,40 @@ final class Users_Sheet
         }
 
         $nationalId = $values[self::KEY_COLUMN] ?? '';
+        $explicitId = (int) ($values['id'] ?? 0);
 
-        if ('' === $nationalId) {
+        /*
+         * شناسه اول، کد ملی دوم.
+         *
+         * ترتیب مهم است و همان چیزی‌ست که اصلاح کد ملی را ممکن می‌کند:
+         * وقتی سطر شناسه دارد، کد ملیِ داخلش یک *مقدار* است که نوشته
+         * می‌شود، نه کلیدی که سطر با آن پیدا شده. سطر بدون شناسه —
+         * سطری که مدیر خودش اضافه کرده — همان رفتار قبلی را دارد.
+         */
+        if ($explicitId > 0) {
+            if (!get_userdata($explicitId)) {
+                return self::row($line, 'error', 0, '', $nationalId, $values, array_merge($errors, [
+                    sprintf(
+                        /* translators: %d: user ID from the file */
+                        __('کاربری با شناسهٔ %d وجود ندارد. اگر می‌خواهید کاربر تازه ساخته شود، ستون شناسه را خالی بگذارید.', 'bakery-widgets'),
+                        $explicitId
+                    ),
+                ]));
+            }
+
+            $userId = $explicitId;
+        } elseif ('' !== $nationalId) {
+            $userId = self::findUser($nationalId);
+        } else {
             return self::row($line, 'error', 0, '', '', $values, array_merge($errors, [
                 sprintf(
                     /* translators: %s: column label */
-                    __('ستون «%s» خالی است؛ این سطر به هیچ کاربری وصل نمی‌شود.', 'bakery-widgets'),
+                    __('این سطر نه شناسه دارد و نه «%s»؛ به هیچ کاربری وصل نمی‌شود.', 'bakery-widgets'),
                     $columns[self::KEY_COLUMN]['label']
                 ),
             ]));
         }
 
-        $userId = self::findUser($nationalId);
         $isNew = 0 === $userId;
 
         $errors = array_merge(
@@ -524,6 +574,68 @@ final class Users_Sheet
         }
 
         return Mobile_Login::normalize_field($key, $raw);
+    }
+
+    /**
+     * قاعده‌ای که خودِ اکسل هنگام تایپ بررسی می‌کند.
+     *
+     * همان دو شرطی که سرور هم می‌گیرد (Mobile_Login::normalize و
+     * normalize_national_id)، این‌بار به زبان فرمول اکسل. هدف جایگزینی
+     * سنجش سرور نیست — آن همیشه حرف آخر را می‌زند — بلکه جلو آوردن
+     * خطاست از «بعد از آپلود کل فایل» به «همان سلولی که تایپ شد».
+     *
+     * ISNUMBER(--{c}) عمداً کنار LEN آمده: ستون قالب متن دارد، پس
+     * ISNUMBER به‌تنهایی روی «۰۹۱۲…» نادرست می‌شود؛ «--» آن را به عدد
+     * تبدیل می‌کند و حرف و فاصله را رد می‌کند.
+     *
+     * @return array<string, mixed>
+     */
+    private static function identityRule(string $key): array
+    {
+        return match ($key) {
+            self::KEY_COLUMN => [
+                'rule' => 'OR({c}="",AND(LEN({c})=10,ISNUMBER(--{c})))',
+                'rule_title' => __('کد ملی نامعتبر', 'bakery-widgets'),
+                'rule_message' => __('کد ملی باید دقیقاً ۱۰ رقم باشد. صفرِ ابتدایی را حذف نکنید.', 'bakery-widgets'),
+                'flag_duplicates' => true,
+            ],
+            Mobile_Login::META_MOBILE => [
+                'rule' => 'OR({c}="",AND(LEN({c})=11,LEFT({c},2)="09",ISNUMBER(--{c})))',
+                'rule_title' => __('شمارهٔ تماس نامعتبر', 'bakery-widgets'),
+                'rule_message' => __('شماره باید ۱۱ رقم باشد و با ۰۹ شروع شود؛ مثل ۰۹۱۲۱۲۳۴۵۶۷.', 'bakery-widgets'),
+                'flag_duplicates' => true,
+            ],
+            Mobile_Login::META_PERSONNEL => ['flag_duplicates' => true],
+            default => [],
+        };
+    }
+
+    /**
+     * ستون‌ها، ترجمه‌شده به چیزی که نویسندهٔ فایل می‌فهمد.
+     *
+     * لایهٔ فایل نباید بداند «کد ملی» چیست؛ فقط می‌داند این ستون متن
+     * است، این قاعده را دارد، و تکراری‌هایش باید قرمز شوند.
+     *
+     * @return array<int, SheetColumnSpec>
+     */
+    public static function sheetColumns(): array
+    {
+        $specs = [];
+
+        foreach (self::columns() as $column) {
+            $specs[] = new SheetColumnSpec(
+                (string) $column['label'],
+                (bool) ($column['numeric'] ?? false),
+                isset($column['rule']) ? (string) $column['rule'] : null,
+                (string) ($column['rule_title'] ?? ''),
+                (string) ($column['rule_message'] ?? ''),
+                (bool) ($column['flag_duplicates'] ?? false),
+                (int) ($column['width'] ?? 22),
+                (bool) ($column['muted'] ?? false),
+            );
+        }
+
+        return $specs;
     }
 
     /** @return array<int, string> */

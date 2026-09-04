@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Sheet\Tests;
 
+use Bakery_Sheet\Column;
 use Bakery_Sheet\Reader;
 use Bakery_Sheet\SheetError;
 use Bakery_Sheet\Writer;
@@ -33,6 +34,15 @@ final class ReaderTest extends TestCase
         }
 
         return $path;
+    }
+
+    /**
+     * @param array<int, string> $labels
+     * @return array<int, Column>
+     */
+    private static function columns(array $labels): array
+    {
+        return array_map(static fn (string $label): Column => new Column($label), $labels);
     }
 
     /* ------------------------------------------------------------------ CSV */
@@ -116,7 +126,7 @@ final class ReaderTest extends TestCase
         ];
 
         $path = $this->file('xlsx');
-        Writer::xlsx($path, $header, $rows);
+        Writer::xlsx($path, self::columns($header), $rows);
 
         self::assertSame(array_merge([$header], $rows), Reader::grid($path, 'xlsx'));
     }
@@ -133,7 +143,7 @@ final class ReaderTest extends TestCase
         }
 
         $path = $this->file('xlsx');
-        Writer::xlsx($path, ['کد ملی'], [['0012345678'], ['007']]);
+        Writer::xlsx($path, self::columns(['کد ملی']), [['0012345678'], ['007']]);
 
         self::assertSame([['کد ملی'], ['0012345678'], ['007']], Reader::grid($path, 'xlsx'));
     }
@@ -236,16 +246,142 @@ final class ReaderTest extends TestCase
         Reader::grid($this->file('xlsx', 'این یک فایل اکسل نیست'), 'xlsx');
     }
 
+    /* ------------------------------------------------- ساختار فایل اکسل */
+
+    private function worksheetXml(string $path): string
+    {
+        $zip = new \ZipArchive();
+        $zip->open($path);
+        $xml = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+
+        return $xml;
+    }
+
+    /**
+     * ترتیب عنصرها در worksheet اختیاری نیست.
+     *
+     * اسکیمای اکسل دقیقاً همین توالی را می‌خواهد، و اگر جابه‌جا شوند
+     * فایل را «خراب» اعلام می‌کند — نه اینکه آن بخش را نادیده بگیرد.
+     * یعنی حالت شکست، «اکسل فایل را باز نمی‌کند» است و نه «قاعده‌ای کار
+     * نکرد»؛ برای همین صریح بررسی می‌شود.
+     */
+    public function test_the_worksheet_parts_are_written_in_schema_order(): void
+    {
+        if (!Writer::canWriteXlsx()) {
+            self::markTestSkipped('افزونهٔ zip در دسترس نیست.');
+        }
+
+        $path = $this->file('xlsx');
+        Writer::xlsx($path, [
+            new Column('کد ملی', rule: 'LEN({c})=10', ruleTitle: 'خطا', ruleMessage: 'ده رقم', flagDuplicates: true),
+            new Column('مبلغ', numeric: true),
+        ], [['0012345678', '1200000']]);
+
+        $xml = $this->worksheetXml($path);
+        $order = [];
+
+        foreach (['<cols>', '<sheetData>', '<autoFilter', '<conditionalFormatting', '<dataValidations>', '<ignoredErrors>'] as $tag) {
+            $at = strpos($xml, $tag);
+            self::assertNotFalse($at, $tag . ' نوشته نشده.');
+            $order[] = $at;
+        }
+
+        $sorted = $order;
+        sort($sorted);
+
+        self::assertSame($sorted, $order, 'ترتیب بخش‌های worksheet با اسکیمای اکسل نمی‌خواند.');
+    }
+
+    /** قاعده برای هر سطر نسبی می‌شود، پس فرمول به اولین سلولِ داده اشاره می‌کند. */
+    public function test_a_validation_rule_is_anchored_to_the_first_data_cell(): void
+    {
+        if (!Writer::canWriteXlsx()) {
+            self::markTestSkipped('افزونهٔ zip در دسترس نیست.');
+        }
+
+        $path = $this->file('xlsx');
+        Writer::xlsx($path, [
+            new Column('نام'),
+            new Column('کد ملی', rule: 'LEN({c})=10', ruleTitle: 'خطا', ruleMessage: 'ده رقم'),
+        ], [['علی', '0012345678']]);
+
+        $xml = $this->worksheetXml($path);
+
+        self::assertStringContainsString('<formula1>LEN(B2)=10</formula1>', $xml);
+        self::assertStringContainsString('errorStyle="stop"', $xml);
+        // چند سطر پایین‌تر از داده هم پوشش دارد، وگرنه سطری که مدیر تازه
+        // اضافه می‌کند از قاعده بیرون می‌افتاد.
+        self::assertStringContainsString('sqref="B2:B502"', $xml);
+    }
+
+    public function test_a_column_can_ask_for_its_duplicates_to_be_highlighted(): void
+    {
+        if (!Writer::canWriteXlsx()) {
+            self::markTestSkipped('افزونهٔ zip در دسترس نیست.');
+        }
+
+        $path = $this->file('xlsx');
+        Writer::xlsx($path, [new Column('کد ملی', flagDuplicates: true), new Column('نام')], [['1', 'علی']]);
+
+        $xml = $this->worksheetXml($path);
+
+        self::assertStringContainsString('type="duplicateValues"', $xml);
+        self::assertStringContainsString('<conditionalFormatting sqref="A2:A502">', $xml);
+        // ستون دوم نخواسته، پس نباید بگیرد.
+        self::assertStringNotContainsString('sqref="B2:B502"', $xml);
+    }
+
+    /**
+     * ستون عددی به‌صورت عدد نوشته می‌شود و بقیه به‌صورت متن.
+     *
+     * همین تفاوت است که هم جداکنندهٔ سه‌رقمی مبلغ را ممکن می‌کند و هم
+     * صفرِ اولِ کد ملی را نگه می‌دارد.
+     */
+    public function test_numeric_columns_are_numbers_and_the_rest_stay_text(): void
+    {
+        if (!Writer::canWriteXlsx()) {
+            self::markTestSkipped('افزونهٔ zip در دسترس نیست.');
+        }
+
+        $path = $this->file('xlsx');
+        Writer::xlsx($path, [new Column('کد ملی'), new Column('مبلغ', numeric: true)], [['0012345678', '1200000']]);
+
+        $xml = $this->worksheetXml($path);
+
+        self::assertStringContainsString('<c r="A2" s="0" t="inlineStr"><is><t xml:space="preserve">0012345678</t></is></c>', $xml);
+        self::assertStringContainsString('<c r="B2" s="2"><v>1200000</v></c>', $xml);
+        self::assertSame([['کد ملی', 'مبلغ'], ['0012345678', '1200000']], Reader::grid($path, 'xlsx'));
+    }
+
+    /** سطر سرستون هنگام اسکرول سر جایش می‌ماند و فیلتر دارد. */
+    public function test_the_header_row_is_frozen_and_filterable(): void
+    {
+        if (!Writer::canWriteXlsx()) {
+            self::markTestSkipped('افزونهٔ zip در دسترس نیست.');
+        }
+
+        $path = $this->file('xlsx');
+        Writer::xlsx($path, [new Column('نام'), new Column('کد ملی')], [['علی', '1'], ['مریم', '2']]);
+
+        $xml = $this->worksheetXml($path);
+
+        self::assertStringContainsString('<pane ySplit="1" topLeftCell="A2"', $xml);
+        self::assertStringContainsString('state="frozen"', $xml);
+        self::assertStringContainsString('<autoFilter ref="A1:B3"/>', $xml);
+        self::assertStringContainsString('rightToLeft="1"', $xml);
+    }
+
     /* --------------------------------------------------------------- Writer */
 
     public function test_the_csv_export_carries_a_bom_so_excel_shows_persian(): void
     {
-        self::assertStringStartsWith("\xEF\xBB\xBF", Writer::csv(['نام'], [['علی']]));
+        self::assertStringStartsWith("\xEF\xBB\xBF", Writer::csv(self::columns(['نام']), [['علی']]));
     }
 
     public function test_the_csv_export_reads_back_through_the_reader(): void
     {
-        $path = $this->file('csv', Writer::csv(['نام', 'کد ملی'], [['علی', '0012345678']]));
+        $path = $this->file('csv', Writer::csv(self::columns(['نام', 'کد ملی']), [['علی', '0012345678']]));
 
         self::assertSame(
             [['نام', 'کد ملی'], ['علی', '0012345678']],

@@ -51,7 +51,16 @@ final class SheetColumn
             'store' => 'custom',
             'required' => false,
             'unique' => false,
-            'hint' => __('سقف ماهانهٔ خرید، بدون جداکننده. خالی گذاشتنش یعنی سقف فعلی دست‌نخورده بماند.', 'bakery-widgets'),
+            // عدد و نه متن: فقط این‌طور جداکنندهٔ سه‌رقمی، مرتب‌سازی و
+            // جمع‌بستنِ ستون در اکسل کار می‌کنند. صفرِ ابتدایی هم که
+            // برای مبلغ بی‌معناست، پس دلیل متن‌بودنِ ستون‌های دیگر
+            // این‌جا برقرار نیست.
+            'numeric' => true,
+            'width' => 16,
+            'rule' => 'OR({c}="",AND(ISNUMBER({c}),{c}>=0))',
+            'rule_title' => __('سقف اعتبار نامعتبر', 'bakery-widgets'),
+            'rule_message' => __('سقف اعتبار باید عددی مثبت یا صفر باشد.', 'bakery-widgets'),
+            'hint' => __('سقف ماهانهٔ خرید. خالی گذاشتنش یعنی سقف فعلی دست‌نخورده بماند. تغییرش از این‌جا هم مثل تغییر از پروفایل کاربر در تاریخچهٔ اعتبار ثبت می‌شود.', 'bakery-widgets'),
             'read' => static fn (int $userId): string => Number::format($allowances->forUser($userId)),
             'parse' => static fn (string $raw): ?string => Number::amount($raw),
             'write' => static function (int $userId, string $value) use ($allowances): void {

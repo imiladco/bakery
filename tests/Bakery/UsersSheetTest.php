@@ -96,12 +96,26 @@ final class UsersSheetTest extends TestCase
         self::assertSame('error', $plan['rows'][0]['action']);
     }
 
-    public function test_a_file_without_the_national_id_column_is_refused_whole(): void
+    public function test_a_file_with_neither_key_column_is_refused_whole(): void
     {
         $plan = $this->plan([['علی', 'رضایی']], ['نام', 'نام خانوادگی']);
 
         self::assertNotSame('', $plan['fatal']);
         self::assertSame([], $plan['rows']);
+    }
+
+    /** فایلی که فقط شناسه و نام دارد کاملاً معتبر است: «فقط نام‌ها را عوض کن». */
+    public function test_a_file_with_only_ids_and_names_is_accepted(): void
+    {
+        $id = WordPress::seedUser(['user_login' => '0012345678'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+        ]);
+
+        $plan = $this->plan([[(string) $id, 'علی', 'رضایی']], ['شناسه', 'نام', 'نام خانوادگی']);
+
+        self::assertSame('', $plan['fatal']);
+        self::assertSame('update', $plan['rows'][0]['action']);
+        self::assertSame([], $plan['rows'][0]['errors']);
     }
 
     /** مدیر یک سطر را کپی می‌کند و یادش می‌رود شماره را عوض کند. */
@@ -169,6 +183,81 @@ final class UsersSheetTest extends TestCase
         self::assertSame([], $plan['rows'][0]['errors']);
         self::assertSame('09121234567', $plan['rows'][0]['values'][Mobile_Login::META_MOBILE]);
         self::assertSame('0012345678', $plan['rows'][0]['values'][Mobile_Login::META_NATIONAL_ID]);
+    }
+
+    /* ------------------------------------------------- شناسه به‌عنوان کلید */
+
+    /**
+     * دلیل وجود ستون شناسه.
+     *
+     * تا وقتی کلید، کد ملی بود، کد ملیِ اشتباهِ ثبت‌شده از راه فایل
+     * اصلاح‌شدنی نبود: مدیر درستش می‌کرد و نتیجه یک کاربر *تازه* بود،
+     * چون سطر دیگر به هیچ‌کس نمی‌خورد. با شناسه، کد ملی از کلید به یک
+     * مقدار قابل ویرایش تبدیل می‌شود.
+     */
+    public function test_a_national_id_can_be_corrected_when_the_row_carries_its_user_id(): void
+    {
+        $id = WordPress::seedUser(['user_login' => '0012345678'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            'first_name' => 'علی',
+            'last_name' => 'رضایی',
+        ]);
+
+        $header = array_merge(['شناسه'], self::HEADER);
+        $plan = $this->apply([[(string) $id, 'علی', 'رضایی', '09121234567', '9998887776', '']], $header);
+
+        self::assertSame('update', $plan['rows'][0]['action']);
+        self::assertSame([], $plan['rows'][0]['errors']);
+        self::assertCount(1, WordPress::$users);
+        self::assertSame('9998887776', WordPress::meta($id, Mobile_Login::META_NATIONAL_ID));
+    }
+
+    /** شناسهٔ بی‌صاحب یعنی اشتباه، نه دعوت به ساختن کاربر تازه. */
+    public function test_a_row_naming_a_user_id_that_does_not_exist_is_an_error(): void
+    {
+        $header = array_merge(['شناسه'], self::HEADER);
+        $plan = $this->plan([['999', 'علی', 'رضایی', '09121234567', '0012345678', '']], $header);
+
+        self::assertSame('error', $plan['rows'][0]['action']);
+        self::assertStringContainsString('999', $plan['rows'][0]['errors'][0]);
+    }
+
+    /** کد ملیِ یک کاربر را نمی‌شود روی کاربر دیگری نشاند. */
+    public function test_moving_a_national_id_onto_another_user_is_refused(): void
+    {
+        WordPress::seedUser(['user_login' => 'a'], [Mobile_Login::META_NATIONAL_ID => '0012345678']);
+        $second = WordPress::seedUser(['user_login' => 'b'], [Mobile_Login::META_NATIONAL_ID => '1234567890']);
+
+        $header = array_merge(['شناسه'], self::HEADER);
+        $plan = $this->plan([[(string) $second, 'مریم', 'احمدی', '09121234568', '0012345678', '']], $header);
+
+        self::assertSame('error', $plan['rows'][0]['action']);
+    }
+
+    /** سطری که مدیر خودش اضافه کرده شناسه ندارد و همان مسیر قبلی را می‌رود. */
+    public function test_a_row_without_a_user_id_still_matches_on_national_id(): void
+    {
+        $id = WordPress::seedUser(['user_login' => '0012345678'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+        ]);
+
+        $header = array_merge(['شناسه'], self::HEADER);
+        $plan = $this->plan([['', 'علی', 'رضایی', '09121234567', '0012345678', '']], $header);
+
+        self::assertSame('update', $plan['rows'][0]['action']);
+        self::assertSame($id, $plan['rows'][0]['user_id']);
+    }
+
+    public function test_the_export_carries_each_user_id_in_the_first_column(): void
+    {
+        $id = WordPress::seedUser(['user_login' => '0012345678'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+        ]);
+
+        $rows = Users_Sheet::exportRows();
+
+        self::assertSame((string) $id, $rows[0][0]);
+        self::assertSame('شناسه', Users_Sheet::sheetColumns()[0]->label);
     }
 
     /* ---------------------------------------------------------- سرستون */
@@ -301,7 +390,7 @@ final class UsersSheetTest extends TestCase
         $path = tempnam(sys_get_temp_dir(), 'bkw') . '.xlsx';
 
         try {
-            Writer::xlsx($path, Users_Sheet::header(), Users_Sheet::exportRows(), 'کاربران');
+            Writer::xlsx($path, Users_Sheet::sheetColumns(), Users_Sheet::exportRows(), 'کاربران');
             $plan = Users_Sheet::plan(Reader::grid($path, 'xlsx'));
         } finally {
             if (is_file($path)) {

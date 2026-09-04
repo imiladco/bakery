@@ -76,7 +76,7 @@ final class Users_Sheet_Page
         $this->authorize(self::EXPORT);
 
         $format = isset($_GET['format']) && 'csv' === $_GET['format'] ? 'csv' : 'xlsx';
-        $header = Users_Sheet::header();
+        $columns = Users_Sheet::sheetColumns();
         $rows = Users_Sheet::exportRows();
         $name = 'bakery-users-' . gmdate('Y-m-d');
 
@@ -89,7 +89,7 @@ final class Users_Sheet_Page
             // finally‌ای را اجرا نمی‌کند — یعنی هر خروجی یک فایل موقت
             // در uploads جا می‌گذاشت.
             try {
-                Writer::xlsx($path, $header, $rows, 'کاربران');
+                Writer::xlsx($path, $columns, $rows, 'کاربران');
                 $body = (string) file_get_contents($path);
             } catch (SheetError $error) {
                 $this->bail($error->getMessage());
@@ -102,7 +102,7 @@ final class Users_Sheet_Page
             $this->send($body, $name . '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         }
 
-        $this->send(Writer::csv($header, $rows), $name . '.csv', 'text/csv; charset=utf-8');
+        $this->send(Writer::csv($columns, $rows), $name . '.csv', 'text/csv; charset=utf-8');
     }
 
     /** @return never */
@@ -270,7 +270,7 @@ final class Users_Sheet_Page
                 </a>
             </p>
             <p class="description">
-                <?php esc_html_e('فایل xlsx را ترجیح بدهید: در CSV، اکسل صفرِ ابتدایی کد ملی و کد پرسنلی را حذف می‌کند.', 'bakery-widgets'); ?>
+                <?php esc_html_e('فایل xlsx را ترجیح بدهید: صفرِ ابتدایی کد ملی و کد پرسنلی را نگه می‌دارد، قالب کد ملی و شمارهٔ تماس را همان‌جا که تایپ می‌شوند بررسی می‌کند، و مقدارهای تکراری را قرمز نشان می‌دهد. CSV هیچ‌کدام از این‌ها را ندارد.', 'bakery-widgets'); ?>
                 <?php esc_html_e('کاربرانی که هنوز کد ملی ندارند (مثل خودِ مدیر سایت) در خروجی نمی‌آیند؛ آن‌ها را در ستون «کد ملی» فهرست کاربران می‌بینید.', 'bakery-widgets'); ?>
             </p>
         </div>
@@ -283,7 +283,7 @@ final class Users_Sheet_Page
         <div class="card" style="max-width:820px">
             <h2><?php esc_html_e('ورودی گرفتن', 'bakery-widgets'); ?></h2>
             <p>
-                <?php esc_html_e('کاربرها با «کد ملی» شناخته می‌شوند: اگر کد ملیِ سطر روی کاربری موجود باشد همان کاربر به‌روز می‌شود، وگرنه کاربر تازه ساخته می‌شود. سلول خالی یعنی «این مقدار را عوض نکن» — پس با پاک کردن یک ستون، چیزی پاک نمی‌شود.', 'bakery-widgets'); ?>
+                <?php esc_html_e('هر سطر با ستون «شناسه» به کاربرش وصل می‌شود؛ آن ستون را خروجی خودش پر می‌کند و دست‌کاری نمی‌خواهد. چون کلید، شناسه است و نه کد ملی، می‌توانید کد ملیِ اشتباه را در همین فایل اصلاح کنید. سطری که شناسه ندارد با کد ملی تطبیق داده می‌شود و اگر کاربری نداشت، کاربر تازه ساخته می‌شود. سلول خالی یعنی «این مقدار را عوض نکن» — پس با پاک کردن یک ستون، چیزی پاک نمی‌شود.', 'bakery-widgets'); ?>
             </p>
             <form method="post" enctype="multipart/form-data" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                 <input type="hidden" name="action" value="<?php echo esc_attr(self::UPLOAD); ?>">
