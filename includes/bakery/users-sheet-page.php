@@ -175,8 +175,11 @@ final class Users_Sheet_Page
         }
 
         // سنجش دوباره و نه استفاده از تصمیم‌های پیش‌نمایش: بین دیدن و
-        // تأیید ممکن است کسی کاربری را عوض کرده باشد.
-        $plan = Users_Sheet::plan($grid);
+        // تأیید ممکن است کسی کاربری را عوض کرده باشد. تنها چیزی که از
+        // فرم می‌آید، انتخاب‌های خودِ مدیر است — و همان سنجش دوباره
+        // بررسی می‌کند که هر انتخاب واقعاً یکی از گزینه‌های پیشنهادیِ
+        // همان سطر باشد.
+        $plan = Users_Sheet::plan($grid, $this->resolutions());
 
         if ('' !== $plan['fatal']) {
             $this->back(['error' => 'read', 'message' => rawurlencode($plan['fatal'])]);
@@ -379,35 +382,60 @@ final class Users_Sheet_Page
             );
             ?>
         </p>
+        <?php
+        $undecided = count(array_filter(
+            $plan['rows'],
+            static fn (array $row): bool => 'create' === $row['action'] && [] !== $row['similar']
+        ));
+        ?>
+        <?php if ($undecided > 0) : ?>
+            <div class="notice notice-warning inline"><p>
+                <?php
+                printf(
+                    /* translators: %d: number of rows needing a decision */
+                    esc_html__('%d سطر کاربر تازه می‌سازد در حالی که کاربری شبیه آن از قبل هست و هیچ سطری از این فایل به او نمی‌خورد. معمول‌ترین علتش این است که کد ملی و شمارهٔ تماسِ یک نفر هر دو در همین فایل عوض شده‌اند. پایین هر کدام می‌توانید بگویید همان کاربر است یا واقعاً آدم تازه‌ای.', 'bakery-widgets'),
+                    (int) $undecided
+                );
+                ?>
+            </p></div>
+        <?php endif; ?>
         <?php if ($counts['error'] > 0) : ?>
             <div class="notice notice-warning inline"><p>
                 <?php esc_html_e('سطرهای خطادار نوشته نمی‌شوند؛ بقیه اعمال می‌شوند. اگر می‌خواهید همه با هم اعمال شوند، فایل را اصلاح کنید و دوباره بیاورید.', 'bakery-widgets'); ?>
             </p></div>
         <?php endif; ?>
 
-        <table class="widefat striped">
-            <thead>
-                <tr>
-                    <th style="width:4rem"><?php esc_html_e('سطر', 'bakery-widgets'); ?></th>
-                    <th style="width:8rem"><?php esc_html_e('نتیجه', 'bakery-widgets'); ?></th>
-                    <th><?php esc_html_e('کاربر', 'bakery-widgets'); ?></th>
-                    <th><?php esc_html_e('کد ملی', 'bakery-widgets'); ?></th>
-                    <th><?php esc_html_e('توضیح', 'bakery-widgets'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php $shown = $this->preview_rows($plan['rows']); ?>
-            <?php foreach ($shown as $row) : ?>
-                <tr>
-                    <td><?php echo (int) $row['line']; ?></td>
-                    <td><?php echo wp_kses_post($this->action_badge($row['action'])); ?></td>
-                    <td><?php echo esc_html('' !== $row['name'] ? $row['name'] : '—'); ?></td>
-                    <td dir="ltr"><?php echo esc_html('' !== $row['key'] ? $row['key'] : '—'); ?></td>
-                    <td><?php echo esc_html(implode(' • ', $row['errors'])); ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <input type="hidden" name="action" value="<?php echo esc_attr(self::APPLY); ?>">
+            <input type="hidden" name="token" value="<?php echo esc_attr($token); ?>">
+            <?php wp_nonce_field(self::APPLY); ?>
+
+            <table class="widefat striped">
+                <thead>
+                    <tr>
+                        <th style="width:4rem"><?php esc_html_e('سطر', 'bakery-widgets'); ?></th>
+                        <th style="width:8rem"><?php esc_html_e('نتیجه', 'bakery-widgets'); ?></th>
+                        <th><?php esc_html_e('کاربر', 'bakery-widgets'); ?></th>
+                        <th><?php esc_html_e('کد ملی', 'bakery-widgets'); ?></th>
+                        <th><?php esc_html_e('توضیح', 'bakery-widgets'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php $shown = $this->preview_rows($plan['rows']); ?>
+                <?php foreach ($shown as $row) : ?>
+                    <tr>
+                        <td><?php echo (int) $row['line']; ?></td>
+                        <td><?php echo wp_kses_post($this->action_badge($row['action'])); ?></td>
+                        <td><?php echo esc_html('' !== $row['name'] ? $row['name'] : '—'); ?></td>
+                        <td dir="ltr"><?php echo esc_html('' !== $row['key'] ? $row['key'] : '—'); ?></td>
+                        <td>
+                            <?php echo esc_html(implode(' • ', $row['errors'])); ?>
+                            <?php $this->render_similar_choice($row); ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
 
         <?php if (count($shown) < count($plan['rows'])) : ?>
             <p class="description">
@@ -422,16 +450,14 @@ final class Users_Sheet_Page
             </p>
         <?php endif; ?>
 
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:1rem">
-            <input type="hidden" name="action" value="<?php echo esc_attr(self::APPLY); ?>">
-            <input type="hidden" name="token" value="<?php echo esc_attr($token); ?>">
-            <?php wp_nonce_field(self::APPLY); ?>
-            <button type="submit" class="button button-primary" <?php disabled(0, $counts['create'] + $counts['update']); ?>>
-                <?php esc_html_e('تأیید و اعمال', 'bakery-widgets'); ?>
-            </button>
-            <a class="button" href="<?php echo esc_url(admin_url('users.php?page=' . self::SLUG)); ?>">
-                <?php esc_html_e('انصراف', 'bakery-widgets'); ?>
-            </a>
+            <p style="margin-top:1rem">
+                <button type="submit" class="button button-primary" <?php disabled(0, $counts['create'] + $counts['update']); ?>>
+                    <?php esc_html_e('تأیید و اعمال', 'bakery-widgets'); ?>
+                </button>
+                <a class="button" href="<?php echo esc_url(admin_url('users.php?page=' . self::SLUG)); ?>">
+                    <?php esc_html_e('انصراف', 'bakery-widgets'); ?>
+                </a>
+            </p>
         </form>
         <?php
     }
@@ -456,6 +482,80 @@ final class Users_Sheet_Page
         usort($shown, static fn (array $a, array $b): int => $a['line'] <=> $b['line']);
 
         return $shown;
+    }
+
+    /**
+     * وقتی سطری کاربر تازه می‌سازد ولی شبیه کسی‌ست که فایل به او نخورده.
+     *
+     * این همان حالتی‌ست که هر دو کلیدِ یک کاربر — کد ملی و شمارهٔ تماس —
+     * در یک ویرایش عوض شده‌اند. آن‌وقت هیچ نخی بین سطر و رکورد قبلی
+     * نمانده و نرم‌افزار نمی‌تواند بفهمد این «آدم تازه» است یا «همان آدم
+     * با اطلاعات تازه». هر دو حالت واقعی‌اند و حدس‌زدن یعنی یا یک نفر
+     * دوبار در سایت باشد، یا رکورد یک نفر روی دیگری نوشته شود.
+     *
+     * پس تصمیم به مدیر داده می‌شود، همان‌جا که هر دو طرف را می‌بیند و
+     * هنوز هیچ چیزی نوشته نشده.
+     *
+     * @param array<string, mixed> $row
+     */
+    private function render_similar_choice(array $row): void
+    {
+        if ('create' !== $row['action'] || [] === $row['similar']) {
+            return;
+        }
+
+        printf(
+            '<p style="margin:.4em 0 0"><label>%s<br><select name="resolve[%d]">',
+            esc_html__('کاربری با مشخصات نزدیک به این سطر از قبل هست و هیچ سطری از این فایل به او نمی‌خورد:', 'bakery-widgets'),
+            (int) $row['line']
+        );
+
+        printf('<option value="0">%s</option>', esc_html__('کاربر تازه بساز', 'bakery-widgets'));
+
+        foreach ($row['similar'] as $candidate) {
+            printf(
+                '<option value="%d">%s</option>',
+                (int) $candidate['id'],
+                esc_html(sprintf(
+                    /* translators: %s: existing user name and identifiers */
+                    __('همان «%s» است — به‌روزرسانی کن', 'bakery-widgets'),
+                    $candidate['label']
+                ))
+            );
+        }
+
+        echo '</select></label></p>';
+    }
+
+    /**
+     * انتخاب‌های مدیر در پیش‌نمایش: شمارهٔ سطر => شناسهٔ کاربر.
+     *
+     * این‌جا فقط شکل داده بررسی می‌شود. اینکه آن شناسه *مجاز* بوده یا نه
+     * را خودِ سنجش تعیین می‌کند و نه این‌جا — Users_Sheet هر انتخابی را
+     * که جزو پیشنهادهای همان سطر نباشد دور می‌ریزد.
+     *
+     * @return array<int, int>
+     */
+    private function resolutions(): array
+    {
+        $raw = $_POST['resolve'] ?? [];
+
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $resolutions = [];
+
+        foreach ($raw as $line => $userId) {
+            $line = absint($line);
+            $userId = absint($userId);
+
+            if ($line > 0 && $userId > 0) {
+                $resolutions[$line] = $userId;
+            }
+        }
+
+        return $resolutions;
     }
 
     private function action_badge(string $action): string

@@ -31,14 +31,14 @@ final class UsersSheetTest extends TestCase
     }
 
     /** @param array<int, array<int, string>> $rows */
-    private function plan(array $rows, array $header = self::HEADER): array
+    private function plan(array $rows, array $header = self::HEADER, array $resolutions = []): array
     {
-        return Users_Sheet::plan(array_merge([$header], $rows));
+        return Users_Sheet::plan(array_merge([$header], $rows), $resolutions);
     }
 
-    private function apply(array $rows, array $header = self::HEADER): array
+    private function apply(array $rows, array $header = self::HEADER, array $resolutions = []): array
     {
-        $plan = $this->plan($rows, $header);
+        $plan = $this->plan($rows, $header, $resolutions);
 
         foreach ($plan['rows'] as $row) {
             if ('error' !== $row['action']) {
@@ -291,6 +291,134 @@ final class UsersSheetTest extends TestCase
         self::assertNotContains('شناسه', $labels);
         self::assertSame('نام', $labels[0]);
         self::assertSame('0012345678', Users_Sheet::exportRows()[0][3]);
+    }
+
+    /* ------------------------------------- وقتی هر دو کلید عوض شده‌اند */
+
+    /**
+     * هر دو کلید یک نفر در یک ویرایش عوض شده‌اند.
+     *
+     * هیچ نخی بین سطر و رکورد قبلی نمانده، پس تطبیق خودکار ممکن نیست.
+     * ولی «آدم تازه» هم قطعی نیست — و بی‌صدا ساختن کاربر دوم یعنی یک
+     * نفر دوبار در سایت باشد و رکورد قبلی‌اش یتیم بماند. پس سطر با
+     * کاربرِ شبیه به خودش نشان داده می‌شود تا مدیر تصمیم بگیرد.
+     */
+    public function test_changing_both_keys_at_once_surfaces_the_user_it_probably_means(): void
+    {
+        $id = WordPress::seedUser(['user_login' => '0012345678', 'display_name' => 'علی رضایی'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121234567',
+            'first_name' => 'علی',
+            'last_name' => 'رضایی',
+        ]);
+
+        $plan = $this->plan([['علی', 'رضایی', '09350000000', '9998887776', '']]);
+
+        self::assertSame('create', $plan['rows'][0]['action']);
+        self::assertArrayHasKey($id, $plan['rows'][0]['similar']);
+        self::assertStringContainsString('علی رضایی', $plan['rows'][0]['similar'][$id]['label']);
+        // برچسب باید کلیدهای قبلی را هم بگوید، وگرنه دو هم‌نام قابل
+        // تشخیص نیستند — و اصلاً به‌خاطر هم‌نامی پیشنهاد شده‌اند.
+        self::assertStringContainsString('0012345678', $plan['rows'][0]['similar'][$id]['label']);
+    }
+
+    /** مدیر می‌گوید «همان کاربر است» و هر دو کلید روی همان رکورد می‌نشینند. */
+    public function test_the_admin_can_say_it_is_the_same_person_and_both_keys_move(): void
+    {
+        $id = WordPress::seedUser(['user_login' => '0012345678', 'display_name' => 'علی رضایی'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121234567',
+            'first_name' => 'علی',
+            'last_name' => 'رضایی',
+        ]);
+
+        $plan = $this->apply(
+            [['علی', 'رضایی', '09350000000', '9998887776', '']],
+            self::HEADER,
+            [2 => $id]
+        );
+
+        self::assertSame('update', $plan['rows'][0]['action']);
+        self::assertCount(1, WordPress::$users);
+        self::assertSame('9998887776', WordPress::meta($id, Mobile_Login::META_NATIONAL_ID));
+        self::assertSame('09350000000', WordPress::meta($id, Mobile_Login::META_MOBILE));
+    }
+
+    /** و اگر واقعاً آدم تازه‌ای باشد، پیش‌فرض همان ساختِ کاربر است. */
+    public function test_declining_the_suggestion_creates_the_new_user(): void
+    {
+        WordPress::seedUser(['user_login' => '0012345678', 'display_name' => 'علی رضایی'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121234567',
+            'first_name' => 'علی',
+            'last_name' => 'رضایی',
+        ]);
+
+        $this->apply([['علی', 'رضایی', '09350000000', '9998887776', '']]);
+
+        self::assertCount(2, WordPress::$users);
+    }
+
+    /**
+     * انتخابِ دست‌کاری‌شده در فرم نباید هیچ کاربری را هدف بگیرد.
+     *
+     * فرم HTML است و هرکسی می‌تواند عددش را عوض کند؛ تنها دفاع این است
+     * که سنجش فقط انتخابی را بپذیرد که *خودش* برای همان سطر پیشنهاد
+     * داده باشد.
+     */
+    public function test_a_resolution_the_plan_never_offered_is_ignored(): void
+    {
+        $victim = WordPress::seedUser(['user_login' => 'other', 'display_name' => 'مریم احمدی'], [
+            Mobile_Login::META_NATIONAL_ID => '1111111111',
+            Mobile_Login::META_MOBILE => '09129999999',
+            'first_name' => 'مریم',
+            'last_name' => 'احمدی',
+        ]);
+
+        $plan = $this->apply(
+            [['رضا', 'کریمی', '09350000000', '9998887776', '']],
+            self::HEADER,
+            [2 => $victim]
+        );
+
+        self::assertSame('create', $plan['rows'][0]['action']);
+        self::assertSame('1111111111', WordPress::meta($victim, Mobile_Login::META_NATIONAL_ID));
+        self::assertCount(2, WordPress::$users);
+    }
+
+    /** کاربری که سطر خودش را در فایل دارد یتیم نیست و پیشنهاد نمی‌شود. */
+    public function test_a_user_the_file_already_accounts_for_is_not_offered(): void
+    {
+        WordPress::seedUser(['user_login' => '0012345678', 'display_name' => 'علی رضایی'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121234567',
+            'first_name' => 'علی',
+            'last_name' => 'رضایی',
+        ]);
+
+        // سطر اول همان کاربر است؛ سطر دوم یک هم‌نامِ واقعاً تازه.
+        $plan = $this->plan([
+            ['علی', 'رضایی', '09121234567', '0012345678', ''],
+            ['علی', 'رضایی', '09350000000', '9998887776', ''],
+        ]);
+
+        self::assertSame('update', $plan['rows'][0]['action']);
+        self::assertSame('create', $plan['rows'][1]['action']);
+        self::assertSame([], $plan['rows'][1]['similar']);
+    }
+
+    /** کد پرسنلی هم نشانه است — حتی وقتی نام‌ها فرق دارند. */
+    public function test_a_shared_personnel_code_is_enough_to_raise_the_question(): void
+    {
+        $id = WordPress::seedUser(['user_login' => 'old', 'display_name' => 'علی رضایی'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121234567',
+            Mobile_Login::META_PERSONNEL => 'A-1',
+        ]);
+
+        $plan = $this->plan([['علی', 'رضاییان', '09350000000', '9998887776', 'A-1']]);
+
+        self::assertArrayHasKey($id, $plan['rows'][0]['similar']);
     }
 
     /* ---------------------------------------------------------- سرستون */

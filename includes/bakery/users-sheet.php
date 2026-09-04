@@ -56,6 +56,13 @@ final class Users_Sheet
     public const KEY_COLUMN = Mobile_Login::META_NATIONAL_ID;
 
     /**
+     * حافظهٔ جست‌وجوی صاحبِ هر مقدار، به‌ازای یک اجرای plan().
+     *
+     * @var array<string, array<string, ?int>>
+     */
+    private static array $owners = [];
+
+    /**
      * @return array<string, array{
      *     label: string,
      *     aliases: array<int, string>,
@@ -222,8 +229,19 @@ final class Users_Sheet
      *     fatal: string
      * }
      */
-    public static function plan(array $grid): array
+    /**
+     * @param array<int, array<int, string>> $grid شبکهٔ خوانده‌شده، سطر اول سرستون
+     * @param array<int, int> $resolutions شمارهٔ سطر => کاربری که مدیر گفته منظورش همان است
+     * @return array{
+     *     columns: array<int, string>,
+     *     rows: array<int, array{line:int, action:string, user_id:int, name:string, key:string, values:array<string,string>, errors:array<int,string>, similar:array<int, array{id:int, label:string}>}>,
+     *     fatal: string
+     * }
+     */
+    public static function plan(array $grid, array $resolutions = []): array
     {
+        self::$owners = [];
+
         $header = $grid[0] ?? [];
         $map = self::mapHeader($header);
         $columns = self::columns();
@@ -243,30 +261,55 @@ final class Users_Sheet
             ];
         }
 
-        $rows = [];
-        // کلیدهای دیده‌شده در خودِ فایل: دو سطر با یک کد ملی یا یک شمارهٔ
-        // موبایل، تکراری‌اند حتی اگر هیچ‌کدام هنوز در دیتابیس نباشند.
-        $seen = [];
+        // گذر یک: فقط خواندن و عادی‌سازی سلول‌ها.
+        $parsed = [];
 
         foreach ($grid as $index => $cells) {
             if (0 === $index || \Bakery_Sheet\Reader::isBlank($cells)) {
                 continue;
             }
 
-            $rows[] = self::planRow($index + 1, $cells, $map, $columns, $seen);
+            $parsed[] = ['line' => $index + 1] + self::parseRow($cells, $map, $columns);
+        }
+
+        /*
+         * گذر دو: فایل، رویِ‌هم‌رفته، حساب چه کسانی را داده؟
+         *
+         * این پیش از تصمیم‌گیری لازم است، نه هم‌زمان با آن: تشخیصِ
+         * «این سطر شاید همان کاربر باشد» فقط وقتی معنا دارد که بدانیم
+         * آن کاربر را هیچ سطر دیگری از همین فایل برنداشته. با محاسبهٔ
+         * درجا، سطر ۳ نمی‌دانست سطر ۴۰ صاحب دارد یا نه.
+         */
+        $taken = [];
+
+        foreach ($parsed as $row) {
+            foreach (self::matchUsers($row['values']) as $id) {
+                $taken[$id] = $id;
+            }
+        }
+
+        // گذر سه: تصمیم.
+        $rows = [];
+        // کلیدهای دیده‌شده در خودِ فایل: دو سطر با یک کد ملی یا یک شمارهٔ
+        // موبایل، تکراری‌اند حتی اگر هیچ‌کدام هنوز در دیتابیس نباشند.
+        $seen = [];
+
+        foreach ($parsed as $row) {
+            $rows[] = self::decide($row['line'], $row['values'], $row['errors'], $columns, $seen, $taken, $resolutions);
         }
 
         return ['columns' => array_values($map), 'rows' => $rows, 'fatal' => ''];
     }
 
     /**
+     * سلول‌های یک سطر، عادی‌سازی‌شده. هیچ تصمیمی این‌جا گرفته نمی‌شود.
+     *
      * @param array<int, string> $cells
      * @param array<int, string> $map
      * @param array<string, array<string, mixed>> $columns
-     * @param array<string, array<string, int>> $seen
-     * @return array{line:int, action:string, user_id:int, name:string, key:string, values:array<string,string>, errors:array<int,string>}
+     * @return array{values: array<string, string>, errors: array<int, string>}
      */
-    private static function planRow(int $line, array $cells, array $map, array $columns, array &$seen): array
+    private static function parseRow(array $cells, array $map, array $columns): array
     {
         $values = [];
         $errors = [];
@@ -293,8 +336,25 @@ final class Users_Sheet
             $values[$key] = $parsed;
         }
 
+        return ['values' => $values, 'errors' => $errors];
+    }
+
+    /**
+     * یک سطرِ خوانده‌شده → یک تصمیم.
+     *
+     * @param array<string, string> $values
+     * @param array<int, string> $errors
+     * @param array<string, array<string, mixed>> $columns
+     * @param array<string, array<string, int>> $seen
+     * @param array<int, int> $taken
+     * @param array<int, int> $resolutions
+     * @return array{line:int, action:string, user_id:int, name:string, key:string, values:array<string,string>, errors:array<int,string>, similar:array<int, array{id:int, label:string}>}
+     */
+    private static function decide(int $line, array $values, array $errors, array $columns, array &$seen, array $taken, array $resolutions): array
+    {
         $nationalId = $values[self::KEY_COLUMN] ?? '';
         $matched = self::matchUsers($values);
+        $similar = [];
 
         if ([] === $matched && '' === $nationalId) {
             // نه به کاربری خورد و نه کد ملی دارد که با آن ساخته شود.
@@ -313,8 +373,9 @@ final class Users_Sheet
              * کد ملی به یک نفر خورده و شماره به یکی دیگر.
              *
              * این‌جا حدس‌زدن خطرناک است: هر انتخابی یعنی نوشتن روی
-             * حسابِ ممکن است اشتباه. معمول‌ترین علتش هم جابه‌جا شدن دو
-             * سطر است، که با یک پیام صریح در چند ثانیه پیدا می‌شود.
+             * حسابی که ممکن است اشتباه باشد. معمول‌ترین علتش هم جابه‌جا
+             * شدن دو سطر است، که با یک پیام صریح در چند ثانیه پیدا
+             * می‌شود.
              */
             return self::row($line, 'error', 0, '', $nationalId, $values, array_merge($errors, [
                 sprintf(
@@ -326,6 +387,30 @@ final class Users_Sheet
         }
 
         $userId = (int) (reset($matched) ?: 0);
+
+        /*
+         * هیچ کلیدی نخورد، پس این سطر کاربر تازه می‌سازد — مگر اینکه
+         * واقعاً همان آدمِ قبلی باشد که *هر دو* کلیدش در همین ویرایش
+         * عوض شده. آن حالت با داده قابل تشخیص نیست، چون دیگر هیچ نخی
+         * بین سطر و رکورد قبلی نمانده.
+         *
+         * پس به‌جای حدس‌زدن، کاربرانی که این فایل اصلاً به آن‌ها نخورده
+         * و نام یا کد پرسنلی‌شان با این سطر یکی‌ست پیدا می‌شوند و
+         * تصمیم به مدیر داده می‌شود. نرم‌افزار هویت را حدس نمی‌زند؛
+         * فقط شباهت را نشان می‌دهد.
+         */
+        if (0 === $userId) {
+            $similar = self::findLookalikes($values, $taken);
+            $chosen = (int) ($resolutions[$line] ?? 0);
+
+            // فقط انتخابی پذیرفته می‌شود که خودِ همین سنجش پیشنهاد داده
+            // باشد — وگرنه یک عدد دست‌کاری‌شده در فرم می‌توانست هر
+            // کاربری را هدف بگیرد.
+            if ($chosen > 0 && isset($similar[$chosen])) {
+                $userId = $chosen;
+            }
+        }
+
         $isNew = 0 === $userId;
 
         $errors = array_merge(
@@ -341,10 +426,72 @@ final class Users_Sheet
         );
 
         if ([] !== $errors) {
-            return self::row($line, 'error', $userId, $name, $nationalId, $values, $errors);
+            return self::row($line, 'error', $userId, $name, $nationalId, $values, $errors, $similar);
         }
 
-        return self::row($line, $isNew ? 'create' : 'update', $userId, $name, $nationalId, $values, []);
+        return self::row($line, $isNew ? 'create' : 'update', $userId, $name, $nationalId, $values, [], $isNew ? $similar : []);
+    }
+
+    /**
+     * کاربرانی که این سطر شاید همان‌ها باشد.
+     *
+     * فقط میان کسانی می‌گردد که *هیچ سطری از این فایل* به آن‌ها نخورده
+     * — کاربری که سطر خودش را دارد یتیم نمی‌ماند و پیشنهاد دادنش فقط
+     * سروصداست.
+     *
+     * نام و کد پرسنلی به‌عنوان نشانه استفاده می‌شوند و نه کلید. تفاوتش
+     * همه‌چیز است: کلید یعنی نرم‌افزار خودش می‌نویسد و کد پرسنلیِ
+     * واگذارشده به کارمند تازه، بی‌صدا روی رکورد کارمند قبلی می‌نشست.
+     * نشانه یعنی مدیر با هر دو نام جلوی چشمش تصمیم می‌گیرد.
+     *
+     * @param array<string, string> $values
+     * @param array<int, int> $taken
+     * @return array<int, array{id:int, label:string}> کلید = شناسهٔ کاربر
+     */
+    private static function findLookalikes(array $values, array $taken): array
+    {
+        $candidates = [];
+
+        $first = trim($values['first_name'] ?? '');
+        $last = trim($values['last_name'] ?? '');
+
+        if ('' !== $first && '' !== $last) {
+            $byName = get_users([
+                'meta_query' => [
+                    'relation' => 'AND',
+                    ['key' => 'first_name', 'value' => $first],
+                    ['key' => 'last_name', 'value' => $last],
+                ],
+                'number' => 5,
+                'fields' => 'ID',
+            ]);
+
+            foreach ($byName as $id) {
+                $candidates[(int) $id] = (int) $id;
+            }
+        }
+
+        $personnel = $values[Mobile_Login::META_PERSONNEL] ?? '';
+
+        if ('' !== $personnel) {
+            $owner = self::owner(Mobile_Login::META_PERSONNEL, $personnel);
+
+            if (null !== $owner) {
+                $candidates[$owner] = $owner;
+            }
+        }
+
+        $similar = [];
+
+        foreach ($candidates as $id) {
+            if (isset($taken[$id])) {
+                continue;
+            }
+
+            $similar[$id] = ['id' => $id, 'label' => self::describe($id, true)];
+        }
+
+        return $similar;
     }
 
     /**
@@ -379,7 +526,7 @@ final class Users_Sheet
                 continue;
             }
 
-            $owner = Mobile_Login::find_by($key, $value);
+            $owner = self::owner($key, $value);
 
             if (null !== $owner) {
                 $found[$owner] = $owner;
@@ -389,8 +536,30 @@ final class Users_Sheet
         return array_values($found);
     }
 
-    /** نام کاربر برای پیام خطا؛ اگر نامی نداشت، نام کاربری‌اش. */
-    private static function describe(int $userId): string
+    /**
+     * صاحب یک مقدار، با حافظه.
+     *
+     * هر سطر دو بار سنجیده می‌شود — یک‌بار برای ساختن فهرست «فایل حساب
+     * چه کسانی را داده» و یک‌بار موقع تصمیم. بدون این حافظه، تعداد
+     * کوئری‌ها دو برابر می‌شد بی‌آنکه چیزی عوض شود. عمرش یک اجرای
+     * plan() است، پس داده‌ای کهنه نمی‌ماند.
+     */
+    private static function owner(string $key, string $value): ?int
+    {
+        if (!array_key_exists($value, self::$owners[$key] ?? [])) {
+            self::$owners[$key][$value] = Mobile_Login::find_by($key, $value);
+        }
+
+        return self::$owners[$key][$value];
+    }
+
+    /**
+     * نام کاربر برای نشان دادن به مدیر؛ اگر نامی نداشت، نام کاربری‌اش.
+     *
+     * $withKeys برای وقتی‌ست که مدیر باید بین دو نفر تصمیم بگیرد — نام
+     * تنها کافی نیست، چون اصلاً به‌خاطر هم‌نام بودن پیشنهاد شده‌اند.
+     */
+    private static function describe(int $userId, bool $withKeys = false): string
     {
         $user = get_userdata($userId);
 
@@ -399,8 +568,18 @@ final class Users_Sheet
         }
 
         $name = trim((string) $user->display_name);
+        $name = '' !== $name ? $name : (string) $user->user_login;
 
-        return '' !== $name ? $name : (string) $user->user_login;
+        if (!$withKeys) {
+            return $name;
+        }
+
+        $keys = array_filter([
+            (string) get_user_meta($userId, self::KEY_COLUMN, true),
+            (string) get_user_meta($userId, Mobile_Login::META_MOBILE, true),
+        ]);
+
+        return [] === $keys ? $name : $name . ' — ' . implode(' / ', $keys);
     }
 
     /**
@@ -717,9 +896,10 @@ final class Users_Sheet
     /**
      * @param array<string, string> $values
      * @param array<int, string> $errors
-     * @return array{line:int, action:string, user_id:int, name:string, key:string, values:array<string,string>, errors:array<int,string>}
+     * @param array<int, array{id:int, label:string}> $similar
+     * @return array{line:int, action:string, user_id:int, name:string, key:string, values:array<string,string>, errors:array<int,string>, similar:array<int, array{id:int, label:string}>}
      */
-    private static function row(int $line, string $action, int $userId, string $name, string $key, array $values, array $errors): array
+    private static function row(int $line, string $action, int $userId, string $name, string $key, array $values, array $errors, array $similar = []): array
     {
         return [
             'line' => $line,
@@ -729,6 +909,7 @@ final class Users_Sheet
             'key' => $key,
             'values' => $values,
             'errors' => $errors,
+            'similar' => $similar,
         ];
     }
 }
