@@ -271,6 +271,7 @@ final class Users_Sheet_Page
             </p>
             <p class="description">
                 <?php esc_html_e('فایل xlsx را ترجیح بدهید: در CSV، اکسل صفرِ ابتدایی کد ملی و کد پرسنلی را حذف می‌کند.', 'bakery-widgets'); ?>
+                <?php esc_html_e('کاربرانی که هنوز کد ملی ندارند (مثل خودِ مدیر سایت) در خروجی نمی‌آیند؛ آن‌ها را در ستون «کد ملی» فهرست کاربران می‌بینید.', 'bakery-widgets'); ?>
             </p>
         </div>
         <?php

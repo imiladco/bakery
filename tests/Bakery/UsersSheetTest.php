@@ -23,7 +23,7 @@ require_once __DIR__ . '/Fakes/functions.php';
  */
 final class UsersSheetTest extends TestCase
 {
-    private const HEADER = ['نام', 'نام خانوادگی', 'شماره تماس', 'کد ملی', 'کد پرسنلی', 'ایمیل'];
+    private const HEADER = ['نام', 'نام خانوادگی', 'شماره تماس', 'کد ملی', 'کد پرسنلی'];
 
     protected function setUp(): void
     {
@@ -53,7 +53,7 @@ final class UsersSheetTest extends TestCase
 
     public function test_a_row_for_an_unknown_national_id_creates_a_user(): void
     {
-        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', 'A-1', '']]);
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', 'A-1']]);
 
         self::assertSame('', $plan['fatal']);
         self::assertSame('create', $plan['rows'][0]['action']);
@@ -64,7 +64,7 @@ final class UsersSheetTest extends TestCase
     {
         $id = WordPress::seedUser(['user_login' => '0012345678'], [Mobile_Login::META_NATIONAL_ID => '0012345678']);
 
-        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '', '']]);
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '']]);
 
         self::assertSame('update', $plan['rows'][0]['action']);
         self::assertSame($id, $plan['rows'][0]['user_id']);
@@ -76,7 +76,7 @@ final class UsersSheetTest extends TestCase
      */
     public function test_excel_stripping_leading_zeros_from_a_national_id_is_undone(): void
     {
-        $plan = $this->plan([['علی', 'رضایی', '09121234567', '12345678', '', '']]);
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '12345678', '']]);
 
         self::assertSame([], $plan['rows'][0]['errors']);
         self::assertSame('0012345678', $plan['rows'][0]['values'][Mobile_Login::META_NATIONAL_ID]);
@@ -84,14 +84,14 @@ final class UsersSheetTest extends TestCase
 
     public function test_a_national_id_that_is_too_long_is_refused(): void
     {
-        $plan = $this->plan([['علی', 'رضایی', '09121234567', '00123456789012', '', '']]);
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '00123456789012', '']]);
 
         self::assertSame('error', $plan['rows'][0]['action']);
     }
 
     public function test_a_row_without_a_national_id_is_an_error_not_a_new_user(): void
     {
-        $plan = $this->plan([['علی', 'رضایی', '09121234567', '', '', '']]);
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '', '']]);
 
         self::assertSame('error', $plan['rows'][0]['action']);
     }
@@ -108,8 +108,8 @@ final class UsersSheetTest extends TestCase
     public function test_two_rows_sharing_a_mobile_number_collide_with_each_other(): void
     {
         $plan = $this->plan([
-            ['علی', 'رضایی', '09121234567', '0012345678', '', ''],
-            ['مریم', 'احمدی', '09121234567', '1234567890', '', ''],
+            ['علی', 'رضایی', '09121234567', '0012345678', ''],
+            ['مریم', 'احمدی', '09121234567', '1234567890', ''],
         ]);
 
         self::assertSame('create', $plan['rows'][0]['action']);
@@ -121,7 +121,7 @@ final class UsersSheetTest extends TestCase
     {
         WordPress::seedUser(['user_login' => 'other'], [Mobile_Login::META_MOBILE => '09121234567']);
 
-        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '', '']]);
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '']]);
 
         self::assertSame('error', $plan['rows'][0]['action']);
     }
@@ -134,7 +134,7 @@ final class UsersSheetTest extends TestCase
             Mobile_Login::META_MOBILE => '09121234567',
         ]);
 
-        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '', '']]);
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '']]);
 
         self::assertSame('update', $plan['rows'][0]['action']);
         self::assertSame([], $plan['rows'][0]['errors']);
@@ -142,7 +142,7 @@ final class UsersSheetTest extends TestCase
 
     public function test_a_new_user_without_a_name_is_refused(): void
     {
-        $plan = $this->plan([['', '', '09121234567', '0012345678', '', '']]);
+        $plan = $this->plan([['', '', '09121234567', '0012345678', '']]);
 
         self::assertSame('error', $plan['rows'][0]['action']);
     }
@@ -155,27 +155,16 @@ final class UsersSheetTest extends TestCase
             'first_name' => 'علی',
         ]);
 
-        $plan = $this->plan([['', '', '', '0012345678', 'A-9', '']]);
+        $plan = $this->plan([['', '', '', '0012345678', 'A-9']]);
 
         self::assertSame('update', $plan['rows'][0]['action']);
         self::assertSame([], $plan['rows'][0]['errors']);
     }
 
-    public function test_an_unreadable_email_is_an_error_but_an_empty_one_is_fine(): void
-    {
-        $plan = $this->plan([
-            ['علی', 'رضایی', '09121234567', '0012345678', '', 'نه-ایمیل'],
-            ['مریم', 'احمدی', '09121234568', '1234567890', '', ''],
-        ]);
-
-        self::assertSame('error', $plan['rows'][0]['action']);
-        self::assertSame('create', $plan['rows'][1]['action']);
-    }
-
     /** شمارهٔ موبایل با ارقام فارسی و پیشوند +۹۸ همان شمارهٔ همیشگی است. */
     public function test_persian_digits_and_country_prefixes_normalise(): void
     {
-        $plan = $this->plan([['علی', 'رضایی', '+۹۸۹۱۲۱۲۳۴۵۶۷', '۰۰۱۲۳۴۵۶۷۸', '', '']]);
+        $plan = $this->plan([['علی', 'رضایی', '+۹۸۹۱۲۱۲۳۴۵۶۷', '۰۰۱۲۳۴۵۶۷۸', '']]);
 
         self::assertSame([], $plan['rows'][0]['errors']);
         self::assertSame('09121234567', $plan['rows'][0]['values'][Mobile_Login::META_MOBILE]);
@@ -186,9 +175,9 @@ final class UsersSheetTest extends TestCase
 
     public function test_headers_match_through_aliases_and_zero_width_spaces(): void
     {
-        $header = ['نام', "نام\u{200C}خانوادگی", 'موبایل', 'کدملی', 'کد پرسنلی', 'email'];
+        $header = ['نام', "نام\u{200C}خانوادگی", 'موبایل', 'کدملی', 'کد پرسنلی'];
 
-        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', 'A-1', 'a@b.co']], $header);
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', 'A-1']], $header);
 
         self::assertSame([], $plan['rows'][0]['errors']);
         self::assertSame('رضایی', $plan['rows'][0]['values']['last_name']);
@@ -198,7 +187,7 @@ final class UsersSheetTest extends TestCase
     {
         $header = array_merge(self::HEADER, ['توضیحات واحد']);
 
-        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '', '', 'هرچیزی']], $header);
+        $plan = $this->plan([['علی', 'رضایی', '09121234567', '0012345678', '', 'هرچیزی']], $header);
 
         self::assertSame('create', $plan['rows'][0]['action']);
     }
@@ -207,7 +196,7 @@ final class UsersSheetTest extends TestCase
 
     public function test_a_created_user_is_named_by_their_national_id_and_shown_by_their_full_name(): void
     {
-        $this->apply([['علی', 'رضایی', '09121234567', '0012345678', 'A-1', '']]);
+        $this->apply([['علی', 'رضایی', '09121234567', '0012345678', 'A-1']]);
 
         $id = username_exists('0012345678');
 
@@ -229,7 +218,7 @@ final class UsersSheetTest extends TestCase
             'last_name' => 'رضایی',
         ]);
 
-        $this->apply([['', '', '', '0012345678', '', '']]);
+        $this->apply([['', '', '', '0012345678', '']]);
 
         self::assertSame('09121234567', WordPress::meta($id, Mobile_Login::META_MOBILE));
         self::assertSame('A-1', WordPress::meta($id, Mobile_Login::META_PERSONNEL));
@@ -245,7 +234,7 @@ final class UsersSheetTest extends TestCase
     {
         $id = WordPress::seedUser(['user_login' => '0012345678']);
 
-        $this->apply([['علی', 'رضایی', '09121234567', '0012345678', '', '']]);
+        $this->apply([['علی', 'رضایی', '09121234567', '0012345678', '']]);
 
         self::assertCount(1, WordPress::$users);
         self::assertSame('0012345678', WordPress::meta($id, Mobile_Login::META_NATIONAL_ID));
@@ -254,7 +243,7 @@ final class UsersSheetTest extends TestCase
 
     public function test_the_second_import_of_the_same_file_changes_nothing(): void
     {
-        $rows = [['علی', 'رضایی', '09121234567', '0012345678', 'A-1', 'a@b.co']];
+        $rows = [['علی', 'رضایی', '09121234567', '0012345678', 'A-1']];
 
         $this->apply($rows);
         $first = WordPress::$users;
@@ -269,6 +258,27 @@ final class UsersSheetTest extends TestCase
     /* ------------------------------------------------- رفت‌وبرگشت کامل */
 
     /**
+     * مدیر سایت و حساب‌های سرویس کد ملی ندارند و در خروجی نمی‌آیند.
+     *
+     * وگرنه همان فایل موقع برگشتن، به‌ازای هرکدام یک سطر «کد ملی خالی
+     * است» می‌داد — خطایی که مدیر هیچ کاری برایش نمی‌تواند بکند و هر
+     * بار باید نادیده‌اش بگیرد.
+     */
+    public function test_a_user_without_a_national_id_is_left_out_of_the_export(): void
+    {
+        WordPress::seedUser(['user_login' => 'admin'], ['first_name' => 'مدیر']);
+        WordPress::seedUser(['user_login' => '0012345678'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            'first_name' => 'علی',
+        ]);
+
+        $rows = Users_Sheet::exportRows();
+
+        self::assertCount(1, $rows);
+        self::assertContains('0012345678', $rows[0]);
+    }
+
+    /**
      * وعده‌ای که صفحهٔ ادمین می‌دهد: «خروجی بگیر، در اکسل ویرایش کن،
      * دوباره وارد کن.» این تست همان را از سر تا ته اجرا می‌کند — سرستون
      * خروجی باید همانی باشد که ورودی می‌شناسد، و کد ملیِ صفردار باید از
@@ -280,7 +290,7 @@ final class UsersSheetTest extends TestCase
             self::markTestSkipped('افزونهٔ zip در دسترس نیست.');
         }
 
-        WordPress::seedUser(['user_login' => '0012345678', 'user_email' => 'a@b.co'], [
+        WordPress::seedUser(['user_login' => '0012345678'], [
             Mobile_Login::META_NATIONAL_ID => '0012345678',
             Mobile_Login::META_MOBILE => '09121234567',
             Mobile_Login::META_PERSONNEL => '007',
@@ -333,7 +343,7 @@ final class UsersSheetTest extends TestCase
         });
 
         $this->apply(
-            [['علی', 'رضایی', '09121234567', '0012345678', '', '', '۱٬۲۰۰٬۰۰۰']],
+            [['علی', 'رضایی', '09121234567', '0012345678', '', '۱٬۲۰۰٬۰۰۰']],
             array_merge(self::HEADER, ['اعتبار'])
         );
 

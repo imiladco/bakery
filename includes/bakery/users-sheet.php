@@ -104,25 +104,6 @@ final class Users_Sheet
             ];
         }
 
-        $columns['user_email'] = [
-            'label' => __('ایمیل', 'bakery-widgets'),
-            'aliases' => ['email', 'user_email', 'پست الکترونیک'],
-            'store' => 'user',
-            'required' => false,
-            'unique' => true,
-            'hint' => __('اختیاری. ورود با پیامک انجام می‌شود و ایمیل هیچ نقشی در آن ندارد.', 'bakery-widgets'),
-            'read' => static function (int $id): string {
-                $user = get_userdata($id);
-
-                return $user ? (string) $user->user_email : '';
-            },
-            'parse' => static function (string $raw): ?string {
-                $email = sanitize_email(trim($raw));
-
-                return is_email($email) ? $email : null;
-            },
-        ];
-
         /**
          * ستون‌های بیرونی — امروز فقط سقف اعتبار.
          *
@@ -146,7 +127,25 @@ final class Users_Sheet
         $rows = [];
         $columns = self::columns();
 
-        foreach (get_users(['fields' => 'ID', 'orderby' => 'ID', 'order' => 'ASC']) as $id) {
+        /*
+         * فقط کاربرانی که کد ملی دارند.
+         *
+         * وگرنه هر خروجی، سطرهای بی‌کدملیِ سایت (مدیر، حساب‌های سرویس)
+         * را هم می‌آورد و همان فایل موقع برگشتن، به‌ازای هرکدام یک سطر
+         * «کد ملی خالی است» می‌داد — خطایی که مدیر کاری نمی‌تواند
+         * برایش بکند و هر بار باید نادیده‌اش بگیرد. خروجی همان مجموعه‌ای
+         * می‌ماند که ورودی می‌فهمد، پس رفت‌وبرگشت بی‌خطا تمام می‌شود.
+         * کاربرِ بدون کد ملی در ستون قرمز «ثبت نشده» فهرست کاربران
+         * دیده می‌شود، که جای درستِ پیدا کردنش است.
+         */
+        $ids = get_users([
+            'fields' => 'ID',
+            'orderby' => 'ID',
+            'order' => 'ASC',
+            'meta_query' => [['key' => self::KEY_COLUMN, 'compare' => 'EXISTS']],
+        ]);
+
+        foreach ($ids as $id) {
             $row = [];
 
             foreach ($columns as $column) {
@@ -366,7 +365,7 @@ final class Users_Sheet
 
             $seen[$key][$value] = $line;
 
-            if (null !== self::findOwner($key, $value, $userId)) {
+            if (null !== Mobile_Login::find_by($key, $value, $userId)) {
                 $errors[] = sprintf(
                     /* translators: %s: column label */
                     __('«%s» قبلاً برای کاربر دیگری ثبت شده است.', 'bakery-widgets'),
@@ -394,15 +393,15 @@ final class Users_Sheet
         $values = $row['values'];
         $userId = (int) $row['user_id'];
 
-        $core = ['first_name' => null, 'last_name' => null, 'user_email' => null];
+        // ستون‌هایی که روی خودِ جدول کاربران می‌نشینند و نه در متا؛
+        // این‌ها باید یک‌جا به wp_insert_user/wp_update_user برسند.
+        $core = [];
 
         foreach ($values as $key => $value) {
-            if ('user' === $columns[$key]['store'] && array_key_exists($key, $core)) {
+            if ('user' === $columns[$key]['store']) {
                 $core[$key] = $value;
             }
         }
-
-        $core = array_filter($core, static fn ($value): bool => null !== $value);
 
         if ('create' === $row['action']) {
             $userId = self::createUser($values[self::KEY_COLUMN], $core);
@@ -559,17 +558,6 @@ final class Users_Sheet
         $id = Mobile_Login::find_by(self::KEY_COLUMN, $nationalId);
 
         return null === $id ? 0 : $id;
-    }
-
-    private static function findOwner(string $key, string $value, int $excludeUserId): ?int
-    {
-        if ('user_email' === $key) {
-            $id = email_exists($value);
-
-            return is_int($id) && $id !== $excludeUserId ? $id : null;
-        }
-
-        return Mobile_Login::find_by($key, $value, $excludeUserId);
     }
 
     /**

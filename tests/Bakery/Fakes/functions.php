@@ -154,7 +154,21 @@ if (!function_exists('get_users')) {
             }
 
             foreach ($args['meta_query'] ?? [] as $clause) {
-                if (is_array($clause) && WordPress::meta($id, (string) $clause['key']) !== (string) $clause['value']) {
+                if (!is_array($clause)) {
+                    continue;
+                }
+
+                $value = WordPress::meta($id, (string) $clause['key']);
+
+                if ('EXISTS' === ($clause['compare'] ?? '')) {
+                    if ('' === $value) {
+                        continue 2;
+                    }
+
+                    continue;
+                }
+
+                if ($value !== (string) ($clause['value'] ?? '')) {
                     continue 2;
                 }
             }
