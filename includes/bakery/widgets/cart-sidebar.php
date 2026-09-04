@@ -116,6 +116,7 @@ final class Cart_Sidebar extends Widget_Base
         $this->register_items_style_controls();
         $this->register_footer_style_controls();
         $this->register_loading_style_controls();
+        $this->register_success_style_controls();
         $this->register_confirm_modal_style_controls([
             'section_label' => __('مودال تأیید سفارش', 'bakery-widgets'),
             'accept_bg' => '#8c583a',
@@ -235,6 +236,13 @@ final class Cart_Sidebar extends Widget_Base
             'label' => __('متن دکمهٔ پیگیری', 'bakery-widgets'),
             'type' => Controls_Manager::TEXT,
             'default' => __('پیگیری سفارش', 'bakery-widgets'),
+        ]);
+
+        $this->add_control('success_close_text', [
+            'label' => __('متن دکمهٔ بستن', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('بستن', 'bakery-widgets'),
+            'description' => __('دکمهٔ فرعی کنار «پیگیری سفارش». خالی گذاشتنش یعنی اصلاً نمایش داده نشود.', 'bakery-widgets'),
         ]);
 
         $this->add_control('success_track_url', [
@@ -876,6 +884,55 @@ final class Cart_Sidebar extends Widget_Base
      * استایل — لایهٔ «در حال انجام» کنترل تعداد
      * =================================================================== */
 
+    private function register_success_style_controls(): void
+    {
+        $this->start_controls_section('section_style_success', [
+            'label' => __('پیام موفقیت', 'bakery-widgets'),
+            'tab' => Controls_Manager::TAB_STYLE,
+        ]);
+
+        /*
+         * یک رنگ، سه کاربرد: پس‌زمینهٔ دکمهٔ اصلی، و بوردر و متنِ دکمهٔ
+         * فرعی. با سه کنترل جدا، اولین باری که مدیر یکی را عوض کند آن
+         * پیوند بی‌صدا می‌شکند و دکمهٔ فرعی رنگی می‌شود که دیگر رنگ
+         * دکمهٔ اصلی نیست.
+         */
+        $this->add_control('success_action_color', [
+            'label' => __('رنگ دکمه‌ها', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#366874',
+            'description' => __('پس‌زمینهٔ دکمهٔ «پیگیری سفارش» و هم‌زمان بوردر و متن دکمهٔ «بستن».', 'bakery-widgets'),
+            'selectors' => ['{{WRAPPER}} .bkw-cart-sidebar__success' => '--bkw-success-action: {{VALUE}};'],
+        ]);
+
+        $this->add_control('success_track_color', [
+            'label' => __('رنگ متن دکمهٔ پیگیری', 'bakery-widgets'),
+            'type' => Controls_Manager::COLOR,
+            'default' => '#ffffff',
+            'selectors' => ['{{WRAPPER}} .bkw-cart-sidebar__success-track' => 'color: {{VALUE}};'],
+        ]);
+
+        $this->add_responsive_control('success_action_radius', [
+            'label' => __('رادیوس دکمه‌ها', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 40]],
+            'default' => ['unit' => 'px', 'size' => 16],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-sidebar__success-track, {{WRAPPER}} .bkw-cart-sidebar__success-close' => 'border-radius: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->add_responsive_control('success_action_gap', [
+            'label' => __('فاصلهٔ دو دکمه', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 40]],
+            'default' => ['unit' => 'px', 'size' => 12],
+            'selectors' => ['{{WRAPPER}} .bkw-cart-sidebar__success-actions' => 'gap: {{SIZE}}{{UNIT}};'],
+        ]);
+
+        $this->end_controls_section();
+    }
+
     private function register_loading_style_controls(): void
     {
         $this->start_controls_section('section_style_loading', [
@@ -991,8 +1048,20 @@ final class Cart_Sidebar extends Widget_Base
                      */
                     $track_url = trim((string) ($settings['success_track_url']['url'] ?? ''));
                     $track_url = '' !== $track_url ? $track_url : '/orders/';
+                    $close_text = trim((string) $settings['success_close_text']);
                     ?>
-                    <a class="bkw-cart-sidebar__success-track" href="<?php echo esc_url($track_url); ?>"><?php echo esc_html($settings['success_track_text']); ?></a>
+                    <div class="bkw-cart-sidebar__success-actions">
+                        <?php
+                        /*
+                         * کنش اصلی اول می‌آید تا زیر dir="rtl" سمت راست
+                         * بنشیند — همان ترتیبی که مودال تأیید هم دارد.
+                         */
+                        ?>
+                        <a class="bkw-cart-sidebar__success-track" href="<?php echo esc_url($track_url); ?>"><?php echo esc_html($settings['success_track_text']); ?></a>
+                        <?php if ('' !== $close_text) : ?>
+                            <button type="button" class="bkw-cart-sidebar__success-close" data-bkw-cart-close><?php echo esc_html($close_text); ?></button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 

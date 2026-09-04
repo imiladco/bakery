@@ -1574,25 +1574,9 @@ html.bkw-panel-open {
  * است» درست زیر پیام موفقیت، دقیقاً همان لحظه‌ای‌ست که کاربر باید
  * مطمئن باشد سفارشش ثبت شده.
  */
-.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__footer,
-.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__credit,
-.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__top .bkw-cart-sidebar__divider,
-.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__items,
-.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__title {
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__top,
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__footer {
 	display: none;
-}
-
-/*
- * دکمهٔ × هدر در حالت «ثبت شد» می‌ماند، هرچند بقیهٔ محتوای بالای پنل
- * می‌رود.
- *
- * تا وقتی دکمهٔ پایین «بستن» بود، همان راه خروج بود. حالا که به صفحهٔ
- * سفارش‌ها می‌برد، اگر × را هم پنهان کنیم روی موبایل هیچ راه خروجی
- * نمی‌ماند: پنل آن‌جا تمام‌عرض است، پس پرده‌ای برای کلیک بیرون از آن
- * وجود ندارد و کیبورد هم برای Escape در کار نیست.
- */
-.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__header {
-	justify-content: flex-end;
 }
 
 .bkw-cart-sidebar__success {
@@ -1621,23 +1605,55 @@ html.bkw-panel-open {
 	color: #7d7065;
 }
 
-/* لینک است و نه دکمه — رجوع کن به یادداشت کنار مارک‌آپش. */
-.bkw-cart-sidebar__success-track {
+.bkw-cart-sidebar__success-actions {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 12px;
+}
+
+/*
+ * هر دو کنش یک شکل و اندازه دارند و فقط پر یا خالی بودنشان فرق می‌کند.
+ * رنگ از یک متغیر می‌آید چون رنگ متن و بوردر دکمهٔ فرعی همان رنگ
+ * پس‌زمینهٔ دکمهٔ اصلی است — با دو مقدار جدا، اولین باری که یکی عوض
+ * شود آن پیوند بی‌صدا می‌شکند.
+ *
+ * دکمهٔ اصلی بوردر شفاف دارد و نه «بدون بوردر»: وگرنه دو پیکسل از
+ * دکمهٔ فرعی کوتاه‌تر می‌شد و کنار هم ناهم‌تراز می‌نشستند.
+ */
+.bkw-cart-sidebar__success {
+	--bkw-success-action: #366874;
+}
+
+.bkw-cart-sidebar__success-track,
+.bkw-cart-sidebar__success-close {
 	appearance: none;
-	border: none;
 	cursor: pointer;
 	font: inherit;
 	text-decoration: none;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	margin-top: 12px;
 	padding: 12px 32px;
 	border-radius: 16px;
-	background-color: #366874;
-	color: #ffffff;
+	border: 1.5px solid transparent;
 	font-size: 16px;
 	font-weight: 700;
+	white-space: nowrap;
+}
+
+.bkw-cart-sidebar__success-track {
+	background-color: var(--bkw-success-action);
+	color: #ffffff;
+}
+
+.bkw-cart-sidebar__success-close {
+	background-color: transparent;
+	border-color: var(--bkw-success-action);
+	color: var(--bkw-success-action);
 }
 
 /*
