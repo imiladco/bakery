@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Credit;
 
+use Bakery_Credit\Admin\ReportPage;
 use Bakery_Credit\Admin\UserField;
 use Bakery_Credit\Integration\AdminOrders;
 use Bakery_Credit\Integration\BalanceFilter;
@@ -15,6 +16,7 @@ use Bakery_Credit\Integration\Registration;
 use Bakery_Credit\Integration\Reversals;
 use Bakery_Credit\Integration\SheetColumn;
 use Bakery_Credit\Service\CreditAccount;
+use Bakery_Credit\Service\PeriodReport;
 use Bakery_Credit\Storage\Allowance;
 use Bakery_Credit\Storage\Ledger;
 use Bakery_Credit\Storage\Schema;
@@ -38,6 +40,7 @@ final class Plugin
 
     private readonly CreditAccount $account;
     private readonly Allowance $allowances;
+    private readonly Ledger $ledger;
 
     public static function instance(): self
     {
@@ -47,7 +50,8 @@ final class Plugin
     private function __construct()
     {
         $this->allowances = new Allowance();
-        $this->account = new CreditAccount($this->allowances, new Ledger());
+        $this->ledger = new Ledger();
+        $this->account = new CreditAccount($this->allowances, $this->ledger);
     }
 
     public function account(): CreditAccount
@@ -83,6 +87,7 @@ final class Plugin
         if (is_admin()) {
             (new UserField($this->allowances, $this->account))->register();
             (new AdminOrders($this->account))->register();
+            (new ReportPage(new PeriodReport($this->allowances, $this->ledger)))->register();
         }
     }
 

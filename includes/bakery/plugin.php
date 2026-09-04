@@ -56,6 +56,12 @@ final class Plugin
         (new Mobile_Login())->register();
         (new Otp_Settings())->register();
 
+        // ستون‌های هویت گزارش اعتبار ماهانه. جهتش عمداً برعکس
+        // bkw_user_sheet_columns است: آن‌جا ماژول اعتبار ستونش را به
+        // فایل کاربران اضافه می‌کند و این‌جا ماژول ویجت‌ها ستون‌های
+        // هویت را به گزارش آن. هیچ‌کدام نام کلاس آن‌یکی را نمی‌برد.
+        add_filter('bkw_credit_report_identity', [Users_Sheet::class, 'identity_columns']);
+
         // ورودی/خروجی اکسل کاربران — فقط در پیشخوان معنا دارد و همهٔ
         // قلاب‌هایش (منوی کاربران و admin-post) هم همان‌جا هستند.
         if (is_admin()) {

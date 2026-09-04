@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  * بلکه با عوض‌شدن دوره خودبه‌خود اتفاق می‌افتد — و کرونِ نامطمئن وردپرس
  * از معادله حذف می‌شود.
  */
-final class Ledger implements LedgerSource
+final class Ledger implements LedgerSource, PeriodSource
 {
     private const LOCK_TIMEOUT_SECONDS = 5;
 
@@ -151,6 +151,78 @@ final class Ledger implements LedgerSource
         }
 
         return $this->insert($userId, $periodKey, $amount, EntryType::Adjust->value, null, $actorId, $note);
+    }
+
+    /**
+     * کارنامهٔ همهٔ کاربران در یک دوره — یک کوئری برای کل گزارش.
+     *
+     * تفکیک انواع داخل خودِ SQL انجام می‌شود و نه با خواندن سطرها و
+     * جمع‌زدنشان در PHP: گزارش یک ماهِ شلوغ می‌تواند هزاران سطر باشد و
+     * آوردن همه‌شان در حافظه برای اینکه فقط جمعشان را بخواهیم، هزینهٔ
+     * بی‌دلیل است. یک کوئری، یک پیمایش، مستقل از تعداد سفارش‌ها.
+     *
+     * سطرهای برگشت در دفتر منفی ثبت شده‌اند، پس علامتشان این‌جا برمی‌گردد
+     * تا «برگشتی» یک عدد مثبتِ خوانا باشد.
+     *
+     * @return array<int, array{spent: float, returned: float, adjusted: float, orders: int}> کلید = شناسهٔ کاربر
+     */
+    #[\Override]
+    public function summaries(string $periodKey): array
+    {
+        global $wpdb;
+
+        $table = Schema::table();
+
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT user_id,
+                    COALESCE(SUM(CASE WHEN type = %s THEN amount ELSE 0 END), 0) AS spent,
+                    COALESCE(SUM(CASE WHEN type IN (%s, %s) THEN -amount ELSE 0 END), 0) AS returned,
+                    COALESCE(SUM(CASE WHEN type = %s THEN amount ELSE 0 END), 0) AS adjusted,
+                    COALESCE(SUM(CASE WHEN type = %s THEN 1 ELSE 0 END), 0) AS orders
+             FROM {$table}
+             WHERE period_key = %s
+             GROUP BY user_id",
+            EntryType::Debit->value,
+            EntryType::Cancel->value,
+            EntryType::Refund->value,
+            EntryType::Adjust->value,
+            EntryType::Debit->value,
+            $periodKey
+        ), ARRAY_A) ?: [];
+
+        $summaries = [];
+
+        foreach ($rows as $row) {
+            $summaries[(int) $row['user_id']] = [
+                'spent' => round((float) $row['spent'], 4),
+                'returned' => round((float) $row['returned'], 4),
+                'adjusted' => round((float) $row['adjusted'], 4),
+                'orders' => (int) $row['orders'],
+            ];
+        }
+
+        return $summaries;
+    }
+
+    /**
+     * دوره‌هایی که اصلاً سطری دارند، تازه‌ترین اول.
+     *
+     * کلید دوره طول ثابت و قالب «۱۴۰۵-۰۶» دارد، پس مرتب‌سازی رشته‌ای
+     * همان مرتب‌سازی تاریخی‌ست و هیچ تبدیلی لازم نیست.
+     *
+     * @return array<int, string>
+     */
+    #[\Override]
+    public function periodKeys(): array
+    {
+        global $wpdb;
+
+        $table = Schema::table();
+
+        return array_map(
+            'strval',
+            $wpdb->get_col("SELECT DISTINCT period_key FROM {$table} ORDER BY period_key DESC") ?: []
+        );
     }
 
     /** @return array<int, array<string, mixed>> سطرهای یک کاربر در یک دوره، تازه‌ترین اول */

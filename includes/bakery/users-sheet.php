@@ -158,6 +158,37 @@ final class Users_Sheet
 
 
 
+    /**
+     * ستون‌های هویت، برای گزارش‌هایی که خودشان اعداد را می‌سازند.
+     *
+     * جواب فیلتر `bkw_credit_report_identity` است. عمداً همان
+     * برچسب‌ها و همان خواننده‌های فایل کاربران را می‌دهد تا یک نفر در
+     * دو فایل مختلف با دو نام متفاوت ظاهر نشود.
+     *
+     * ستون شناسه و ستون‌های محاسبه‌شده (سقف اعتبار) بیرون می‌مانند:
+     * اولی شمارهٔ داخلی‌ست و به گزارش نمی‌خورد، دومی را خودِ گزارش با
+     * مقدار همان ماه حساب می‌کند و نه با مقدار امروز.
+     *
+     * @param array<int, array<string, mixed>> $columns
+     * @return array<int, array{label: string, read: callable(int): string, width: int}>
+     */
+    public static function identity_columns(array $columns = []): array
+    {
+        foreach (self::columns() as $key => $column) {
+            if ('id' === $key || 'custom' === $column['store']) {
+                continue;
+            }
+
+            $columns[] = [
+                'label' => (string) $column['label'],
+                'read' => $column['read'],
+                'width' => (int) ($column['width'] ?? 20),
+            ];
+        }
+
+        return $columns;
+    }
+
     /** @return array<int, array<int, string>> یک سطر به‌ازای هر کاربر سایت */
     public static function exportRows(): array
     {

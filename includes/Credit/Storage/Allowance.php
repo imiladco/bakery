@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
  * باشد. لاگ ذاتاً کوتاه است (تغییر سقف رویدادی نادر است) ولی برای اینکه
  * هیچ‌وقت بی‌مرز رشد نکند سقف‌دار است.
  */
-final class Allowance implements AllowanceSource
+final class Allowance implements AllowanceReportSource
 {
     public const META = 'bkw_credit_allowance';
 
@@ -58,11 +58,41 @@ final class Allowance implements AllowanceSource
     }
 
     /** @return array<int, array{at: string, from: float, to: float, by: int}> تازه‌ترین اول */
+    #[\Override]
     public function changeLog(int $userId): array
     {
         $log = get_user_meta($userId, self::LOG_META, true);
 
         return is_array($log) ? $log : [];
+    }
+
+    #[\Override]
+    public function logIsFull(array $log): bool
+    {
+        return count($log) >= self::LOG_LIMIT;
+    }
+
+    /**
+     * کاربرانی که سقفی برایشان تعریف شده.
+     *
+     * صفرها بیرون می‌مانند: سقف صفر یعنی «تعریف نشده» و آوردنشان
+     * گزارش را با سطرهایی پر می‌کرد که نه اعتباری دارند و نه خریدی.
+     * کسی که در همان ماه خرید کرده از راه دفتر می‌آید، چه سقف داشته
+     * باشد چه نه.
+     *
+     * @return array<int, int>
+     */
+    #[\Override]
+    public function userIdsWithAllowance(): array
+    {
+        global $wpdb;
+
+        $ids = $wpdb->get_col($wpdb->prepare(
+            "SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND CAST(meta_value AS DECIMAL(20,4)) > 0",
+            self::META
+        )) ?: [];
+
+        return array_map('intval', $ids);
     }
 
     private function appendToLog(int $userId, float $from, float $to, int $actorId): void
