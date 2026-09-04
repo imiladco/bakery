@@ -1574,9 +1574,25 @@ html.bkw-panel-open {
  * است» درست زیر پیام موفقیت، دقیقاً همان لحظه‌ای‌ست که کاربر باید
  * مطمئن باشد سفارشش ثبت شده.
  */
-.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__top,
-.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__footer {
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__footer,
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__credit,
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__top .bkw-cart-sidebar__divider,
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__items,
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__title {
 	display: none;
+}
+
+/*
+ * دکمهٔ × هدر در حالت «ثبت شد» می‌ماند، هرچند بقیهٔ محتوای بالای پنل
+ * می‌رود.
+ *
+ * تا وقتی دکمهٔ پایین «بستن» بود، همان راه خروج بود. حالا که به صفحهٔ
+ * سفارش‌ها می‌برد، اگر × را هم پنهان کنیم روی موبایل هیچ راه خروجی
+ * نمی‌ماند: پنل آن‌جا تمام‌عرض است، پس پرده‌ای برای کلیک بیرون از آن
+ * وجود ندارد و کیبورد هم برای Escape در کار نیست.
+ */
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__header {
+	justify-content: flex-end;
 }
 
 .bkw-cart-sidebar__success {
@@ -1605,11 +1621,16 @@ html.bkw-panel-open {
 	color: #7d7065;
 }
 
-.bkw-cart-sidebar__success-close {
+/* لینک است و نه دکمه — رجوع کن به یادداشت کنار مارک‌آپش. */
+.bkw-cart-sidebar__success-track {
 	appearance: none;
 	border: none;
 	cursor: pointer;
 	font: inherit;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	margin-top: 12px;
 	padding: 12px 32px;
 	border-radius: 16px;

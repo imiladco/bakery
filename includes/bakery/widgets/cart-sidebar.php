@@ -222,10 +222,28 @@ final class Cart_Sidebar extends Widget_Base
             'rows' => 2,
         ]);
 
-        $this->add_control('success_close_text', [
-            'label' => __('متن دکمهٔ بستن', 'bakery-widgets'),
+        /*
+         * دکمهٔ پایین پیام موفقیت به‌جای بستن، به صفحهٔ سفارش‌ها می‌برد.
+         *
+         * شناسهٔ کنترل عمداً عوض شد (success_close_text → این): کاری که
+         * دکمه می‌کند از «ببند» به «برو» تغییر کرده، پس اگر مدیری قبلاً
+         * متنش را دستی «بستن» گذاشته بود، همان متن روی دکمه‌ای که حالا
+         * صفحه را عوض می‌کند گمراه‌کننده است. برگشتن به پیش‌فرض تازه
+         * درست‌تر از نگه‌داشتن یک برچسب بی‌ربط است.
+         */
+        $this->add_control('success_track_text', [
+            'label' => __('متن دکمهٔ پیگیری', 'bakery-widgets'),
             'type' => Controls_Manager::TEXT,
-            'default' => __('بستن', 'bakery-widgets'),
+            'default' => __('پیگیری سفارش', 'bakery-widgets'),
+        ]);
+
+        $this->add_control('success_track_url', [
+            'label' => __('مقصد دکمهٔ پیگیری', 'bakery-widgets'),
+            'type' => Controls_Manager::URL,
+            'default' => ['url' => '/orders/'],
+            'placeholder' => '/orders/',
+            'description' => __('صفحه‌ای که ویجت «سابقهٔ سفارش‌ها» رویش قرار دارد. خالی گذاشتنش یعنی /orders/.', 'bakery-widgets'),
+            'options' => false,
         ]);
 
         $this->add_control('success_order_prefix', [
@@ -963,7 +981,18 @@ final class Cart_Sidebar extends Widget_Base
                     <p class="bkw-cart-sidebar__success-title"><?php echo esc_html($settings['success_title']); ?></p>
                     <p class="bkw-cart-sidebar__success-text"><?php echo esc_html($settings['success_text']); ?></p>
                     <p class="bkw-cart-sidebar__success-order" data-bkw-cart-success-order></p>
-                    <button type="button" class="bkw-cart-sidebar__success-close" data-bkw-cart-close><?php echo esc_html($settings['success_close_text']); ?></button>
+                    <?php
+                    /*
+                     * لینک است و نه دکمه، چون واقعاً صفحه را عوض می‌کند —
+                     * پس با کلیک میانی/راست هم مثل بقیهٔ لینک‌ها رفتار
+                     * می‌کند و صفحه‌خوان هم درست معرفی‌اش می‌کند.
+                     * data-bkw-cart-close ندارد: بستن سایدبار پیش از
+                     * پیمایش کاری نمی‌کند جز یک پرش بصری.
+                     */
+                    $track_url = trim((string) ($settings['success_track_url']['url'] ?? ''));
+                    $track_url = '' !== $track_url ? $track_url : '/orders/';
+                    ?>
+                    <a class="bkw-cart-sidebar__success-track" href="<?php echo esc_url($track_url); ?>"><?php echo esc_html($settings['success_track_text']); ?></a>
                 </div>
             </div>
 
