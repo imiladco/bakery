@@ -78,6 +78,22 @@ final class Users_Sheet
     public static function columns(): array
     {
         $columns = [
+            'id' => [
+                'label' => __('شناسه', 'bakery-widgets'),
+                'aliases' => ['شناسه کاربر', 'user_id', 'id'],
+                'store' => 'id',
+                'required' => false,
+                'unique' => false,
+                'width' => 9,
+                'locked' => true,
+                'hint' => __('شناسهٔ کاربر در وردپرس. خروجی خودش پرش می‌کند و در فایل اکسل قفل است — نه لازم است پرش کنید و نه می‌شود. برای کاربر تازه خالی می‌ماند.', 'bakery-widgets'),
+                'read' => static fn (int $id): string => (string) $id,
+                'parse' => static function (string $raw): ?string {
+                    $digits = Mobile_Login::normalize_digits($raw);
+
+                    return '' !== $digits && (int) $digits > 0 ? $digits : null;
+                },
+            ],
             'first_name' => [
                 'label' => __('نام', 'bakery-widgets'),
                 'aliases' => ['نام کوچک', 'first_name'],
@@ -248,13 +264,14 @@ final class Users_Sheet
 
         // یکی از این دو کافی‌ست؛ هیچ‌کدام نباشد، هیچ سطری به هیچ کاربری
         // نمی‌خورد و فایل اصلاً قابل پردازش نیست.
-        if ([] === array_intersect(self::matchKeys(), $map)) {
+        if ([] === array_intersect(array_merge(['id'], self::matchKeys()), $map)) {
             return [
                 'columns' => [],
                 'rows' => [],
                 'fatal' => sprintf(
-                    /* translators: 1: national ID column label, 2: mobile column label */
-                    __('فایل نه ستون «%1$s» دارد و نه «%2$s»، پس معلوم نیست هر سطر مال کدام کاربر است. یک بار خروجی بگیرید و همان فایل را ویرایش کنید.', 'bakery-widgets'),
+                    /* translators: 1: ID column label, 2: national ID column label, 3: mobile column label */
+                    __('فایل هیچ‌کدام از ستون‌های «%1$s»، «%2$s» و «%3$s» را ندارد، پس معلوم نیست هر سطر مال کدام کاربر است. یک بار خروجی بگیرید و همان فایل را ویرایش کنید.', 'bakery-widgets'),
+                    $columns['id']['label'],
                     $columns[self::KEY_COLUMN]['label'],
                     $columns[Mobile_Login::META_MOBILE]['label']
                 ),
@@ -283,7 +300,7 @@ final class Users_Sheet
         $taken = [];
 
         foreach ($parsed as $row) {
-            foreach (self::matchUsers($row['values']) as $id) {
+            foreach (self::rowUsers($row['values']) as $id) {
                 $taken[$id] = $id;
             }
         }
@@ -353,8 +370,33 @@ final class Users_Sheet
     private static function decide(int $line, array $values, array $errors, array $columns, array &$seen, array $taken, array $resolutions): array
     {
         $nationalId = $values[self::KEY_COLUMN] ?? '';
-        $matched = self::matchUsers($values);
         $similar = [];
+
+        /*
+         * شناسه، اگر باشد، حرف آخر را می‌زند.
+         *
+         * آن‌وقت کد ملی و شمارهٔ تماس هر دو فقط *مقدار*اند و می‌شود هر
+         * دو را در یک ویرایش عوض کرد — همان حالتی که با تطبیق دو کلیدی
+         * تنها، به کاربر تازه تبدیل می‌شد. سطرهایی که مدیر خودش اضافه
+         * کرده شناسه ندارند و همان مسیر دو کلیدی را می‌روند.
+         */
+        $explicitId = (int) ($values['id'] ?? 0);
+
+        if ($explicitId > 0) {
+            if (!get_userdata($explicitId)) {
+                return self::row($line, 'error', 0, '', $nationalId, $values, array_merge($errors, [
+                    sprintf(
+                        /* translators: %d: user ID from the file */
+                        __('کاربری با شناسهٔ %d وجود ندارد. اگر می‌خواهید کاربر تازه ساخته شود، ستون شناسه را خالی بگذارید.', 'bakery-widgets'),
+                        $explicitId
+                    ),
+                ]));
+            }
+
+            return self::decided($line, $explicitId, $values, $errors, $columns, $seen, $nationalId);
+        }
+
+        $matched = self::matchUsers($values);
 
         if ([] === $matched && '' === $nationalId) {
             // نه به کاربری خورد و نه کد ملی دارد که با آن ساخته شود.
@@ -411,6 +453,22 @@ final class Users_Sheet
             }
         }
 
+        return self::decided($line, $userId, $values, $errors, $columns, $seen, $nationalId, $similar);
+    }
+
+    /**
+     * سنجش‌های مشترکِ هر سطری که تکلیفش روشن شده — چه با شناسه و چه با
+     * تطبیق کلیدها.
+     *
+     * @param array<string, string> $values
+     * @param array<int, string> $errors
+     * @param array<string, array<string, mixed>> $columns
+     * @param array<string, array<string, int>> $seen
+     * @param array<int, array{id:int, label:string}> $similar
+     * @return array{line:int, action:string, user_id:int, name:string, key:string, values:array<string,string>, errors:array<int,string>, similar:array<int, array{id:int, label:string}>}
+     */
+    private static function decided(int $line, int $userId, array $values, array $errors, array $columns, array &$seen, string $nationalId, array $similar = []): array
+    {
         $isNew = 0 === $userId;
 
         $errors = array_merge(
@@ -534,6 +592,24 @@ final class Users_Sheet
         }
 
         return array_values($found);
+    }
+
+    /**
+     * همهٔ کاربرانی که یک سطر حسابشان را می‌دهد — شناسه به‌علاوهٔ کلیدها.
+     *
+     * @param array<string, string> $values
+     * @return array<int, int>
+     */
+    private static function rowUsers(array $values): array
+    {
+        $found = self::matchUsers($values);
+        $explicitId = (int) ($values['id'] ?? 0);
+
+        if ($explicitId > 0 && get_userdata($explicitId)) {
+            $found[] = $explicitId;
+        }
+
+        return array_values(array_unique($found));
     }
 
     /**
@@ -853,6 +929,7 @@ final class Users_Sheet
                 (string) ($column['rule_message'] ?? ''),
                 (bool) ($column['flag_duplicates'] ?? false),
                 (int) ($column['width'] ?? 22),
+                (bool) ($column['locked'] ?? false),
             );
         }
 

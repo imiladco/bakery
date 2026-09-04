@@ -380,6 +380,57 @@ final class ReaderTest extends TestCase
         self::assertStringContainsString('<c r="A1" s="1"', $xml);
     }
 
+    /**
+     * قفل کردن یک ستون یعنی باز گذاشتنِ صریحِ بقیه.
+     *
+     * منطق اکسل وارونهٔ چیزی‌ست که به‌نظر می‌رسد: هر سلول پیش‌فرض قفل
+     * است و محافظت برگه آن قفل‌ها را *فعال* می‌کند. اگر فقط محافظت را
+     * روشن می‌کردیم، کل فایل غیرقابل ویرایش می‌شد — یعنی خرابیِ ساکت و
+     * دقیقاً برعکسِ چیزی که می‌خواستیم.
+     */
+    public function test_locking_one_column_leaves_the_others_writable(): void
+    {
+        if (!Writer::canWriteXlsx()) {
+            self::markTestSkipped('افزونهٔ zip در دسترس نیست.');
+        }
+
+        $path = $this->file('xlsx');
+        Writer::xlsx($path, [new Column('شناسه', locked: true), new Column('نام')], [['1', 'علی']]);
+
+        $xml = $this->worksheetXml($path);
+
+        self::assertStringContainsString('<sheetProtection sheet="1"', $xml);
+        // مرتب‌سازی، فیلتر و افزودن سطر باید باز بمانند؛ فایل برای همین است.
+        self::assertStringContainsString('insertRows="0"', $xml);
+        self::assertStringContainsString('sort="0"', $xml);
+        self::assertStringContainsString('autoFilter="0"', $xml);
+
+        // ستون قفل سبک ۳ می‌گیرد و ستون آزاد سبک ۰.
+        self::assertStringContainsString('<c r="A2" s="3"', $xml);
+        self::assertStringContainsString('<c r="B2" s="0"', $xml);
+
+        $zip = new \ZipArchive();
+        $zip->open($path);
+        $styles = (string) $zip->getFromName('xl/styles.xml');
+        $zip->close();
+
+        self::assertStringContainsString('<protection locked="0"/>', $styles, 'ستون‌های آزاد باید صریحاً باز باشند.');
+        self::assertStringContainsString('<protection locked="1"/>', $styles);
+    }
+
+    /** بدون ستون قفل، اصلاً محافظتی روشن نمی‌شود. */
+    public function test_a_sheet_with_no_locked_column_is_not_protected(): void
+    {
+        if (!Writer::canWriteXlsx()) {
+            self::markTestSkipped('افزونهٔ zip در دسترس نیست.');
+        }
+
+        $path = $this->file('xlsx');
+        Writer::xlsx($path, [new Column('نام')], [['علی']]);
+
+        self::assertStringNotContainsString('<sheetProtection', $this->worksheetXml($path));
+    }
+
     /** سطر سرستون هنگام اسکرول سر جایش می‌ماند و فیلتر دارد. */
     public function test_the_header_row_is_frozen_and_filterable(): void
     {

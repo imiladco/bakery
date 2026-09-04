@@ -40,6 +40,7 @@ final class Writer
     private const STYLE_TEXT = 0;
     private const STYLE_HEADER = 1;
     private const STYLE_NUMBER = 2;
+    private const STYLE_LOCKED = 3;
 
     /**
      * چند سطر پایین‌تر از داده هم اعتبارسنجی و رنگ‌آمیزی می‌گیرند.
@@ -147,6 +148,7 @@ final class Writer
         $xml .= '</sheetData>';
 
         if ($count > 0) {
+            $xml .= self::protection($columns);
             $xml .= '<autoFilter ref="A1:' . $lastLetter . max(1, $lastRow) . '"/>';
             $xml .= self::duplicateHighlights($columns, $guardedRow);
             $xml .= self::validations($columns, $guardedRow);
@@ -167,6 +169,38 @@ final class Writer
             . '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
             . '<selection pane="bottomLeft" activeCell="A2" sqref="A2"/>'
             . '</sheetView></sheetViews>';
+    }
+
+    /**
+     * قفل کردن ستون‌هایی که فقط دیدنی‌اند.
+     *
+     * منطق اکسل این‌جا وارونهٔ چیزی‌ست که به‌نظر می‌رسد و اشتباه‌کردنش
+     * آسان است: هر سلول به‌صورت پیش‌فرض «قفل» است و این قفل فقط وقتی
+     * *اثر* می‌کند که محافظت برگه روشن باشد. پس برای قفل کردن یک ستون،
+     * باید بقیهٔ ستون‌ها را صریحاً باز کرد و بعد محافظت را روشن کرد —
+     * وگرنه کل فایل غیرقابل ویرایش می‌شود.
+     *
+     * مقدار "0" روی هر ویژگی یعنی «این کار مجاز است». مرتب‌سازی، فیلتر
+     * و افزودن سطر باز می‌مانند، چون فایل برای همین کارها ساخته شده؛
+     * فقط نوشتن در سلول‌های قفل ممنوع است.
+     *
+     * رمز ندارد و عمداً هم ندارد: این یک حفاظ است و نه قفل امنیتی. اگر
+     * مدیر واقعاً لازم داشت، از نوار ابزار اکسل بازش می‌کند. تصمیم واقعی
+     * را همیشه سرور می‌گیرد.
+     *
+     * @param array<int, Column> $columns
+     */
+    private static function protection(array $columns): string
+    {
+        foreach ($columns as $column) {
+            if ($column->locked) {
+                return '<sheetProtection sheet="1" objects="1" scenarios="1"'
+                    . ' formatCells="0" formatColumns="0" formatRows="0"'
+                    . ' insertRows="0" deleteRows="0" sort="0" autoFilter="0"/>';
+            }
+        }
+
+        return '';
     }
 
     /** @param array<int, Column> $columns */
@@ -297,6 +331,10 @@ final class Writer
 
     private static function styleFor(Column $column): int
     {
+        if ($column->locked) {
+            return self::STYLE_LOCKED;
+        }
+
         return $column->numeric ? self::STYLE_NUMBER : self::STYLE_TEXT;
     }
 
@@ -376,9 +414,10 @@ final class Writer
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            . '<fonts count="2">'
+            . '<fonts count="3">'
             . '<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>'
             . '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
+            . '<font><sz val="11"/><color rgb="FF808080"/><name val="Calibri"/></font>'
             . '</fonts>'
             . '<fills count="3">'
             . '<fill><patternFill patternType="none"/></fill>'
@@ -393,14 +432,19 @@ final class Writer
             . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
             // بدون cellStyles، اکسل «سبک پیش‌فرضی ندارد» می‌گیرد و سبک
             // خودش را جای سبک‌های ما می‌نشاند.
-            . '<cellXfs count="3">'
-            // ۰ — متن
-            . '<xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>'
-            // ۱ — سرستون
+            . '<cellXfs count="4">'
+            // ۰ — متن، باز برای ویرایش
+            . '<xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyProtection="1">'
+            . '<protection locked="0"/></xf>'
+            // ۱ — سرستون؛ قفل می‌ماند تا نگاشت ستون‌ها دست‌نخورده بماند
             . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">'
             . '<alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
-            // ۲ — عدد با جداکنندهٔ سه‌رقمی
-            . '<xf numFmtId="3" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>'
+            // ۲ — عدد با جداکنندهٔ سه‌رقمی، باز برای ویرایش
+            . '<xf numFmtId="3" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyProtection="1">'
+            . '<protection locked="0"/></xf>'
+            // ۳ — متنِ کم‌رنگ و قفل (ستون شناسه)
+            . '<xf numFmtId="49" fontId="2" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1" applyProtection="1">'
+            . '<alignment horizontal="center"/><protection locked="1"/></xf>'
             . '</cellXfs>'
             . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
             // قالب سلول‌های تکراری: پس‌زمینهٔ صورتی، متن قرمز تیره —

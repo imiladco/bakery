@@ -276,21 +276,102 @@ final class UsersSheetTest extends TestCase
         self::assertSame('create', $plan['rows'][0]['action']);
     }
 
-    /** فایل هیچ ستون شناسه‌ای ندارد؛ روی هر نصبی همان معنا را می‌دهد. */
-    public function test_the_export_carries_no_internal_identifier(): void
+    public function test_the_export_carries_each_user_id_in_the_first_column(): void
     {
-        WordPress::seedUser(['user_login' => '0012345678'], [
+        $id = WordPress::seedUser(['user_login' => '0012345678'], [
             Mobile_Login::META_NATIONAL_ID => '0012345678',
         ]);
 
-        $labels = array_map(
-            static fn ($column): string => $column->label,
-            Users_Sheet::sheetColumns()
-        );
+        $columns = Users_Sheet::sheetColumns();
 
-        self::assertNotContains('شناسه', $labels);
-        self::assertSame('نام', $labels[0]);
-        self::assertSame('0012345678', Users_Sheet::exportRows()[0][3]);
+        self::assertSame('شناسه', $columns[0]->label);
+        self::assertTrue($columns[0]->locked, 'ستون شناسه باید در فایل اکسل قفل باشد.');
+        self::assertSame((string) $id, Users_Sheet::exportRows()[0][0]);
+    }
+
+    /* ----------------------------------------------- شناسه، وقتی هست */
+
+    /**
+     * با شناسه، عوض کردن هر دو کلید در یک ویرایش دیگر سؤالی ندارد.
+     *
+     * همان سناریویی که با تطبیق دو کلیدیِ تنها به «کاربر تازه» تبدیل
+     * می‌شد و باید از مدیر پرسیده می‌شد، این‌جا قطعی‌ست.
+     */
+    public function test_an_id_lets_both_keys_change_at_once_without_a_question(): void
+    {
+        $id = WordPress::seedUser(['user_login' => '0012345678', 'display_name' => 'علی رضایی'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121234567',
+            'first_name' => 'علی',
+            'last_name' => 'رضایی',
+        ]);
+
+        $header = array_merge(['شناسه'], self::HEADER);
+        $plan = $this->apply([[(string) $id, 'علی', 'رضایی', '09350000000', '9998887776', '']], $header);
+
+        self::assertSame('update', $plan['rows'][0]['action']);
+        self::assertSame([], $plan['rows'][0]['errors']);
+        self::assertSame([], $plan['rows'][0]['similar']);
+        self::assertCount(1, WordPress::$users);
+        self::assertSame('9998887776', WordPress::meta($id, Mobile_Login::META_NATIONAL_ID));
+        self::assertSame('09350000000', WordPress::meta($id, Mobile_Login::META_MOBILE));
+    }
+
+    /** شناسهٔ بی‌صاحب یعنی اشتباه، نه دعوت به ساختن کاربر تازه. */
+    public function test_a_row_naming_a_user_id_that_does_not_exist_is_an_error(): void
+    {
+        $header = array_merge(['شناسه'], self::HEADER);
+        $plan = $this->plan([['999', 'علی', 'رضایی', '09121234567', '0012345678', '']], $header);
+
+        self::assertSame('error', $plan['rows'][0]['action']);
+        self::assertStringContainsString('999', $plan['rows'][0]['errors'][0]);
+    }
+
+    /** کلیدی که به کاربر دیگری تعلق دارد، حتی با شناسهٔ درست، رد می‌شود. */
+    public function test_an_id_cannot_take_a_key_that_belongs_to_someone_else(): void
+    {
+        WordPress::seedUser(['user_login' => 'a'], [Mobile_Login::META_NATIONAL_ID => '0012345678']);
+        $second = WordPress::seedUser(['user_login' => 'b'], [Mobile_Login::META_NATIONAL_ID => '1234567890']);
+
+        $header = array_merge(['شناسه'], self::HEADER);
+        $plan = $this->plan([[(string) $second, 'مریم', 'احمدی', '09121234568', '0012345678', '']], $header);
+
+        self::assertSame('error', $plan['rows'][0]['action']);
+    }
+
+    /** سطری که مدیر خودش اضافه کرده شناسه ندارد و همان مسیر کلیدها را می‌رود. */
+    public function test_a_row_without_an_id_still_matches_on_its_keys(): void
+    {
+        $id = WordPress::seedUser(['user_login' => '0012345678'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+        ]);
+
+        $header = array_merge(['شناسه'], self::HEADER);
+        $plan = $this->plan([['', 'علی', 'رضایی', '09121234567', '0012345678', '']], $header);
+
+        self::assertSame('update', $plan['rows'][0]['action']);
+        self::assertSame($id, $plan['rows'][0]['user_id']);
+    }
+
+    /** کاربری که سطرش با شناسه شناخته شده، جای دیگری به‌عنوان «شبیه» پیشنهاد نمی‌شود. */
+    public function test_a_user_claimed_by_id_is_not_offered_as_a_lookalike_elsewhere(): void
+    {
+        $id = WordPress::seedUser(['user_login' => 'a', 'display_name' => 'علی رضایی'], [
+            Mobile_Login::META_NATIONAL_ID => '0012345678',
+            Mobile_Login::META_MOBILE => '09121234567',
+            'first_name' => 'علی',
+            'last_name' => 'رضایی',
+        ]);
+
+        $header = array_merge(['شناسه'], self::HEADER);
+        $plan = $this->plan([
+            [(string) $id, 'علی', 'رضایی', '09350000000', '9998887776', ''],
+            ['', 'علی', 'رضایی', '09360000000', '5556667778', ''],
+        ], $header);
+
+        self::assertSame('update', $plan['rows'][0]['action']);
+        self::assertSame('create', $plan['rows'][1]['action']);
+        self::assertSame([], $plan['rows'][1]['similar']);
     }
 
     /* ------------------------------------- وقتی هر دو کلید عوض شده‌اند */

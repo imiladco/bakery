@@ -16,6 +16,10 @@ namespace Bakery_Sheet;
  * $rule یک فرمول اکسل است با «{c}» به‌جای آدرس اولین سلولِ داده — مثلاً
  * AND(LEN({c})=10,ISNUMBER(--{c})). اکسل خودش آن را برای بقیهٔ سطرها
  * نسبی می‌کند.
+ *
+ * $locked یعنی این ستون فقط دیدنی‌ست. اگر حتی یک ستون قفل باشد، محافظت
+ * برگه روشن می‌شود و بقیهٔ ستون‌ها صریحاً باز می‌مانند — وگرنه پیش‌فرض
+ * اکسل «همه‌چیز قفل» است و کل فایل غیرقابل ویرایش می‌شد.
  */
 final class Column
 {
@@ -27,6 +31,7 @@ final class Column
         public readonly string $ruleMessage = '',
         public readonly bool $flagDuplicates = false,
         public readonly int $width = 22,
+        public readonly bool $locked = false,
     ) {
     }
 }
