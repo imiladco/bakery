@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Credit\Tests\Service\Fakes;
 
+use Bakery_Credit\Domain\DebitRecord;
 use Bakery_Credit\Domain\EntryType;
 use Bakery_Credit\Storage\LedgerSource;
 
@@ -48,6 +49,18 @@ final class InMemoryLedger implements LedgerSource
         $this->rows[] = ['user' => $userId, 'period' => $periodKey, 'amount' => $amount, 'type' => EntryType::Debit->value, 'ref' => $orderId];
 
         return true;
+    }
+
+    #[\Override]
+    public function debitFor(int $orderId): ?DebitRecord
+    {
+        foreach ($this->rows as $row) {
+            if (EntryType::Debit->value === $row['type'] && $row['ref'] === $orderId) {
+                return new DebitRecord($row['user'], $row['period'], $row['amount']);
+            }
+        }
+
+        return null;
     }
 
     #[\Override]

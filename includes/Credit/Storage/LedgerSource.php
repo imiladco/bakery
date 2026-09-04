@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Credit\Storage;
 
+use Bakery_Credit\Domain\DebitRecord;
 use Bakery_Credit\Domain\EntryType;
 
 /**
@@ -20,6 +21,15 @@ interface LedgerSource
      * ثبت شده بود؛ false یعنی اعتبار کافی نبود و هیچ چیزی نوشته نشد.
      */
     public function tryDebit(int $userId, string $periodKey, float $amount, float $allowance, int $orderId): bool;
+
+    /**
+     * سطرِ کسرِ یک سفارش، یا null اگر اصلاً از اعتبار کم نشده باشد.
+     *
+     * وجود این سطر تنها سند معتبرِ «این سفارش با اعتبار پرداخت شده»
+     * است — نه فیلد payment_method سفارش، که ادمین می‌تواند بعداً در
+     * صفحهٔ سفارش عوضش کند.
+     */
+    public function debitFor(int $orderId): ?DebitRecord;
 
     /**
      * برگشت اعتبار در پی لغو یا مرجوعی؛ همیشه به دورهٔ سفارش اصلی می‌رود.

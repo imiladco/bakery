@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bakery_Credit\Service;
 
 use Bakery_Credit\Domain\Balance;
+use Bakery_Credit\Domain\DebitRecord;
 use Bakery_Credit\Domain\EntryType;
 use Bakery_Credit\Domain\Period;
 use Bakery_Credit\Storage\AllowanceSource;
@@ -75,21 +76,49 @@ final class CreditAccount
         );
     }
 
+    /** مبلغی که واقعاً بابت این سفارش از اعتبار کم شده؛ صفر یعنی هیچ. */
+    public function debitedForOrder(int $orderId): float
+    {
+        return $this->ledger->debitFor($orderId)?->amount ?? 0.0;
+    }
+
     /**
-     * برگشت اعتبار. دوره از تاریخ سفارش اصلی گرفته می‌شود، نه از امروز،
-     * تا اعتبار به همان ماهی برگردد که از آن کم شده بود.
+     * برگشتِ کسرِ یک سفارش — مسیرِ لغو و مرجوعی.
+     *
+     * برخلاف reverse()، این متد هیچ‌کدام از «کاربر، دوره، مبلغ» را از
+     * فراخوان نمی‌گیرد و از خودِ سطر کسر می‌خوانَد. دلیلش این است که هر
+     * سه در سفارش ووکامرس قابل تغییرند بعد از پرداخت: ادمین می‌تواند
+     * مبلغ سفارش را ویرایش کند، مالکش را عوض کند، یا آن را ماه بعد لغو
+     * کند. هرکدام از این‌ها یعنی برگشتِ عدد اشتباه به حساب اشتباه یا به
+     * ماه اشتباه. دفتر ثبت کرده که چه چیزی از کجا کم شد، پس دقیقاً همان
+     * برمی‌گردد و نه چیزی که سفارش امروز ادعا می‌کند.
+     *
+     * $amount فقط برای مرجوعی جزئی داده می‌شود و هرگز از خودِ کسر بیشتر
+     * نمی‌شود. $refId هم برای مرجوعی، شناسهٔ رکورد مرجوعی است و نه سفارش
+     * (رجوع کن به Domain\EntryType: دو فضای شمارهٔ مستقل).
+     *
+     * @return float مبلغی که واقعاً برگشت؛ صفر یعنی چیزی برنگشت.
      */
-    public function reverse(
-        int $userId,
-        float $amount,
-        int $refId,
-        DateTimeImmutable $orderDate,
-        EntryType $type = EntryType::Refund
-    ): bool {
-        if ($userId <= 0 || $amount <= 0.0) {
-            return false;
+    public function reverseDebit(
+        int $orderId,
+        EntryType $type = EntryType::Cancel,
+        ?float $amount = null,
+        ?int $refId = null
+    ): float {
+        $debit = $this->ledger->debitFor($orderId);
+
+        if (!$debit instanceof DebitRecord) {
+            return 0.0;
         }
 
-        return $this->ledger->reverse($userId, Period::fromDate($orderDate)->key(), $amount, $refId, $type);
+        $amount = null === $amount ? $debit->amount : min($amount, $debit->amount);
+
+        if ($amount <= 0.0) {
+            return 0.0;
+        }
+
+        $done = $this->ledger->reverse($debit->userId, $debit->periodKey, $amount, $refId ?? $orderId, $type);
+
+        return $done ? $amount : 0.0;
     }
 }

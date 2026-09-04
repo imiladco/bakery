@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Credit\Storage;
 
+use Bakery_Credit\Domain\DebitRecord;
 use Bakery_Credit\Domain\EntryType;
 
 if (!defined('ABSPATH')) {
@@ -87,6 +88,30 @@ final class Ledger implements LedgerSource
         } finally {
             $this->releaseLock($userId);
         }
+    }
+
+    #[\Override]
+    public function debitFor(int $orderId): ?DebitRecord
+    {
+        global $wpdb;
+
+        $table = Schema::table();
+
+        $row = $wpdb->get_row($wpdb->prepare(
+            "SELECT user_id, period_key, amount FROM {$table} WHERE type = %s AND ref_id = %d LIMIT 1",
+            EntryType::Debit->value,
+            $orderId
+        ), ARRAY_A);
+
+        if (!is_array($row)) {
+            return null;
+        }
+
+        return new DebitRecord(
+            (int) $row['user_id'],
+            (string) $row['period_key'],
+            round((float) $row['amount'], 4)
+        );
     }
 
     /**

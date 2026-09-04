@@ -43,6 +43,11 @@ if (!defined('ABSPATH')) {
  *      نه مرحله‌ای بعد از تحویل؛ طراحی هم آن را جدا نشان می‌دهد (دو
  *      دایره: ثبت شد ← لغو شد).
  *
+ * جدا از ثبتِ این دو، کشویی وضعیت در پیشخوان هم به همین پنج حالت
+ * محدود می‌شود (admin_status_list). بقیهٔ وضعیت‌های ووکامرس برای
+ * فروشگاهی نوشته شده‌اند که درگاه بانکی و مرجوعی دارد و این‌جا فقط
+ * فرصت اشتباه‌اند — با یک استثنای مهم که همان‌جا توضیح داده شده.
+ *
  * این دو وضعیت به فهرست «قابل لغو» اضافه نمی‌شوند: سفارشی که وارد فر
  * شده دیگر برای مشتری قابل لغو نیست. آن فهرست در Order_Cancellation
  * تعریف شده و با فیلتر bkw_order_cancellable_statuses قابل تغییر است،
@@ -83,7 +88,7 @@ final class Order_Statuses
     public function register(): void
     {
         add_action('init', [$this, 'register_statuses']);
-        add_filter('wc_order_statuses', [$this, 'add_to_status_list']);
+        add_filter('wc_order_statuses', [$this, 'admin_status_list']);
         add_filter('woocommerce_order_is_paid_statuses', [$this, 'add_to_paid_statuses']);
     }
 
@@ -103,35 +108,86 @@ final class Order_Statuses
     }
 
     /**
-     * وضعیت‌های تازه را در کشویی «وضعیت سفارش» پیشخوان می‌گذارد، درست
-     * بعد از «در حال انجام» و پیش از «تکمیل‌شده» — همان ترتیبی که
-     * سفارش واقعاً طی می‌کند. درج در وسط آرایه و نه انتهایش، وگرنه
-     * ادمین باید بین «تکمیل‌شده» و «لغو شده» دنبال «در حال آماده‌سازی»
-     * بگردد.
+     * فهرست وضعیت‌هایی که ادمین می‌بیند و می‌تواند سفارش را به آن‌ها ببرد.
+     *
+     * ووکامرس نُه وضعیت دارد که هفت‌تایشان برای فروشگاهی نوشته شده‌اند که
+     * درگاه بانکی و انبار و مرجوعی دارد. این‌جا هیچ‌کدام از آن‌ها معنا
+     * ندارند: تنها روش پرداخت اعتبار ماهانه است و همان لحظهٔ ثبت سفارش
+     * تسویه می‌شود، پس «در انتظار پرداخت» و «در انتظار بررسی» حالتی‌اند
+     * که سفارش سالم هرگز در آن نمی‌ماند. نگه‌داشتنشان در کشویی فقط یعنی
+     * ادمین می‌تواند به‌اشتباه سفارشی را به وضعیتی ببرد که هیچ معنایی در
+     * این فروشگاه ندارد.
+     *
+     * ترتیب هم عمدی است و همان مسیر واقعی سفارش را نشان می‌دهد، نه ترتیب
+     * الفبایی یا ترتیب داخلی ووکامرس.
      *
      * @param array<string, string> $statuses
      * @return array<string, string>
      */
-    public function add_to_status_list(array $statuses): array
+    public function admin_status_list(array $statuses): array
     {
-        $reordered = [];
+        $visible = [
+            'wc-processing' => $statuses['wc-processing'] ?? __('در حال انجام', 'bakery-widgets'),
+            'wc-' . self::PREPARING => self::custom_labels()[self::PREPARING],
+            'wc-' . self::READY => self::custom_labels()[self::READY],
+            // تنها برچسبی که عوض می‌شود: «تکمیل شده» برای نانوایی یعنی نان
+            // به دست مشتری رسیده. عین همان چیزی که chain() به کاربر نشان
+            // می‌دهد، تا پیشخوان و صفحهٔ سفارش‌های کاربر یک زبان داشته باشند.
+            'wc-completed' => __('تحویل داده شد', 'bakery-widgets'),
+            'wc-cancelled' => $statuses['wc-cancelled'] ?? __('لغو شده', 'bakery-widgets'),
+        ];
 
-        foreach ($statuses as $key => $label) {
-            $reordered[$key] = $label;
+        /*
+         * وضعیت خودِ سفارشی که ادمین باز کرده هرگز از فهرست نمی‌افتد،
+         * حتی اگر جزو این پنج‌تا نباشد.
+         *
+         * این محافظ الکی نیست: سفارشی که اعتبارش کفاف نداده «ناموفق»
+         * می‌شود (Bakery_Credit\Integration\DirectCheckout) و سفارشی که
+         * وسط ثبت رها شده «در انتظار پرداخت» می‌ماند. اگر وضعیت فعلی در
+         * کشویی نباشد، مرورگر گزینهٔ اول را انتخاب‌شده نشان می‌دهد و
+         * اولین «به‌روزرسانی» آن سفارش را بی‌صدا به «در حال انجام»
+         * می‌برد — که چون وضعیت پرداخت‌شده است، از اعتبار کاربر هم کم
+         * می‌کند. یعنی یک کلیک بی‌ربط، پول واقعی خرج می‌کرد.
+         */
+        $current = self::current_status_key();
 
-            if ('wc-processing' === $key) {
-                foreach (self::custom_labels() as $status => $custom) {
-                    $reordered['wc-' . $status] = $custom;
+        if (null !== $current && !isset($visible[$current])) {
+            $visible[$current] = $statuses[$current] ?? $current;
+        }
+
+        return $visible;
+    }
+
+    /**
+     * وضعیت سفارشی که همین حالا در پیشخوان باز است، یا null.
+     *
+     * ووکامرس $theorder را پیش از رندر متاباکس‌ها پر می‌کند، ولی ترتیب
+     * دقیقش بین نسخه‌های HPOS و پست‌محور فرق کرده؛ پس اگر خالی بود از
+     * روی خودِ درخواست خوانده می‌شود (post برای جدول wp_posts و id برای
+     * HPOS). محافظ بازگشتی هم لازم است چون wc_get_order در مسیرش ممکن
+     * است دوباره به همین فیلتر برسد.
+     */
+    private static function current_status_key(): ?string
+    {
+        static $resolving = false;
+
+        $order = $GLOBALS['theorder'] ?? null;
+
+        if (!$order instanceof WC_Order && is_admin() && !$resolving) {
+            $id = isset($_GET['id']) ? absint($_GET['id']) : absint($_GET['post'] ?? 0);
+
+            if ($id > 0) {
+                $resolving = true;
+
+                try {
+                    $order = wc_get_order($id);
+                } finally {
+                    $resolving = false;
                 }
             }
         }
 
-        // اگر ووکامرس روزی wc-processing نداشت، دست‌کم گم نشوند.
-        foreach (self::custom_labels() as $status => $custom) {
-            $reordered['wc-' . $status] ??= $custom;
-        }
-
-        return $reordered;
+        return $order instanceof WC_Order ? 'wc-' . $order->get_status() : null;
     }
 
     /**

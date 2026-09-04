@@ -6,7 +6,6 @@ namespace Bakery_Credit\Integration;
 
 use Bakery_Credit\Domain\EntryType;
 use Bakery_Credit\Service\CreditAccount;
-use DateTimeImmutable;
 use WC_Order;
 use WC_Order_Refund;
 
@@ -22,8 +21,22 @@ if (!defined('ABSPATH')) {
  * می‌شدند، یک سفارش و یک مرجوعی با عدد یکسان به‌هم می‌خوردند و قید
  * یکتایی دومی را بی‌صدا رد می‌کرد (رجوع کن به Domain\EntryType).
  *
- * دوره همیشه از تاریخ سفارش اصلی گرفته می‌شود، نه از امروز، تا اعتبار
- * به همان ماهی برگردد که از آن کم شده بود.
+ * این کلاس هیچ چیزی را از خودِ سفارش حدس نمی‌زند.
+ *
+ * قبلاً می‌زد: «آیا با اعتبار پرداخت شده؟» را از payment_method
+ * می‌خواند، مبلغ را از get_total()، مالک را از customer_id، و ماهِ
+ * برگشت را از تاریخ ساخت سفارش. هر چهارتا داده‌های زندهٔ سفارش‌اند و
+ * بعد از پرداخت هم قابل تغییرند — کافی بود ادمین در صفحهٔ سفارش روش
+ * پرداخت را دست بزند تا لغو، اعتبار را بی‌صدا برنگرداند.
+ *
+ * حالا هر چهارتا از سطر کسرِ همان سفارش در دفتر خوانده می‌شوند
+ * (Service\CreditAccount::reverseDebit). دفتر تنها جایی‌ست که ثبت کرده
+ * واقعاً چه مبلغی از اعتبارِ چه کسی در کدام ماه کم شد، و برخلاف سفارش
+ * هرگز بازنویسی نمی‌شود.
+ *
+ * یادداشت روی سفارش هم عمدی‌ست: برگشت اعتبار پولی‌ست و باید در همان
+ * جایی دیده شود که ادمین لغو را انجام داده — همان قراردادی که
+ * Integration\AdminOrders برای کسرِ ناموفق گذاشته.
  */
 final class Reversals
 {
@@ -41,17 +54,34 @@ final class Reversals
     {
         $order = wc_get_order($orderId);
 
-        if (!$this->paid_with_credit($order)) {
+        if (!$order instanceof WC_Order) {
             return;
         }
 
-        $this->account->reverse(
-            (int) $order->get_customer_id(),
-            (float) $order->get_total(),
-            $orderId,
-            $this->order_date($order),
-            EntryType::Cancel
-        );
+        if ($this->account->debitedForOrder($orderId) <= 0.0) {
+            /*
+             * سفارشی که با اعتبار پرداخت نشده اصلاً به این دفتر ربطی
+             * ندارد و سکوت درست است. ولی اگر سفارش خودش می‌گوید با
+             * اعتبار پرداخت شده و سطر کسری برایش نیست، چیزی سر جایش
+             * نیست و باید دیده شود — وگرنه ادمین فکر می‌کند اعتبار
+             * برگشته در حالی که اصلاً کسر نشده بوده.
+             */
+            if (Gateway::ID === $order->get_payment_method()) {
+                $order->add_order_note(__('این سفارش با روش «اعتبار ماهانه» ثبت شده بود ولی سطر کسری برایش در دفتر اعتبار نیست؛ چیزی برای برگرداندن وجود نداشت.', 'bakery-widgets'));
+            }
+
+            return;
+        }
+
+        $returned = $this->account->reverseDebit($orderId, EntryType::Cancel);
+
+        if ($returned > 0.0) {
+            $order->add_order_note(sprintf(
+                /* translators: %s: returned amount, formatted */
+                __('مبلغ %s با لغو سفارش به اعتبار ماهانهٔ کاربر برگشت.', 'bakery-widgets'),
+                wp_strip_all_tags(wc_price($returned))
+            ));
+        }
     }
 
     public function on_refunded(int $orderId, int $refundId): void
@@ -59,41 +89,21 @@ final class Reversals
         $order = wc_get_order($orderId);
         $refund = wc_get_order($refundId);
 
-        if (!$this->paid_with_credit($order) || !$refund instanceof WC_Order_Refund) {
+        if (!$order instanceof WC_Order || !$refund instanceof WC_Order_Refund) {
             return;
         }
 
         // مبلغ مرجوعی در ووکامرس منفی ذخیره می‌شود؛ قدرمطلقش را می‌خواهیم.
         $amount = abs((float) $refund->get_amount());
 
-        $this->account->reverse(
-            (int) $order->get_customer_id(),
-            $amount,
-            $refundId,
-            $this->order_date($order),
-            EntryType::Refund
-        );
-    }
+        $returned = $this->account->reverseDebit($orderId, EntryType::Refund, $amount, $refundId);
 
-    /** سفارش‌هایی که با روش دیگری پرداخت شده‌اند اصلاً به این دفتر ربطی ندارند. */
-    private function paid_with_credit(mixed $order): bool
-    {
-        return $order instanceof WC_Order
-            && Gateway::ID === $order->get_payment_method()
-            && $order->get_customer_id() > 0;
-    }
-
-    private function order_date(WC_Order $order): DateTimeImmutable
-    {
-        $created = $order->get_date_created();
-
-        if (!$created) {
-            return new DateTimeImmutable('now', wp_timezone());
+        if ($returned > 0.0) {
+            $order->add_order_note(sprintf(
+                /* translators: %s: returned amount, formatted */
+                __('مبلغ %s بابت مرجوعی به اعتبار ماهانهٔ کاربر برگشت.', 'bakery-widgets'),
+                wp_strip_all_tags(wc_price($returned))
+            ));
         }
-
-        // setTimezone و نه پارامتر سازنده: با فرمت '@timestamp' آرگومان
-        // منطقهٔ زمانی بی‌صدا نادیده گرفته می‌شود و نتیجه UTC می‌ماند —
-        // که نزدیک مرز ماه، برگشت اعتبار را به ماه اشتباه می‌برد.
-        return (new DateTimeImmutable('@' . $created->getTimestamp()))->setTimezone(wp_timezone());
     }
 }

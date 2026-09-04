@@ -155,46 +155,77 @@ final class CreditAccountTest extends TestCase
         self::assertSame(600_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
     }
 
-    public function test_a_reversal_restores_the_credit_within_the_same_month(): void
+    /* ---------------------------------------------------------------------
+     * برگشت اعتبار — همیشه از روی سطر کسر، نه از روی سفارش.
+     * ------------------------------------------------------------------- */
+
+    /**
+     * مبلغِ برگشتی از دفتر می‌آید، نه از سفارش.
+     *
+     * همین تفاوت است که باگ لغو را می‌بندد: قبلاً get_total() سفارش
+     * برمی‌گشت، و اگر ادمین بعد از پرداخت مبلغ سفارش را ویرایش می‌کرد،
+     * عددی غیر از آنچه کم شده بود به کاربر برمی‌گشت.
+     */
+    public function test_a_cancellation_returns_exactly_what_was_debited(): void
     {
         $this->account->debit(self::USER, 400_000, 101, $this->at(self::SHAHRIVAR));
 
-        self::assertTrue($this->account->reverse(self::USER, 400_000, 55, $this->at(self::SHAHRIVAR)));
+        self::assertSame(400_000.0, $this->account->reverseDebit(101));
         self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
-    }
-
-    /** مرجوعی جزئی و چندباره روی یک سفارش، هرکدام با شناسهٔ مرجوعی خودش. */
-    public function test_partial_reversals_each_restore_their_own_amount(): void
-    {
-        $this->account->debit(self::USER, 900_000, 101, $this->at(self::SHAHRIVAR));
-
-        self::assertTrue($this->account->reverse(self::USER, 300_000, 55, $this->at(self::SHAHRIVAR)));
-        self::assertTrue($this->account->reverse(self::USER, 200_000, 56, $this->at(self::SHAHRIVAR)));
-
-        self::assertSame(600_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
-    }
-
-    public function test_the_same_reversal_event_is_never_applied_twice(): void
-    {
-        $this->account->debit(self::USER, 900_000, 101, $this->at(self::SHAHRIVAR));
-        $this->account->reverse(self::USER, 300_000, 55, $this->at(self::SHAHRIVAR));
-
-        self::assertFalse($this->account->reverse(self::USER, 300_000, 55, $this->at(self::SHAHRIVAR)));
-        self::assertSame(400_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
     }
 
     /**
-     * لغو دیرهنگام توسط ادمین: اعتبار به ماه سفارش برمی‌گردد، نه به ماه
-     * جاری — پس ماه جاری تصادفاً از سقفش رد نمی‌شود.
+     * لغو دیرهنگام: اعتبار به همان ماهی برمی‌گردد که از آن کم شده و ماه
+     * جاری دست‌نخورده می‌ماند. دورهٔ برگشت اصلاً پارامتر نیست — از
+     * period_key خودِ سطر کسر خوانده می‌شود، پس نه به تاریخ سفارش وابسته
+     * است و نه به «امروز».
      */
-    public function test_a_late_reversal_returns_credit_to_the_original_month(): void
+    public function test_a_cancellation_returns_credit_to_the_month_it_left(): void
+    {
+        $this->account->debit(self::USER, 400_000, 101, $this->at(self::SHAHRIVAR));
+        $this->account->debit(self::USER, 300_000, 102, $this->at(self::MEHR));
+
+        self::assertSame(400_000.0, $this->account->reverseDebit(101));
+
+        self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
+        self::assertSame(700_000.0, $this->account->remaining(self::USER, $this->at(self::MEHR)));
+    }
+
+    /** سفارشی که هرگز از اعتبار کم نکرده، چیزی هم برای برگرداندن ندارد. */
+    public function test_an_order_that_never_used_credit_returns_nothing(): void
+    {
+        self::assertSame(0.0, $this->account->debitedForOrder(101));
+        self::assertSame(0.0, $this->account->reverseDebit(101));
+        self::assertSame(0, $this->ledger->rowCount());
+    }
+
+    public function test_the_same_cancellation_is_never_applied_twice(): void
     {
         $this->account->debit(self::USER, 400_000, 101, $this->at(self::SHAHRIVAR));
 
-        $this->account->reverse(self::USER, 400_000, 55, $this->at(self::SHAHRIVAR));
-
+        self::assertSame(400_000.0, $this->account->reverseDebit(101));
+        self::assertSame(0.0, $this->account->reverseDebit(101));
         self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
-        self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::MEHR)));
+    }
+
+    /** مرجوعی هرگز بیشتر از چیزی که کم شده برنمی‌گرداند. */
+    public function test_a_refund_never_returns_more_than_was_debited(): void
+    {
+        $this->account->debit(self::USER, 300_000, 101, $this->at(self::SHAHRIVAR));
+
+        self::assertSame(300_000.0, $this->account->reverseDebit(101, EntryType::Refund, 500_000, 55));
+        self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
+    }
+
+    /** مرجوعی جزئی و چندباره، هرکدام با شناسهٔ رکورد مرجوعی خودش. */
+    public function test_partial_refunds_each_return_only_their_own_amount(): void
+    {
+        $this->account->debit(self::USER, 900_000, 101, $this->at(self::SHAHRIVAR));
+
+        self::assertSame(300_000.0, $this->account->reverseDebit(101, EntryType::Refund, 300_000, 55));
+        self::assertSame(200_000.0, $this->account->reverseDebit(101, EntryType::Refund, 200_000, 56));
+
+        self::assertSame(600_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
     }
 
     /**
@@ -209,8 +240,8 @@ final class CreditAccountTest extends TestCase
 
         $this->account->debit(self::USER, 500_000, $sharedId, $this->at(self::SHAHRIVAR));
 
-        self::assertTrue($this->account->reverse(self::USER, 200_000, $sharedId, $this->at(self::SHAHRIVAR), EntryType::Cancel));
-        self::assertTrue($this->account->reverse(self::USER, 300_000, $sharedId, $this->at(self::SHAHRIVAR), EntryType::Refund));
+        self::assertSame(200_000.0, $this->account->reverseDebit($sharedId, EntryType::Refund, 200_000, $sharedId));
+        self::assertSame(300_000.0, $this->account->reverseDebit($sharedId, EntryType::Cancel, 300_000));
 
         self::assertSame(1_000_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
     }
@@ -220,8 +251,8 @@ final class CreditAccountTest extends TestCase
     {
         $this->account->debit(self::USER, 500_000, 101, $this->at(self::SHAHRIVAR));
 
-        self::assertFalse($this->account->reverse(self::USER, 100_000, 55, $this->at(self::SHAHRIVAR), EntryType::Debit));
-        self::assertFalse($this->account->reverse(self::USER, 100_000, 56, $this->at(self::SHAHRIVAR), EntryType::Adjust));
+        self::assertSame(0.0, $this->account->reverseDebit(101, EntryType::Debit));
+        self::assertSame(0.0, $this->account->reverseDebit(101, EntryType::Adjust));
         self::assertSame(500_000.0, $this->account->remaining(self::USER, $this->at(self::SHAHRIVAR)));
     }
 
