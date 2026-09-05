@@ -93,6 +93,33 @@
 }
 
 /*
+ * قرارداد «html body …» در این فایل
+ * =================================
+ *
+ * تنظیمات سراسری المنتور (تنظیمات سایت ← استایل قالب ← دکمه‌ها /
+ * فیلدهای فرم / تایپوگرافی) روی خودِ عنصر می‌نویسد، با سلکتوری مثل
+ * `.elementor-kit-12 button` یا `.elementor-kit-12 a`. تخصص آن
+ * (۰-۱-۱) از سلکتور تک‌کلاسی این فایل (۰-۱-۰) بیشتر است، پس هر
+ * دکمه/ورودی/لینک این افزونه پدینگ، قاب، فونت، رنگ و پس‌زمینهٔ
+ * کیت را می‌گرفت و استایل خودش را از دست می‌داد.
+ *
+ * !important جواب نیست: خروجی کنترل‌های خودِ ویجت‌ها (تب استایل)
+ * هم بدون !important و با تخصص `.elementor-element-xxx .cls`
+ * (۰-۲-۰) می‌آید، و important کردنِ این‌جا آن کنترل‌ها را از کار
+ * می‌انداخت.
+ *
+ * پس سلکتورهای پایهٔ عناصر تعاملی با `html body` نوشته می‌شوند:
+ * تخصص ۰-۱-۲ می‌شود — یک پله بالاتر از کیت المنتور و قالب، و هنوز
+ * یک کلاس پایین‌تر از خروجی کنترل‌ها. یعنی ترتیب درست برقرار
+ * می‌ماند: مقدار کنترل کاربر > پایهٔ افزونه > پیش‌فرض المنتور/قالب.
+ *
+ * قاعده: هر قانونِ پایه که روی <button>/<input>/<textarea>/<a>
+ * می‌نشیند و فقط یک کلاس دارد این پیشوند را می‌گیرد. قوانینی که
+ * خودشان دو کلاس دارند (مثل .bkw-atc__step:disabled) از قبل از
+ * کیت جلوترند و دست‌نخورده می‌مانند.
+ */
+
+/*
  * ویجت account-bar: سه پیل مستقل (سبد خرید / کاربر / خروج) کنار هم.
  * جایگاه نهایی هر پیل با CSS order (کنترل «ترتیب نمایش» در تب چیدمان)
  * تعیین می‌شود، نه ترتیب DOM — دقیقاً مثل .bkw-price. کادر پیل‌ها
@@ -105,7 +132,7 @@
 	align-items: center;
 }
 
-.bkw-account-bar__item {
+html body .bkw-account-bar__item {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
@@ -114,7 +141,7 @@
 	text-decoration: none;
 }
 
-a.bkw-account-bar__item {
+html body a.bkw-account-bar__item {
 	cursor: pointer;
 }
 
@@ -218,7 +245,7 @@ a.bkw-account-bar__item {
 	gap: 48px;
 }
 
-.bkw-header__brand {
+html body .bkw-header__brand {
 	display: flex;
 	align-items: center;
 	text-decoration: none;
@@ -245,7 +272,7 @@ a.bkw-account-bar__item {
 	align-items: center;
 }
 
-.bkw-header__nav-link {
+html body .bkw-header__nav-link {
 	text-decoration: none;
 	white-space: nowrap;
 }
@@ -261,9 +288,18 @@ a.bkw-account-bar__item {
 	margin-top: 12px;
 }
 
-.bkw-header__hamburger,
-.bkw-header__close {
+html body .bkw-header__hamburger,
+html body .bkw-header__close {
 	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	border-radius: 0;
+	color: inherit;
+	font: inherit;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
 	background: transparent;
 	border: 0 none;
 	cursor: pointer;
@@ -274,11 +310,11 @@ a.bkw-account-bar__item {
 	line-height: 1;
 }
 
-.bkw-header__hamburger {
+html body .bkw-header__hamburger {
 	padding: 8px;
 }
 
-.bkw-header__close {
+html body .bkw-header__close {
 	padding: 10px;
 }
 
@@ -445,7 +481,7 @@ a.bkw-account-bar__item {
 	flex-shrink: 0;
 }
 
-.bkw-header__logout-button {
+html body .bkw-header__logout-button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -667,7 +703,7 @@ html.bkw-panel-open {
 	display: block;
 }
 
-.bkw-login__input {
+html body .bkw-login__input {
 	flex: 1 1 0;
 	min-width: 0;
 	width: 100% !important;
@@ -691,7 +727,7 @@ html.bkw-panel-open {
 	box-shadow: none !important;
 }
 
-.bkw-login__submit {
+html body .bkw-login__submit {
 	-webkit-appearance: none;
 	appearance: none;
 	border: 0 none !important;
@@ -743,7 +779,7 @@ html.bkw-panel-open {
 	width: 100%;
 }
 
-.bkw-login__edit-number {
+html body .bkw-login__edit-number {
 	-webkit-appearance: none;
 	appearance: none;
 	background: transparent !important;
@@ -780,7 +816,7 @@ html.bkw-panel-open {
 	width: 100%;
 }
 
-.bkw-login__otp-input {
+html body .bkw-login__otp-input {
 	box-sizing: border-box !important;
 	text-align: center;
 	border-style: solid !important;
@@ -819,7 +855,7 @@ html.bkw-panel-open {
 	display: block;
 }
 
-.bkw-login__resend {
+html body .bkw-login__resend {
 	-webkit-appearance: none;
 	appearance: none;
 	background: transparent !important;
@@ -1020,7 +1056,7 @@ html.bkw-panel-open {
 	flex-shrink: 0;
 }
 
-.bkw-terms-modal__checkbox {
+html body .bkw-terms-modal__checkbox {
 	position: absolute;
 	inset: 0;
 	width: 100%;
@@ -1064,7 +1100,7 @@ html.bkw-panel-open {
 	flex-shrink: 0;
 }
 
-.bkw-terms-modal__accept {
+html body .bkw-terms-modal__accept {
 	-webkit-appearance: none;
 	appearance: none;
 	border: 0 none !important;
@@ -1121,7 +1157,12 @@ html.bkw-panel-open {
 	font-size: 13px;
 }
 
-.bkw-atc__btn {
+html body .bkw-atc__btn {
+	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	min-height: 0;
+	min-width: 0;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -1130,7 +1171,7 @@ html.bkw-panel-open {
 	font: inherit;
 }
 
-.bkw-atc__btn--oos {
+html body .bkw-atc__btn--oos {
 	cursor: default;
 }
 
@@ -1154,7 +1195,19 @@ html.bkw-panel-open {
 	align-items: center;
 }
 
-.bkw-atc__step {
+html body .bkw-atc__step {
+	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	padding: 0;
+	background: transparent;
+	color: inherit;
+	box-shadow: none;
+	text-shadow: none;
+	text-transform: none;
+	letter-spacing: normal;
+	min-height: 0;
+	min-width: 0;
 	flex-shrink: 0;
 	width: var(--bkw-atc-step-size);
 	height: var(--bkw-atc-step-size);
@@ -1200,7 +1253,7 @@ html.bkw-panel-open {
 	transition: opacity var(--bkw-atc-loading-duration) ease;
 }
 
-.bkw-atc__btn--add {
+html body .bkw-atc__btn--add {
 	position: relative;
 }
 
@@ -1293,7 +1346,15 @@ html.bkw-panel-open {
 	font-weight: 900;
 }
 
-.bkw-cart-sidebar__close {
+html body .bkw-cart-sidebar__close {
+	-webkit-appearance: none;
+	margin: 0;
+	padding: 0;
+	color: inherit;
+	font: inherit;
+	box-shadow: none;
+	min-height: 0;
+	min-width: 0;
 	flex-shrink: 0;
 	display: inline-flex;
 	align-items: center;
@@ -1461,7 +1522,13 @@ html.bkw-panel-open {
 	pointer-events: none;
 }
 
-.bkw-cart-sidebar__step {
+html body .bkw-cart-sidebar__step {
+	-webkit-appearance: none;
+	margin: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
 	flex-shrink: 0;
 	display: inline-flex;
 	align-items: center;
@@ -1515,8 +1582,15 @@ html.bkw-panel-open {
 	justify-content: space-between;
 }
 
-.bkw-cart-sidebar__checkout {
+html body .bkw-cart-sidebar__checkout {
 	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	padding: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
 	border: none;
 	width: 100%;
 	display: flex;
@@ -1629,9 +1703,15 @@ html.bkw-panel-open {
 	--bkw-success-action: #366874;
 }
 
-.bkw-cart-sidebar__success-track,
-.bkw-cart-sidebar__success-close {
+html body .bkw-cart-sidebar__success-track,
+html body .bkw-cart-sidebar__success-close {
 	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
 	cursor: pointer;
 	font: inherit;
 	text-decoration: none;
@@ -1646,12 +1726,12 @@ html.bkw-panel-open {
 	white-space: nowrap;
 }
 
-.bkw-cart-sidebar__success-track {
+html body .bkw-cart-sidebar__success-track {
 	background-color: var(--bkw-success-action);
 	color: #ffffff;
 }
 
-.bkw-cart-sidebar__success-close {
+html body .bkw-cart-sidebar__success-close {
 	background-color: transparent;
 	border-color: var(--bkw-success-action);
 	color: var(--bkw-success-action);
@@ -1763,8 +1843,15 @@ html.bkw-panel-open {
 	width: 100%;
 }
 
-.bkw-confirm__actions button {
+html body .bkw-confirm__actions button {
 	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	padding: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
 	flex: 1 1 0;
 	min-width: 0;
 	display: flex;
@@ -1780,12 +1867,12 @@ html.bkw-panel-open {
 	white-space: nowrap;
 }
 
-.bkw-confirm__accept {
+html body .bkw-confirm__accept {
 	background-color: #8c583a;
 	color: #ffffff;
 }
 
-.bkw-confirm__cancel {
+html body .bkw-confirm__cancel {
 	background-color: #ffffff;
 	color: #7d7065;
 	border: 1.5px solid #eaded6;
@@ -2138,8 +2225,14 @@ html.bkw-panel-open {
 	width: 100%;
 }
 
-.bkw-order-history__cancel {
+html body .bkw-order-history__cancel {
 	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
 	width: 100%;
 	display: flex;
 	align-items: center;
@@ -2195,7 +2288,7 @@ html.bkw-panel-open {
 	margin-top: 12px;
 }
 
-.bkw-order-history__page {
+html body .bkw-order-history__page {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -2600,7 +2693,7 @@ html.bkw-panel-open {
 	align-items: center;
 }
 
-.bkw-review-modal__close {
+html body .bkw-review-modal__close {
 	padding: 8px;
 	background: #fff;
 	border: none;
@@ -2701,7 +2794,7 @@ html.bkw-panel-open {
 	gap: 8px;
 }
 
-.bkw-review-modal__star {
+html body .bkw-review-modal__star {
 	width: 44px;
 	height: 44px;
 	padding: 0;
@@ -2761,7 +2854,7 @@ html.bkw-panel-open {
 	word-wrap: break-word;
 }
 
-.bkw-review-modal__comment {
+html body .bkw-review-modal__comment {
 	align-self: stretch;
 	box-sizing: border-box;
 	width: 100%;
@@ -2780,7 +2873,7 @@ html.bkw-panel-open {
 	font-weight: 400;
 }
 
-.bkw-review-modal__comment::placeholder {
+html body .bkw-review-modal__comment::placeholder {
 	color: #a8968d;
 }
 
@@ -2800,7 +2893,7 @@ html.bkw-panel-open {
 	font-weight: 700;
 }
 
-.bkw-review-modal__submit {
+html body .bkw-review-modal__submit {
 	align-self: stretch;
 	padding: 14px 0;
 	background: #8c583a;
@@ -2848,10 +2941,10 @@ html.bkw-panel-open {
 	box-sizing: border-box;
 }
 
-.bkw-review-modal__close,
-.bkw-review-modal__star,
-.bkw-review-modal__submit,
-.bkw-review-modal__comment {
+html body .bkw-review-modal__close,
+html body .bkw-review-modal__star,
+html body .bkw-review-modal__submit,
+html body .bkw-review-modal__comment {
 	appearance: none !important;
 	-webkit-appearance: none !important;
 	margin: 0 !important;
@@ -2870,10 +2963,10 @@ html.bkw-panel-open {
  * :hover و :focus را جدا رنگ می‌کنند، و بدون این، دکمه فقط تا اولین
  * لمس درست می‌ماند.
  */
-.bkw-review-modal__close,
+html body .bkw-review-modal__close,
 .bkw-review-modal__close:hover,
 .bkw-review-modal__close:focus,
-.bkw-review-modal__star,
+html body .bkw-review-modal__star,
 .bkw-review-modal__star:hover,
 .bkw-review-modal__star:focus,
 .bkw-review-modal__star:active {
@@ -2885,15 +2978,15 @@ html.bkw-panel-open {
 }
 
 /* دکمهٔ بستن تنها موردی‌ست که پس‌زمینه و قاب دارد. */
-.bkw-review-modal__close,
-.bkw-review-modal__close:hover,
-.bkw-review-modal__close:focus {
+html body .bkw-review-modal__close,
+html body .bkw-review-modal__close:hover,
+html body .bkw-review-modal__close:focus {
 	background-color: #fff !important;
 	padding: 8px !important;
 	border-radius: 100px !important;
 }
 
-.bkw-review-modal__submit,
+html body .bkw-review-modal__submit,
 .bkw-review-modal__submit:hover,
 .bkw-review-modal__submit:focus,
 .bkw-review-modal__submit:active {
@@ -2908,7 +3001,7 @@ html.bkw-panel-open {
 	font-weight: 700 !important;
 }
 
-.bkw-review-modal__comment,
+html body .bkw-review-modal__comment,
 .bkw-review-modal__comment:focus {
 	background: #fff !important;
 	background-color: #fff !important;
@@ -2963,7 +3056,7 @@ html.bkw-panel-open {
 		font-size: 16px;
 	}
 
-	.bkw-review-modal__star {
+	html body .bkw-review-modal__star {
 		width: 36px;
 		height: 36px;
 	}
