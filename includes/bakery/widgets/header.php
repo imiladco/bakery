@@ -797,11 +797,20 @@ final class Header extends Widget_Base
         ]);
 
         $this->add_control('panel_logout_color', [
-            'label' => __('رنگ متن و حاشیه', 'bakery-widgets'),
+            'label' => __('رنگ متن، حاشیه و آیکون', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
             'default' => '#a8261a',
             'selectors' => [
                 $selector => 'color: {{VALUE}}; border-color: {{VALUE}};',
+                /*
+                 * آیکون هم از همین یک رنگ می‌آید و کنترل جدا ندارد.
+                 *
+                 * فایل SVG رنگ خودش را دارد (#2a1e17) و بدون این خط،
+                 * آیکون تیره می‌ماند کنار متن و حاشیهٔ قرمز — همان چیزی
+                 * که در خروجی دیده شد. طرح هم برای هر سه یک رنگ می‌دهد،
+                 * پس یک کنترل برای یک مفهوم بصری کافی‌ست.
+                 */
+                "{$selector} svg [stroke]:not([stroke=\"none\"])" => 'stroke: {{VALUE}};',
             ],
         ]);
 

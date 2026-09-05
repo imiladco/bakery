@@ -452,7 +452,8 @@ a.bkw-account-bar__item {
 	gap: 8px;
 	width: 100%;
 	box-sizing: border-box;
-	padding: 12px;
+	/* طبق طرح فقط بالا و پایین؛ دکمه تمام‌عرض است و محتوایش وسط‌چین. */
+	padding: 12px 0;
 	text-decoration: none;
 	cursor: pointer;
 	background: transparent;
