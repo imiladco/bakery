@@ -494,7 +494,7 @@ final class Header extends Widget_Base
             'separator' => 'before',
         ]);
 
-        $this->register_icon_button_style_controls('panel_close', '.bkw-header__close', 16, 10);
+        $this->register_icon_button_style_controls('panel_close', '.bkw-header__close', 16, 12);
 
         $this->add_control('heading_panel_user_card', [
             'label' => __('کارت کاربر', 'bakery-widgets'),
@@ -530,12 +530,32 @@ final class Header extends Widget_Base
             ],
         ]);
 
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'panel_user_name_typography',
+            'label' => __('تایپوگرافی نام', 'bakery-widgets'),
+            'selector' => '{{WRAPPER}} .bkw-header__user-card-name',
+            'fields_options' => [
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 14]],
+                'font_weight' => ['default' => '800'],
+            ],
+        ]);
+
         $this->add_control('panel_user_name_color', [
             'label' => __('رنگ نام', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
             'default' => '#2a1e17',
             'selectors' => [
                 '{{WRAPPER}} .bkw-header__user-card-name' => 'color: {{VALUE}};',
+            ],
+        ]);
+
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'panel_user_balance_typography',
+            'label' => __('تایپوگرافی موجودی', 'bakery-widgets'),
+            'selector' => '{{WRAPPER}} .bkw-header__user-card-balance',
+            'fields_options' => [
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 11]],
+                'font_weight' => ['default' => '600'],
             ],
         ]);
 
@@ -643,6 +663,25 @@ final class Header extends Widget_Base
             ],
         ]);
 
+        /*
+         * ضخامت قلم عمداً از این گروه بیرون است.
+         *
+         * ردیف فعال و غیرفعال دو ضخامت متفاوت دارند (۸۰۰ و ۶۰۰) و آن
+         * را کنترل‌های هر حالت می‌نویسند. اگر این‌جا هم ضخامت داشت،
+         * چون کنترل‌های حالت بعد از این ثبت می‌شوند و هم‌وزن‌اند،
+         * مقداری که ادمین این‌جا می‌گذاشت بی‌اثر می‌ماند — کنترلی که
+         * کار نمی‌کند از نبودنش بدتر است.
+         */
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'nav_item_typography',
+            'label' => __('تایپوگرافی برچسب', 'bakery-widgets'),
+            'selector' => '{{WRAPPER}} .bkw-header__nav-label',
+            'exclude' => ['font_weight'],
+            'fields_options' => [
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 15]],
+            ],
+        ]);
+
         $this->add_control('nav_item_chevron_color', [
             'label' => __('رنگ فلش', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
@@ -703,7 +742,7 @@ final class Header extends Widget_Base
         ]);
 
         $this->add_control($prefix . '_label_color', [
-            'label' => __('رنگ برچسب', 'bakery-widgets'),
+            'label' => __('رنگ و ضخامت برچسب', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
             'default' => $label_color,
             'selectors' => ["{$row_selector} .bkw-header__nav-label" => 'color: {{VALUE}}; font-weight: ' . $label_weight . ';'],
@@ -741,6 +780,10 @@ final class Header extends Widget_Base
         $this->add_group_control(Group_Control_Typography::get_type(), [
             'name' => 'panel_logout_typography',
             'selector' => $selector,
+            'fields_options' => [
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 14]],
+                'font_weight' => ['default' => '800'],
+            ],
         ]);
 
         $this->add_control('panel_logout_color', [
