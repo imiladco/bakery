@@ -184,12 +184,12 @@ final class Header extends Widget_Base
             'fields' => $repeater->get_controls(),
             'default' => [
                 [
-                    'label' => __('خانه', 'bakery-widgets'),
+                    'label' => __('صفحه اصلی', 'bakery-widgets'),
                     'url' => ['url' => home_url('/')],
                     'icon' => ['url' => BAKERY_WIDGETS_URL . 'assets/icons/home.svg'],
                 ],
                 [
-                    'label' => __('سفارشات قبلی', 'bakery-widgets'),
+                    'label' => __('سفارشات من', 'bakery-widgets'),
                     'url' => ['url' => ''],
                     'icon' => ['url' => BAKERY_WIDGETS_URL . 'assets/icons/calendar.svg'],
                 ],
@@ -506,7 +506,7 @@ final class Header extends Widget_Base
             'name' => 'panel_user_card_background',
             'types' => ['classic'],
             'selector' => '{{WRAPPER}} .bkw-header__user-card',
-            'fields_options' => ['color' => ['default' => '#ffffff']],
+            'fields_options' => ['background' => ['default' => 'classic'], 'color' => ['default' => '#ffffff']],
         ]);
 
         $this->add_group_control(Group_Control_Border::get_type(), [
@@ -535,6 +535,8 @@ final class Header extends Widget_Base
             'label' => __('تایپوگرافی نام', 'bakery-widgets'),
             'selector' => '{{WRAPPER}} .bkw-header__user-card-name',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
+
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 14]],
                 'font_weight' => ['default' => '800'],
             ],
@@ -554,6 +556,8 @@ final class Header extends Widget_Base
             'label' => __('تایپوگرافی موجودی', 'bakery-widgets'),
             'selector' => '{{WRAPPER}} .bkw-header__user-card-balance',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
+
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 11]],
                 'font_weight' => ['default' => '600'],
             ],
@@ -598,7 +602,7 @@ final class Header extends Widget_Base
             'name' => $prefix . '_background',
             'types' => ['classic'],
             'selector' => $selector,
-            'fields_options' => ['color' => ['default' => '#ffffff']],
+            'fields_options' => ['background' => ['default' => 'classic'], 'color' => ['default' => '#ffffff']],
         ]);
 
         $this->add_group_control(Group_Control_Border::get_type(), [
@@ -678,6 +682,7 @@ final class Header extends Widget_Base
             'selector' => '{{WRAPPER}} .bkw-header__nav-label',
             'exclude' => ['font_weight'],
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 15]],
             ],
         ]);
@@ -719,7 +724,10 @@ final class Header extends Widget_Base
             'name' => $prefix . '_background',
             'types' => ['classic'],
             'selector' => $row_selector,
-            'fields_options' => ['color' => ['default' => '' === $suffix ? 'transparent' : '#f3ece3']],
+            'fields_options' => [
+                'background' => ['default' => 'classic'],
+                'color' => ['default' => '' === $suffix ? 'transparent' : '#f3ece3'],
+            ],
         ]);
 
         $this->add_group_control(Group_Control_Border::get_type(), [
@@ -781,6 +789,8 @@ final class Header extends Widget_Base
             'name' => 'panel_logout_typography',
             'selector' => $selector,
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
+
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 14]],
                 'font_weight' => ['default' => '800'],
             ],
