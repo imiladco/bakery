@@ -187,6 +187,10 @@
                 .then(function (response) {
                     if (response && response.success && response.data) {
                         applyFragments(response.data);
+
+                        if (response.data.insufficient_credit && window.bkwToast) {
+                            window.bkwToast.insufficientCredit();
+                        }
                     }
                 })
                 .catch(function () {
@@ -331,6 +335,12 @@
             .then(function (response) {
                 if (!response || !response.success) {
                     showError(errorBox, response && response.data && response.data.message);
+
+                    var code = response && response.data && response.data.code;
+                    if ('insufficient_credit' === code && window.bkwToast) {
+                        window.bkwToast.insufficientCredit();
+                    }
+
                     return;
                 }
 

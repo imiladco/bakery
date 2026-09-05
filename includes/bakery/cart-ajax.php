@@ -62,15 +62,24 @@ final class Cart_Ajax
 
         $max = Purchase_Limit::for_product($product); // -1 یعنی نامحدود
         $current = $this->cart_quantity($product_id);
+        $requested = $quantity;
+        $insufficient_credit = false;
+
         if (-1 !== $max && ($current + $quantity) > $max) {
             $quantity = max(0, $max - $current);
+
+            // چرا از اول این‌جا برش نمی‌خورد: علتِ برش می‌تواند موجودی
+            // انبار باشد، نه اعتبار — و پیام «موجودی کافی نیست» فقط
+            // برای دومی درست است. رجوع کن به یادداشت PurchaseLimit.
+            $creditCap = (int) apply_filters('bkw_credit_affordable_units', -1, $product);
+            $insufficient_credit = -1 !== $creditCap && ($current + $requested) > $creditCap;
         }
 
         if ($quantity > 0 && !WC()->cart->add_to_cart($product_id, $quantity)) {
             wp_send_json_error(['message' => __('افزودن به سبد ممکن نشد.', 'bakery-widgets')], 400);
         }
 
-        $this->send_state($product_id);
+        $this->send_state($product_id, $insufficient_credit);
     }
 
     /** تنظیم مقدار مطلق (برای دکمهٔ کاهش) — صفر یعنی حذف کامل از سبد */
@@ -141,7 +150,7 @@ final class Cart_Ajax
     }
 
     /** پاسخ یکسان برای هر دو اکشن: تعداد نهایی، حداکثر مجاز و فرگمنت‌های ووکامرس */
-    private function send_state(int $product_id): void
+    private function send_state(int $product_id, bool $insufficient_credit = false): void
     {
         WC()->cart->calculate_totals();
 
@@ -151,6 +160,10 @@ final class Cart_Ajax
         wp_send_json_success([
             'qty' => $this->cart_quantity($product_id),
             'max' => $max,
+            // فقط وقتی true است که برشِ تعداد درخواستی به‌خاطر اعتبار
+            // بوده — جاوااسکریپت با دیدنش توست «موجودی کافی نیست» را
+            // نشان می‌دهد (رجوع کن به bakery-toast.js).
+            'insufficient_credit' => $insufficient_credit,
             // شمارندهٔ بج سبد در هدر/نوار حساب کاربری (Traits\Account_Actions_Controls)
             // از همین مقدار زنده می‌ماند؛ بدون آن، آن بج فقط با رفرش صفحه به‌روز می‌شد.
             'cart_count' => WC()->cart->get_cart_contents_count(),

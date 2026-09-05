@@ -209,10 +209,26 @@ final class Plugin
             true,
         );
 
+        // توست سراسری «موجودی کافی نیست» — هم افزودن به سبد و هم ثبت
+        // سفارش می‌توانند به آن نیاز پیدا کنند، پس به‌جای تکرار در هر
+        // دو، وابستگیِ هر دو است (رجوع کن به bakery-toast.js).
+        wp_register_script(
+            'bakery-toast',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-toast.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+
+        wp_localize_script('bakery-toast', 'bkwToastStrings', [
+            'insufficientCreditTitle' => __('موجودی کافی نیست', 'bakery-widgets'),
+            'insufficientCreditText' => __('موجودی کیف پول شما برای ثبت این سفارش کافی نمی‌باشد.', 'bakery-widgets'),
+        ]);
+
         wp_register_script(
             'bakery-add-to-cart',
             BAKERY_WIDGETS_URL . 'assets/js/bakery-add-to-cart.js',
-            [],
+            ['bakery-toast'],
             BAKERY_WIDGETS_VERSION,
             true,
         );
@@ -220,7 +236,7 @@ final class Plugin
         wp_register_script(
             'bakery-cart-sidebar',
             BAKERY_WIDGETS_URL . 'assets/js/bakery-cart-sidebar.js',
-            [],
+            ['bakery-toast'],
             BAKERY_WIDGETS_VERSION,
             true,
         );

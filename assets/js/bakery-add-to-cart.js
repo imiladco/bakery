@@ -149,6 +149,10 @@
         callAjax(root, 'bkw_add_to_cart', { product_id: productId, quantity: 1 }, function (payload) {
             renderQty(root, payload.qty, payload.max);
 
+            if (payload.insufficient_credit && window.bkwToast) {
+                window.bkwToast.insufficientCredit();
+            }
+
             // یک CustomEvent بومی — نه jQuery.trigger — پس یک شنوندهٔ jQuery
             // (رایج در قالب‌های ووکامرس) خودِ رویداد را می‌گیرد، ولی
             // fragments/cart_hash را به‌عنوان آرگومان دومِ jQuery نمی‌بیند؛

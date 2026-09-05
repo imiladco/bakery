@@ -2382,3 +2382,108 @@ html.bkw-panel-open {
 		min-width: 1px;
 	}
 }
+
+/*
+ * توست سراسری «موجودی کافی نیست» (assets/js/bakery-toast.js).
+ *
+ * به هیچ ویجتی تعلق ندارد — مستقیم زیر body ساخته می‌شود، نه داخل
+ * رپر یک ویجت خاص — پس بر خلاف بقیهٔ این فایل رنگ و تایپوگرافی‌اش هم
+ * این‌جا ثابت است، نه از کنترل‌های تب استایل. فقط فاصله از لبهٔ صفحه
+ * (bkw-toast-gap) و عرض کارت متغیر CSS دارند تا بعداً بدون دست‌زدن به
+ * جاوااسکریپت قابل تغییر باشند.
+ *
+ * موقعیت با مقادیر فیزیکی (right/left/bottom/top) نوشته شده، نه
+ * inset-inline-*: خواستهٔ دقیق «پایین راستِ نمایشگر» است، صرف‌نظر از
+ * جهت متن سند میزبان.
+ */
+.bkw-toast {
+	--bkw-toast-gap: 24px;
+	--bkw-toast-width: 380px;
+
+	position: fixed;
+	z-index: 100000;
+	right: var(--bkw-toast-gap);
+	bottom: var(--bkw-toast-gap);
+	width: var(--bkw-toast-width);
+	max-width: calc(100vw - (var(--bkw-toast-gap) * 2));
+	box-sizing: border-box;
+	direction: rtl;
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 12px;
+	padding: 16px;
+	background: #fcf9f5;
+	border-radius: 16px;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	box-shadow: 0 16px 32px rgba(35, 25, 18, 0.15);
+	opacity: 0;
+	transform: translateY(16px);
+	transition: opacity 240ms ease, transform 240ms ease;
+	pointer-events: none;
+}
+
+.bkw-toast.is-visible {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.bkw-toast__text {
+	flex: 1 1 0%;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 4px;
+}
+
+.bkw-toast__title {
+	color: #ba291e;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 14px;
+	font-weight: 900;
+	word-wrap: break-word;
+}
+
+.bkw-toast__desc {
+	color: #231912;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16.8px;
+	word-wrap: break-word;
+}
+
+.bkw-toast__icon {
+	flex: none;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	background: #fdf2f0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.bkw-toast__icon svg {
+	width: 24px;
+	height: 24px;
+}
+
+/*
+ * موبایل: تمام‌عرض و چسبیده به بالا، نه پایین — رفرنس صریحاً همین را
+ * می‌خواهد (نه صرفاً همان نسخهٔ دسکتاپ در اندازهٔ کوچک‌تر).
+ */
+@media (max-width: 767px) {
+	.bkw-toast {
+		right: 16px;
+		left: 16px;
+		top: 16px;
+		bottom: auto;
+		width: auto;
+		max-width: none;
+		transform: translateY(-16px);
+	}
+}

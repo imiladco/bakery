@@ -17,8 +17,11 @@ if (!defined('ABSPATH')) {
  *
  * ویجت افزودن به سبد از قبل یک سقف داشت (موجودی انبار) و وقتی به آن
  * می‌رسید دکمه را خاموش می‌کرد. این‌جا فقط یک سقف دیگر کنارش می‌نشیند و
- * کوچک‌ترین‌شان برنده است. نتیجه این است که خطای «اعتبار کافی نیست» عملاً
- * هیچ‌وقت دیده نمی‌شود، چون از اول اجازهٔ ساختن چنین سبدی داده نمی‌شود.
+ * کوچک‌ترین‌شان برنده است. در حالت عادی همین کافی است تا کاربر اصلاً
+ * نتواند سبدی بسازد که اعتبارش کفافش را ندهد — دکمهٔ «+» از قبل غیرفعال
+ * می‌شود. توست «موجودی کافی نیست» فقط برای حالت‌های لبه‌ای می‌ماند: وقتی
+ * وضعیت سمت مرورگر با سرور هم‌زمان نیست (تب دیگر، تغییر سقف توسط ادمین
+ * وسط جلسه) و درخواست افزودن به سرور می‌رسد ولی سرور آن را می‌بُرد.
  */
 final class PurchaseLimit
 {
@@ -29,27 +32,41 @@ final class PurchaseLimit
     public function register(): void
     {
         add_filter('bkw_max_purchase_quantity', [$this, 'cap_by_credit'], 10, 2);
+
+        // سقفِ خام و فقط بر پایهٔ اعتبار (بدون ترکیب با سقف انبار) —
+        // Cart_Ajax از این استفاده می‌کند تا وقتی سبد را به این سقف برش
+        // می‌دهد بفهمد علتش اعتبار بوده یا موجودی انبار، تا فقط برای
+        // اولی پیام «موجودی کافی نیست» را نشان دهد.
+        add_filter('bkw_credit_affordable_units', [$this, 'credit_only_cap'], 10, 2);
     }
 
     public function cap_by_credit(int $max, WC_Product $product): int
     {
+        $creditCap = $this->credit_only_cap(-1, $product);
+
+        return -1 === $creditCap ? $max : (-1 === $max ? $creditCap : min($max, $creditCap));
+    }
+
+    /** سقفِ فقط-اعتبار برای این محصول؛ -1 یعنی اعتبار محدودیتی تحمیل نمی‌کند. */
+    public function credit_only_cap(int $default, WC_Product $product): int
+    {
         $userId = get_current_user_id();
 
         if ($userId <= 0 || !function_exists('WC') || !WC()->cart) {
-            return $max;
+            return $default;
         }
 
         // مدیر معاف است — وگرنه با معافیتِ Gateway/CheckoutGuard از
         // بلوکهٔ چک‌اوت، همین دکمهٔ + جلوی ساختن سبد آزمایشی را می‌گرفت.
         // رجوع کن به CreditExemption.
         if (CreditExemption::forUser($userId)) {
-            return $max;
+            return $default;
         }
 
         $unitPrice = round((float) wc_get_price_to_display($product), 4);
 
         if ($unitPrice <= 0.0) {
-            return $max; // کالای رایگان اعتبار مصرف نمی‌کند، پس سقفی هم تحمیل نمی‌کند
+            return $default; // کالای رایگان اعتبار مصرف نمی‌کند، پس سقفی هم تحمیل نمی‌کند
         }
 
         /*
@@ -67,9 +84,8 @@ final class PurchaseLimit
 
         $headroom = $remaining - $cartTotal;
         $affordableExtra = (int) floor($headroom / $unitPrice);
-        $creditCap = max(0, $inCart + $affordableExtra);
 
-        return -1 === $max ? $creditCap : min($max, $creditCap);
+        return max(0, $inCart + $affordableExtra);
     }
 
     private function quantity_in_cart(int $productId): int

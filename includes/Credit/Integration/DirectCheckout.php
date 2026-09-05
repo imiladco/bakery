@@ -94,7 +94,7 @@ final class DirectCheckout
                 __('اعتبار شما برای این سفارش کافی نیست. جمع سفارش %1$s و باقی‌ماندهٔ اعتبار شما %2$s است.', 'bakery-widgets'),
                 wp_strip_all_tags(wc_price($total)),
                 wp_strip_all_tags(wc_price($this->account->remaining($userId, Clock::now())))
-            ));
+            ), 'insufficient_credit');
         }
 
         $order->payment_complete();
@@ -187,9 +187,21 @@ final class DirectCheckout
         }
     }
 
-    /** @return never */
-    private function fail(string $message): void
+    /**
+     * @param string $code شناسهٔ ماشین‌خوانِ اختیاریِ علتِ خطا — فقط
+     *        'insufficient_credit' معنا دارد؛ جاوااسکریپت با دیدنش،
+     *        علاوه بر پیامِ داخل مودال، توست «موجودی کافی نیست» را هم
+     *        نشان می‌دهد (رجوع کن به bakery-toast.js).
+     *
+     * @return never
+     */
+    private function fail(string $message, string $code = ''): void
     {
-        wp_send_json_error(['message' => $message]);
+        $data = ['message' => $message];
+        if ('' !== $code) {
+            $data['code'] = $code;
+        }
+
+        wp_send_json_error($data);
     }
 }
