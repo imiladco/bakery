@@ -21,12 +21,6 @@ final class PeriodReportTest extends TestCase
     private const SHAHRIVAR = '1405-06';
     private const MEHR = '1405-07';
 
-    /** @return array{consumed: float, orders: int} */
-    private function row(float $consumed, int $orders = 1): array
-    {
-        return ['consumed' => $consumed, 'orders' => $orders];
-    }
-
     private function report(InMemoryPeriods $source): PeriodReport
     {
         return new PeriodReport($source, $source);
@@ -44,23 +38,22 @@ final class PeriodReportTest extends TestCase
     public function test_a_purchase_in_the_next_month_never_leaks_into_this_report(): void
     {
         $source = new InMemoryPeriods([
-            self::SHAHRIVAR => [7 => $this->row(500_000, 2)],
-            self::MEHR => [7 => $this->row(9_000_000, 30)],
+            self::SHAHRIVAR => [7 => 500_000.0],
+            self::MEHR => [7 => 9_000_000.0],
         ], [7 => 10_000_000.0]);
 
         $summaries = $this->report($source)->summaries(self::SHAHRIVAR);
 
         self::assertCount(1, $summaries);
         self::assertSame(500_000.0, $summaries[0]->consumed);
-        self::assertSame(2, $summaries[0]->orders);
     }
 
     /** و همان کاربر در گزارش مهر فقط عدد مهر را دارد. */
     public function test_each_month_reports_only_its_own_rows(): void
     {
         $source = new InMemoryPeriods([
-            self::SHAHRIVAR => [7 => $this->row(500_000, 2)],
-            self::MEHR => [7 => $this->row(9_000_000, 30)],
+            self::SHAHRIVAR => [7 => 500_000.0],
+            self::MEHR => [7 => 9_000_000.0],
         ], [7 => 10_000_000.0]);
 
         self::assertSame(9_000_000.0, $this->report($source)->summaries(self::MEHR)[0]->consumed);
@@ -78,7 +71,7 @@ final class PeriodReportTest extends TestCase
     public function test_a_reversal_lands_in_the_month_the_money_left(): void
     {
         // ۹۰۰ خرید شهریور، منهای ۴۰۰ که در مهر لغو شده ولی به شهریور خورده.
-        $source = new InMemoryPeriods([self::SHAHRIVAR => [7 => $this->row(500_000, 3)]]);
+        $source = new InMemoryPeriods([self::SHAHRIVAR => [7 => 500_000.0]]);
 
         self::assertSame(500_000.0, $this->report($source)->summaries(self::SHAHRIVAR)[0]->consumed);
     }
@@ -93,7 +86,7 @@ final class PeriodReportTest extends TestCase
      */
     public function test_the_default_month_is_the_newest_one_with_data(): void
     {
-        $source = new InMemoryPeriods([self::SHAHRIVAR => [7 => $this->row(500_000)]], [7 => 1_000_000.0]);
+        $source = new InMemoryPeriods([self::SHAHRIVAR => [7 => 500_000.0]], [7 => 1_000_000.0]);
 
         self::assertSame(self::SHAHRIVAR, $this->report($source)->defaultPeriod(new DateTimeImmutable(self::FIRST_OF_MEHR)));
     }
@@ -101,7 +94,7 @@ final class PeriodReportTest extends TestCase
     /** ولی ماه جاری همیشه در فهرست هست، حتی اگر هنوز خالی باشد. */
     public function test_the_current_month_is_always_offered(): void
     {
-        $source = new InMemoryPeriods([self::SHAHRIVAR => [7 => $this->row(500_000)]], [7 => 1_000_000.0]);
+        $source = new InMemoryPeriods([self::SHAHRIVAR => [7 => 500_000.0]], [7 => 1_000_000.0]);
 
         self::assertSame([self::MEHR, self::SHAHRIVAR], $this->report($source)->periods(new DateTimeImmutable(self::FIRST_OF_MEHR)));
     }
@@ -120,9 +113,9 @@ final class PeriodReportTest extends TestCase
     {
         $source = new InMemoryPeriods(
             [self::SHAHRIVAR => [
-                4 => $this->row(100_000),
-                2 => $this->row(900_000),
-                3 => $this->row(400_000),
+                4 => 100_000.0,
+                2 => 900_000.0,
+                3 => 400_000.0,
             ]],
             [1 => 1_000_000.0, 2 => 1_000_000.0, 3 => 1_000_000.0, 4 => 1_000_000.0, 5 => 1_000_000.0]
         );
@@ -136,7 +129,7 @@ final class PeriodReportTest extends TestCase
     public function test_users_who_consumed_the_same_amount_keep_a_stable_order(): void
     {
         $source = new InMemoryPeriods(
-            [self::SHAHRIVAR => [9 => $this->row(500_000), 3 => $this->row(500_000), 6 => $this->row(500_000)]]
+            [self::SHAHRIVAR => [9 => 500_000.0, 3 => 500_000.0, 6 => 500_000.0]]
         );
 
         $order = array_map(static fn ($s): int => $s->userId, $this->report($source)->summaries(self::SHAHRIVAR));
@@ -147,7 +140,7 @@ final class PeriodReportTest extends TestCase
     /** کسی که خرید کرده ولی سقفی برایش تعریف نشده هم می‌آید — از راه دفتر. */
     public function test_a_spender_without_an_allowance_is_not_dropped(): void
     {
-        $source = new InMemoryPeriods([self::SHAHRIVAR => [3 => $this->row(120_000)]]);
+        $source = new InMemoryPeriods([self::SHAHRIVAR => [3 => 120_000.0]]);
 
         $summaries = $this->report($source)->summaries(self::SHAHRIVAR);
 
@@ -165,14 +158,13 @@ final class PeriodReportTest extends TestCase
 
         self::assertCount(1, $summaries);
         self::assertSame(0.0, $summaries[0]->consumed);
-        self::assertSame(0, $summaries[0]->orders);
         self::assertSame(2_000_000.0, $summaries[0]->allowance);
     }
 
     /** هیچ کاربری دوبار نمی‌آید، حتی وقتی هم سقف دارد و هم خرید کرده. */
     public function test_a_user_appearing_on_both_sides_is_listed_once(): void
     {
-        $source = new InMemoryPeriods([self::SHAHRIVAR => [7 => $this->row(500_000)]], [7 => 1_000_000.0]);
+        $source = new InMemoryPeriods([self::SHAHRIVAR => [7 => 500_000.0]], [7 => 1_000_000.0]);
 
         self::assertCount(1, $this->report($source)->summaries(self::SHAHRIVAR));
     }

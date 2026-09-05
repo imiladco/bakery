@@ -167,7 +167,7 @@ final class Ledger implements LedgerSource, PeriodSource
      * نیست. جمع روی ستون DECIMAL انجام می‌شود، پس گِردکردن ممیز شناور
      * وارد محاسبه نمی‌شود.
      *
-     * @return array<int, array{consumed: float, orders: int}> کلید = شناسهٔ کاربر
+     * @return array<int, float> شناسهٔ کاربر => مصرف خالص
      */
     #[\Override]
     public function summaries(string $periodKey): array
@@ -177,23 +177,17 @@ final class Ledger implements LedgerSource, PeriodSource
         $table = Schema::table();
 
         $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT user_id,
-                    COALESCE(SUM(amount), 0) AS consumed,
-                    COALESCE(SUM(CASE WHEN type = %s THEN 1 ELSE 0 END), 0) AS orders
+            "SELECT user_id, COALESCE(SUM(amount), 0) AS consumed
              FROM {$table}
              WHERE period_key = %s
              GROUP BY user_id",
-            EntryType::Debit->value,
             $periodKey
         ), ARRAY_A) ?: [];
 
         $summaries = [];
 
         foreach ($rows as $row) {
-            $summaries[(int) $row['user_id']] = [
-                'consumed' => round((float) $row['consumed'], 4),
-                'orders' => (int) $row['orders'],
-            ];
+            $summaries[(int) $row['user_id']] = round((float) $row['consumed'], 4);
         }
 
         return $summaries;

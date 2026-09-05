@@ -81,13 +81,10 @@ final class PeriodReport
         $summaries = [];
 
         foreach ($this->userIds($periodKey) as $userId) {
-            $row = $ledgerRows[$userId] ?? ['consumed' => 0.0, 'orders' => 0];
-
             $summaries[] = new PeriodSummary(
                 $userId,
                 $this->allowances->forUser($userId),
-                $row['consumed'],
-                $row['orders']
+                $ledgerRows[$userId] ?? 0.0
             );
         }
 

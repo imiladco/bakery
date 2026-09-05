@@ -22,7 +22,6 @@ final class PeriodSummary
         public readonly int $userId,
         public readonly float $allowance,
         public readonly float $consumed,
-        public readonly int $orders,
     ) {
     }
 }

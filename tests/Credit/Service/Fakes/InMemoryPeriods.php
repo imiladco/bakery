@@ -13,7 +13,7 @@ use Bakery_Credit\Storage\PeriodSource;
 final class InMemoryPeriods implements PeriodSource, AllowanceReportSource
 {
     /**
-     * @param array<string, array<int, array{consumed: float, orders: int}>> $byPeriod
+     * @param array<string, array<int, float>> $byPeriod شناسهٔ کاربر => مصرف
      * @param array<int, float> $allowances
      */
     public function __construct(

@@ -200,7 +200,6 @@ final class ReportPage
                 24,
                 static fn (PeriodSummary $s): string => Number::format($s->consumed),
             ],
-            [__('تعداد سفارش', 'bakery-widgets'), 14, static fn (PeriodSummary $s): string => (string) $s->orders],
         ];
 
         foreach ($numbers as [$label, $width, $read]) {
