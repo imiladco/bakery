@@ -2822,17 +2822,6 @@ html.bkw-panel-open {
 	cursor: not-allowed;
 }
 
-@media (max-width: 767px) {
-	.bkw-review-modal {
-		padding: 16px;
-	}
-
-	.bkw-review-modal__card {
-		padding: 24px;
-		gap: 20px;
-	}
-}
-
 /*
  * سخت‌سازی مودال امتیازدهی در برابر استایل عمومی قالب.
  *
@@ -2945,4 +2934,51 @@ html.bkw-panel-open {
 .bkw-review-modal__star svg {
 	width: 36px !important;
 	height: 36px !important;
+}
+
+/*
+ * نسخهٔ موبایل — رفرنس جداگانه‌ای در فیگما دارد و نه فقط همان کارت با
+ * عرض کمتر: پدینگ و فاصله‌ها جمع‌تر، عنوان و نام محصول یک پله کوچک‌تر،
+ * و ستاره‌ها ۳۶ در ۳۶ با وکتور ۲۸ (به‌جای ۴۴ و ۳۶).
+ *
+ * عمداً آخرین بلوک این فایل است: چند مقدار (اندازهٔ ستاره) در بلوک
+ * سخت‌سازی بالا با !important نوشته شده‌اند، و مدیا کوئری تخصص اضافه
+ * نمی‌آورد — پس تنها راهِ برنده شدنِ مقدار موبایل، آمدن بعد از آن است.
+ */
+@media (max-width: 767px) {
+	.bkw-review-modal {
+		padding: 16px;
+	}
+
+	.bkw-review-modal__card {
+		padding: 20px;
+		gap: 20px;
+	}
+
+	.bkw-review-modal__title {
+		font-size: 18px;
+	}
+
+	.bkw-review-modal__product-name {
+		font-size: 16px;
+	}
+
+	.bkw-review-modal__star {
+		width: 36px;
+		height: 36px;
+	}
+
+	.bkw-review-modal__star svg {
+		width: 28px !important;
+		height: 28px !important;
+	}
+
+	/*
+	 * در دسکتاپ عرضِ ثابت ۲۶۰ دارد تا زیر ردیف ستاره‌ها جمع بماند؛ در
+	 * موبایل رفرنس تمام‌عرض است، پس دو برچسب به دو لبهٔ کارت می‌چسبند.
+	 */
+	.bkw-review-modal__star-labels {
+		align-self: stretch;
+		width: auto;
+	}
 }
