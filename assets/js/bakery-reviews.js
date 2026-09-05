@@ -47,8 +47,12 @@
               '<path d="M4 4l8 8M12 4l-8 8" stroke="#615249" stroke-width="2" stroke-linecap="round"/>' +
               '</svg></button>';
 
+        // از ۵ به ۱ ساخته می‌شود و نه برعکس: مودال rtl است، پس فرزند اول
+        // سمت راست می‌نشیند — همان‌جایی که برچسب «عالی» است. با ترتیب
+        // طبیعی ۱..۵، ستارهٔ «یک» زیر «عالی» می‌افتاد و پُر شدن ستاره‌ها
+        // از سمت «عالی» شروع می‌شد؛ یعنی دقیقاً برعکس برچسب‌های زیرش.
         var stars = '';
-        for (var i = 1; i <= 5; i++) {
+        for (var i = 5; i >= 1; i--) {
             stars +=
                 '<button type="button" class="bkw-review-modal__star" data-star="' + i + '" ' +
                 'aria-label="' + i + ' ستاره">' + STAR_ICON + '</button>';

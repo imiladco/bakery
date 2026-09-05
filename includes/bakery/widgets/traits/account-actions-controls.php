@@ -359,6 +359,30 @@ trait Account_Actions_Controls
             'tab' => Controls_Manager::TAB_STYLE,
         ]);
 
+        /*
+         * ارتفاع ثابت و مشترک هر سه پیل.
+         *
+         * بدون این، ارتفاع هر پیل را محتوای خودش تعیین می‌کرد: پیل سبد
+         * خرید یک آیکون ۲۴ پیکسلی دارد و پیل کاربر یک سطر متن، پس با
+         * پدینگ یکسان هم دو ارتفاع متفاوت درمی‌آمدند و ردیف ناهموار
+         * می‌شد. با یک عدد این‌جا، هر سه دقیقاً هم‌اندازه می‌شوند و
+         * پدینگ عمودی دیگر ارتفاع را تعیین نمی‌کند (کادر border-box
+         * است) بلکه فقط فضای دور محتوا را نگه می‌دارد.
+         *
+         * خالی گذاشتنش یعنی برگشت به رفتار قبلی: ارتفاعِ خودکارِ هر پیل.
+         */
+        $this->add_responsive_control('item_height', [
+            'label' => __('ارتفاع پیل‌ها', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px', 'em'],
+            'range' => ['px' => ['min' => 0, 'max' => 120]],
+            'default' => ['size' => 44, 'unit' => 'px'],
+            'mobile_default' => ['size' => 40, 'unit' => 'px'],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-account-bar__item' => 'height: {{SIZE}}{{UNIT}};',
+            ],
+        ]);
+
         $this->add_responsive_control('item_padding', [
             'label' => __('پدینگ', 'bakery-widgets'),
             'type' => Controls_Manager::DIMENSIONS,
