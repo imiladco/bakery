@@ -411,6 +411,7 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'title_typography',
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__title',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_weight' => ['default' => '900'],
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 22]],
             ],
@@ -455,7 +456,7 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'close_background',
             'types' => ['classic'],
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__close',
-            'fields_options' => ['color' => ['default' => '#faf6f0']],
+            'fields_options' => ['background' => ['default' => 'classic'], 'color' => ['default' => '#faf6f0']],
         ]);
 
         $this->add_group_control(Group_Control_Border::get_type(), [
@@ -507,6 +508,7 @@ final class Cart_Sidebar extends Widget_Base
             'label' => __('تایپوگرافی مقدار', 'bakery-widgets'),
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__credit-value',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_weight' => ['default' => '800'],
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 20]],
             ],
@@ -517,6 +519,7 @@ final class Cart_Sidebar extends Widget_Base
             'label' => __('تایپوگرافی برچسب', 'bakery-widgets'),
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__credit-label',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_weight' => ['default' => '600'],
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 16]],
             ],
@@ -580,6 +583,7 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'item_name_typography',
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__item-name',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_weight' => ['default' => '700'],
                 // رفرنس فیگما موبایل نام محصول را ۱۸px می‌خواهد (نه ۱۶px دسکتاپ) —
                 // font_size داخل گروه تایپوگرافی خودش ریسپانسیو است، پس همین‌جا
@@ -608,6 +612,7 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'item_price_typography',
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__item-price',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_weight' => ['default' => '500'],
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 14]],
             ],
@@ -667,7 +672,7 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'qty_background',
             'types' => ['classic'],
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__qty',
-            'fields_options' => ['color' => ['default' => '#ffffff']],
+            'fields_options' => ['background' => ['default' => 'classic'], 'color' => ['default' => '#ffffff']],
         ]);
 
         $this->add_responsive_control('qty_radius', [
@@ -754,6 +759,7 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'qty_value_typography',
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__qty-value',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_weight' => ['default' => '600'],
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 15]],
             ],
@@ -797,6 +803,7 @@ final class Cart_Sidebar extends Widget_Base
             'label' => __('تایپوگرافی جمع کل', 'bakery-widgets'),
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__total-value',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_weight' => ['default' => '800'],
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 20]],
             ],
@@ -814,6 +821,7 @@ final class Cart_Sidebar extends Widget_Base
             'label' => __('تایپوگرافی برچسب', 'bakery-widgets'),
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__total-label',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_weight' => ['default' => '600'],
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 16]],
             ],
@@ -836,6 +844,7 @@ final class Cart_Sidebar extends Widget_Base
             'name' => 'checkout_typography',
             'selector' => '{{WRAPPER}} .bkw-cart-sidebar__checkout',
             'fields_options' => [
+                'typography' => ['default' => 'custom'],
                 'font_weight' => ['default' => '700'],
                 'font_size' => ['default' => ['unit' => 'px', 'size' => 18]],
             ],
