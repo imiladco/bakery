@@ -2533,3 +2533,302 @@ html.bkw-panel-open {
 		max-width: none;
 	}
 }
+
+/*
+ * مودال «ثبت امتیاز و نظر» (assets/js/bakery-reviews.js) — مثل توست،
+ * به هیچ ویجتی تعلق ندارد و مستقیم زیر body ساخته می‌شود، پس رنگ و
+ * تایپوگرافی‌اش هم این‌جا ثابت است.
+ *
+ * نسخهٔ دسکتاپِ رفرنس شمارندهٔ «فلان از فلان» را نشان نمی‌داد (کاربر
+ * صریحاً گفت مطمئن نیست کجا باید باشد) — این‌جا به‌عنوان یک خطِ کوچکِ
+ * کم‌رنگ بین سربرگ و کارتِ محصول اضافه شده، و وقتی سفارش فقط یک محصول
+ * دارد اصلاً رندر نمی‌شود؛ یعنی در حالتِ رایج، ظاهرِ مودال دقیقاً همان
+ * چیزی می‌ماند که رفرنس نشان داده.
+ *
+ * ۱:۱ روی مقادیر رفرنس؛ عرضِ کارت و پدینگِ پرده (نه اندازه‌های خودِ
+ * کارت) چیزی هستند که رفرنس مشخص نکرده و این‌جا با قضاوت انتخاب شده‌اند.
+ */
+.bkw-review-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100001;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	box-sizing: border-box;
+	background: rgba(26, 19, 14, 0.45);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	opacity: 0;
+	transition: opacity 240ms ease;
+	direction: rtl;
+}
+
+.bkw-review-modal.is-visible {
+	opacity: 1;
+}
+
+.bkw-review-modal__card {
+	width: 100%;
+	max-width: 480px;
+	max-height: 100%;
+	overflow-y: auto;
+	box-sizing: border-box;
+	padding: 32px;
+	background: #fcf9f5;
+	box-shadow: 0 16px 32px rgba(35, 25, 18, 0.15);
+	border-radius: 32px;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 24px;
+	transform: translateY(16px) scale(0.98);
+	transition: transform 240ms ease;
+}
+
+.bkw-review-modal.is-visible .bkw-review-modal__card {
+	transform: translateY(0) scale(1);
+}
+
+.bkw-review-modal__header {
+	align-self: stretch;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.bkw-review-modal__close {
+	padding: 8px;
+	background: #fff;
+	border: none;
+	border-radius: 100px;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+
+.bkw-review-modal__close svg {
+	width: 16px;
+	height: 16px;
+}
+
+.bkw-review-modal__title {
+	color: #231912;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 22px;
+	font-weight: 900;
+	word-wrap: break-word;
+}
+
+/* رجوع کن به یادداشتِ بالای بلوک — تنها بخشی که رفرنس جایش را نگفته. */
+.bkw-review-modal__counter {
+	align-self: stretch;
+	margin-top: -12px;
+	text-align: center;
+	color: #a8968d;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.bkw-review-modal__product {
+	align-self: stretch;
+	box-sizing: border-box;
+	padding: 12px;
+	background: #fff;
+	border-radius: 18px;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.bkw-review-modal__product-meta {
+	flex: 1 1 0%;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.bkw-review-modal__product-name {
+	align-self: stretch;
+	text-align: right;
+	color: #231912;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 18px;
+	font-weight: 900;
+	word-wrap: break-word;
+}
+
+.bkw-review-modal__product-desc {
+	align-self: stretch;
+	text-align: right;
+	color: #a8968d;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 12px;
+	font-weight: 400;
+	word-wrap: break-word;
+}
+
+.bkw-review-modal__stars-section {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+}
+
+.bkw-review-modal__stars-label {
+	color: #615249;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 14px;
+	font-weight: 700;
+	word-wrap: break-word;
+}
+
+.bkw-review-modal__star-row {
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.bkw-review-modal__star {
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	background: none;
+	border: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+
+.bkw-review-modal__star svg {
+	width: 36px;
+	height: 36px;
+	stroke: #e5e7eb;
+	stroke-width: 2;
+	fill: none;
+	transition: fill 120ms ease, stroke 120ms ease;
+}
+
+.bkw-review-modal__star.is-filled svg {
+	stroke: #dfb370;
+	fill: #dfb370;
+}
+
+.bkw-review-modal__star-labels {
+	width: 260px;
+	padding: 0 8px;
+	box-sizing: border-box;
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+}
+
+.bkw-review-modal__star-labels span {
+	color: #a8968d;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 12px;
+	font-weight: 600;
+	word-wrap: break-word;
+}
+
+.bkw-review-modal__comment-section {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.bkw-review-modal__comment-label {
+	align-self: stretch;
+	text-align: right;
+	color: #615249;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 13px;
+	font-weight: 700;
+	word-wrap: break-word;
+}
+
+.bkw-review-modal__comment {
+	align-self: stretch;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 100px;
+	padding: 14px;
+	background: #fff;
+	border: none;
+	border-radius: 14px;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	resize: vertical;
+	text-align: right;
+	color: #231912;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 13px;
+	font-weight: 400;
+}
+
+.bkw-review-modal__comment::placeholder {
+	color: #a8968d;
+}
+
+.bkw-review-modal__actions {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.bkw-review-modal__error {
+	align-self: stretch;
+	text-align: right;
+	color: #ba291e;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.bkw-review-modal__submit {
+	align-self: stretch;
+	padding: 14px 0;
+	background: #8c583a;
+	border: none;
+	border-radius: 16px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 15px;
+	font-weight: 700;
+	word-wrap: break-word;
+	cursor: pointer;
+}
+
+.bkw-review-modal__submit:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+	.bkw-review-modal {
+		padding: 16px;
+	}
+
+	.bkw-review-modal__card {
+		padding: 24px;
+		gap: 20px;
+	}
+}

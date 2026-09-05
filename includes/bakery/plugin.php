@@ -75,15 +75,23 @@ final class Plugin
             require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-fragments.php';
             require_once BAKERY_WIDGETS_PATH . 'includes/bakery/order-cancellation.php';
             require_once BAKERY_WIDGETS_PATH . 'includes/bakery/order-statuses.php';
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/product-reviews.php';
 
             new Cart_Ajax();
             (new Order_Cancellation())->register();
             (new Order_Statuses())->register();
+            (new Product_Reviews())->register();
 
             // اتصال محتوای زندهٔ سایدبار سبد به همان فیلتر فرگمنت استاندارد
             // ووکامرس — Cart_Ajax و Widgets\Cart_Sidebar هیچ‌کدام از وجود
             // یکدیگر خبر ندارند، سیم‌کشی‌شان فقط همین‌جاست.
             add_filter('woocommerce_add_to_cart_fragments', [Cart_Fragments::class, 'add']);
+
+            // مودال امتیازدهی به هیچ ویجتی تعلق ندارد (مثل توست سراسری)
+            // پس منتظر get_script_depends هیچ ویجتی نمی‌ماند — همه‌جای
+            // سایت، برای هر کاربر واردشده، مستقیم روی wp_enqueue_scripts
+            // بارگذاری می‌شود.
+            add_action('wp_enqueue_scripts', [$this, 'enqueue_review_prompt']);
         }
     }
 
@@ -278,6 +286,53 @@ final class Plugin
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('bkw_cancel_order'),
             'genericError' => __('لغو سفارش ممکن نشد. دوباره تلاش کنید.', 'bakery-widgets'),
+        ]);
+
+        wp_register_script(
+            'bakery-reviews',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-reviews.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+    }
+
+    /**
+     * بارگذاریِ خودِ مودال امتیازدهی — فقط برای کاربر واردشده و فقط وقتی
+     * ووکامرس فعال است (رجوع کن به قلاب‌گذاری در __construct).
+     *
+     * چرا اسکریپت مستقل و نه get_script_depends یک ویجت: این مودال به
+     * هیچ ویجتی وابسته نیست و باید همه‌جای سایت ظاهر شود، دقیقاً مثل
+     * توستِ سراسری — پس روی همان قلابِ عمومی enqueue می‌شود، نه قلاب
+     * مخصوص المنتور که این دو تابعِ بالا رویش‌اند.
+     */
+    public function enqueue_review_prompt(): void
+    {
+        if (!is_user_logged_in()) {
+            return;
+        }
+
+        $this->register_scripts();
+        $this->register_styles();
+        wp_enqueue_script('bakery-reviews');
+        wp_enqueue_style('bakery-widgets');
+
+        wp_localize_script('bakery-reviews', 'bkwReviews', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce(Product_Reviews::NONCE_ACTION),
+            'strict' => Product_Reviews::is_strict(),
+            'title' => __('ثبت امتیاز و نظر', 'bakery-widgets'),
+            'ratingLabel' => __('امتیاز شما به این محصول', 'bakery-widgets'),
+            'bestLabel' => __('عالی', 'bakery-widgets'),
+            'worstLabel' => __('خیلی بد', 'bakery-widgets'),
+            'commentLabel' => __('نظر شما (اختیاری)', 'bakery-widgets'),
+            /* translators: %s: product name */
+            'commentPlaceholder' => __('تجربه خود از طعم و پخت %s را بنویسید...', 'bakery-widgets'),
+            'submitLabel' => __('ثبت امتیاز', 'bakery-widgets'),
+            /* translators: 1: current item number, 2: total items in this order */
+            'counter' => __('محصول %1$s از %2$s', 'bakery-widgets'),
+            'ratingRequired' => __('لطفاً یک امتیاز انتخاب کنید.', 'bakery-widgets'),
+            'genericError' => __('ثبت نظر ممکن نشد. دوباره تلاش کنید.', 'bakery-widgets'),
         ]);
     }
 
