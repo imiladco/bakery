@@ -78,17 +78,14 @@ final class WorkbookTest extends TestCase
         self::assertTrue(end($columns)->numeric);
     }
 
-    /**
-     * ستون سقف «فعلی» است و نه سقفِ آن ماه — عنوانش همین را می‌گوید و
-     * ادعای تاریخی بودن نمی‌کند.
-     */
-    public function test_the_allowance_column_does_not_claim_to_be_historical(): void
+    /** عنوان ستون سقف، همان‌طور که با کارفرما توافق شده. */
+    public function test_the_allowance_column_is_titled_as_agreed(): void
     {
         $source = new InMemoryPeriods([self::SHAHRIVAR => [7 => 2_000_000.0]]);
         $columns = $this->workbook($source, [])->columns(self::SHAHRIVAR);
 
         // یکی مانده به آخر؛ آخری ستون مصرف است.
-        self::assertStringContainsString('فعلی', $columns[count($columns) - 2]->label);
+        self::assertSame('سقف اعتبار', $columns[count($columns) - 2]->label);
     }
 
     public function test_the_filename_carries_the_period(): void
