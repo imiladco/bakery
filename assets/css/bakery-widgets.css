@@ -2832,3 +2832,117 @@ html.bkw-panel-open {
 		gap: 20px;
 	}
 }
+
+/*
+ * سخت‌سازی مودال امتیازدهی در برابر استایل عمومی قالب.
+ *
+ * همان مسئله‌ای که ویجت ورود دارد و همان راه‌حل — رجوع کن به یادداشت
+ * بالای بلوک .bkw-login. تفاوتش این است که آن‌جا ویجت است و این‌جا یک
+ * مودال سراسری که روی *هر* صفحه‌ای باز می‌شود، پس با هر قالبی که
+ * کاربر نصب کرده روبه‌رو می‌شود و نه فقط قالب صفحه‌های ساخته‌شده با
+ * المنتور.
+ *
+ * چه چیزی خراب شده بود: قالب یک استایل عمومی برای button و textarea
+ * تعریف کرده (پس‌زمینه، بردر، رادیوس با رنگ اکسنتِ خودش). سلکتور آن‌ها
+ * از سلکتور تک‌کلاسیِ این‌جا تخصص بیشتری داشت، پس دکمهٔ «ثبت امتیاز»
+ * به‌جای قهوه‌ای #8c583a با متن سفید، دکمهٔ کم‌رنگِ قالب با متن صورتی
+ * می‌شد و خانه‌های ستاره بردر و پس‌زمینهٔ صورتی می‌گرفتند — رنگ‌هایی
+ * که هیچ‌کجای این فایل نیستند.
+ *
+ * فقط ویژگی‌هایی قفل می‌شوند که قالب‌ها عملاً روی button/textarea
+ * می‌نویسند؛ باقی استایل همان بلوک‌های بالا می‌ماند.
+ */
+.bkw-review-modal,
+.bkw-review-modal *,
+.bkw-review-modal *::before,
+.bkw-review-modal *::after {
+	box-sizing: border-box;
+}
+
+.bkw-review-modal__close,
+.bkw-review-modal__star,
+.bkw-review-modal__submit,
+.bkw-review-modal__comment {
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	margin: 0 !important;
+	box-shadow: none !important;
+	text-transform: none !important;
+	letter-spacing: normal !important;
+	line-height: normal !important;
+	min-height: 0 !important;
+	min-width: 0 !important;
+	font-family: 'Vazirmatn', sans-serif !important;
+	transition: none;
+}
+
+/*
+ * حالت‌های تعاملی هم قفل می‌شوند و نه فقط حالت عادی: قالب‌ها معمولاً
+ * :hover و :focus را جدا رنگ می‌کنند، و بدون این، دکمه فقط تا اولین
+ * لمس درست می‌ماند.
+ */
+.bkw-review-modal__close,
+.bkw-review-modal__close:hover,
+.bkw-review-modal__close:focus,
+.bkw-review-modal__star,
+.bkw-review-modal__star:hover,
+.bkw-review-modal__star:focus,
+.bkw-review-modal__star:active {
+	background: none !important;
+	background-color: transparent !important;
+	border: 0 none !important;
+	padding: 0 !important;
+	color: inherit !important;
+}
+
+/* دکمهٔ بستن تنها موردی‌ست که پس‌زمینه و قاب دارد. */
+.bkw-review-modal__close,
+.bkw-review-modal__close:hover,
+.bkw-review-modal__close:focus {
+	background-color: #fff !important;
+	padding: 8px !important;
+	border-radius: 100px !important;
+}
+
+.bkw-review-modal__submit,
+.bkw-review-modal__submit:hover,
+.bkw-review-modal__submit:focus,
+.bkw-review-modal__submit:active {
+	background: #8c583a !important;
+	background-color: #8c583a !important;
+	border: 0 none !important;
+	border-radius: 16px !important;
+	color: #fff !important;
+	padding: 14px 0 !important;
+	width: 100% !important;
+	font-size: 15px !important;
+	font-weight: 700 !important;
+}
+
+.bkw-review-modal__comment,
+.bkw-review-modal__comment:focus {
+	background: #fff !important;
+	background-color: #fff !important;
+	border: 0 none !important;
+	border-radius: 14px !important;
+	padding: 14px !important;
+	width: 100% !important;
+	color: #231912 !important;
+	font-size: 13px !important;
+	font-weight: 400 !important;
+	line-height: 1.6 !important;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	/*
+	 * ارتفاع ۱۰۰ رفرنس این‌جا دوباره نوشته می‌شود چون خودِ سخت‌سازیِ
+	 * بالا با min-height: 0 آن را برداشته بود؛ بدون این، ارتفاع را
+	 * rows="3" تعیین می‌کرد و کادر کوتاه‌تر می‌شد.
+	 */
+	min-height: 100px !important;
+}
+
+/* رنگ ستاره از خودِ SVG می‌آید و قالب به آن کاری ندارد؛ فقط اندازه قفل می‌شود. */
+.bkw-review-modal__star svg {
+	width: 36px !important;
+	height: 36px !important;
+}
