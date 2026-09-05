@@ -1032,14 +1032,26 @@ final class Header extends Widget_Base
         printf('<p class="bkw-header__user-card-name">%s</p>', esc_html($name));
 
         if ('yes' === ($settings['show_balance'] ?? 'yes')) {
-            $amount = $this->format_balance($settings, $user);
-            $balance_text = trim(sprintf(
-                '%s %s %s',
-                (string) $settings['balance_label'],
-                $amount,
-                (string) $settings['balance_currency'],
-            ));
-            printf('<p class="bkw-header__user-card-balance">%s</p>', esc_html($balance_text));
+            /*
+             * سه تکه جدا و نه یک رشتهٔ ساخته‌شده.
+             *
+             * format_balance() مارک‌آپ برمی‌گرداند، نه متن: عدد داخل
+             * <span data-bkw-account-balance> می‌نشیند تا فرگمنتِ بعد
+             * از ثبت سفارش هدفش بگیرد. قبلاً هر سه با هم به esc_html
+             * داده می‌شدند و نتیجه‌اش این بود که خودِ تگ به‌صورت متن روی
+             * صفحه چاپ می‌شد — و مهم‌تر، چون دیگر عنصری با آن
+             * data-attribute وجود نداشت، موجودیِ این کارت بعد از خرید
+             * هیچ‌وقت به‌روز نمی‌شد.
+             *
+             * برچسب و واحد از کنترل‌های المنتور می‌آیند و ورودی‌اند، پس
+             * همچنان escape می‌شوند؛ فقط خودِ عدد از آن رد می‌شود.
+             */
+            printf(
+                '<p class="bkw-header__user-card-balance">%s %s %s</p>',
+                esc_html(trim((string) $settings['balance_label'])),
+                $this->format_balance($settings, $user), // phpcs:ignore WordPress.Security.EscapeOutput -- Account_Balance::fragment_html خودش escape می‌کند
+                esc_html(trim((string) $settings['balance_currency']))
+            );
         }
 
         echo '</div>';
