@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Widgets\Widgets;
 
+use Bakery_Widgets\Otp_Policy;
 use Bakery_Widgets\Site_Gate;
 use Bakery_Widgets\Svg;
 use Bakery_Widgets\Widgets\Traits\Terms_Modal_Controls;
@@ -212,6 +213,14 @@ final class Login extends Widget_Base
             'label' => __('راهنما (placeholder)', 'bakery-widgets'),
             'type' => Controls_Manager::TEXT,
             'default' => __('مثلا: 09013004000', 'bakery-widgets'),
+        ]);
+
+        $this->add_control('mobile_not_found_text', [
+            'label' => __('پیام «شماره ثبت نشده»', 'bakery-widgets'),
+            'type' => Controls_Manager::TEXT,
+            'default' => __('این شماره برای هیچ حسابی در سایت ثبت نشده است.', 'bakery-widgets'),
+            'label_block' => true,
+            'description' => __('وقتی کاربری این شماره را ندارد نشان داده می‌شود (رجوع کن به Mobile_Login::find_user_id). شماره‌ها را فقط مدیر از صفحهٔ ویرایش هر کاربر تعریف می‌کند — ثبت‌نام خودکار وجود ندارد.', 'bakery-widgets'),
         ]);
 
         $this->add_control('heading_step1_button', [
@@ -1185,6 +1194,13 @@ final class Login extends Widget_Base
 
         $otp_length = max(3, min(8, (int) $settings['otp_length']));
         $countdown = max(10, (int) $settings['countdown_seconds']);
+
+        // به سرور اعلام می‌کند کاربر چه چیزی می‌بیند: کد چند رقمی است و
+        // شمارش معکوس چند ثانیه. سرور نمی‌تواند این دو را از درخواست
+        // مرورگر بگیرد (هر کسی می‌تواند «طول کد = ۳» بفرستد)، پس همان
+        // الگوی Site_Gate::remember_login_page() اینجا هم تکرار شده —
+        // رجوع کن به Otp_Policy::remember().
+        Otp_Policy::remember($otp_length, $countdown);
         $redirect_url = !empty($settings['redirect_url']['url']) ? (string) $settings['redirect_url']['url'] : home_url('/');
 
         $bg_url = (string) ($settings['page_background_image']['url'] ?? '');
@@ -1253,6 +1269,11 @@ final class Login extends Widget_Base
         $this->render_input_field('national-id', (string) $settings['national_id_label'], (string) $settings['national_id_placeholder']);
         $this->render_input_field('mobile', (string) $settings['mobile_label'], (string) $settings['mobile_placeholder']);
 
+        printf(
+            '<p class="bkw-login__field-error" data-bkw-login-error hidden>%s</p>',
+            esc_html((string) $settings['mobile_not_found_text']),
+        );
+
         echo '<button type="button" class="bkw-login__submit" data-bkw-login-step1-submit>';
         printf('<span class="bkw-login__submit-text-full">%s</span>', esc_html((string) $settings['step1_button_text']));
         printf('<span class="bkw-login__submit-text-short">%s</span>', esc_html((string) $settings['step1_button_text_mobile']));
@@ -1319,6 +1340,12 @@ final class Login extends Widget_Base
         echo '</div>';
 
         echo '<div class="bkw-login__actions">';
+
+        // پیام‌های این عنصر همه از سرور می‌آیند (کد غلط، کد منقضی، سقف
+        // تلاش) — رجوع کن به Mobile_Login::ajax_verify. متن ثابتی ندارد
+        // و assets/js/bakery-login.js پرش می‌کند.
+        echo '<p class="bkw-login__field-error" data-bkw-login-code-error hidden></p>';
+
         echo '<button type="button" class="bkw-login__submit" data-bkw-login-step2-submit>';
         printf('<span class="bkw-login__submit-text-full">%s</span>', esc_html((string) $settings['step2_button_text']));
         printf('<span class="bkw-login__submit-text-short">%s</span>', esc_html((string) $settings['step2_button_text_mobile']));
@@ -1347,12 +1374,16 @@ final class Login extends Widget_Base
         $this->render_icon_field(['url' => BAKERY_WIDGETS_URL . 'assets/icons/user.svg']);
         echo '</span>';
 
+        // کد ملی دقیقاً ۱۰ رقم است و موبایل ۱۱ — maxlength جلوی تایپ
+        // اضافه را همان‌جا می‌گیرد. اعتبارسنجی واقعی سمت سرور است
+        // (Mobile_Login::resolve_identity)؛ این فقط راحتی کاربر است.
         printf(
-            '<input type="text" inputmode="%1$s" class="bkw-login__input" id="bkw-login-%2$s-%3$s" placeholder="%4$s" data-bkw-login-field="%2$s">',
+            '<input type="text" inputmode="%1$s" maxlength="%5$d" class="bkw-login__input" id="bkw-login-%2$s-%3$s" placeholder="%4$s" data-bkw-login-field="%2$s">',
             'mobile' === $key ? 'tel' : 'numeric',
             esc_attr($key),
             esc_attr((string) $this->get_id()),
             esc_attr($placeholder),
+            'mobile' === $key ? 11 : 10,
         );
 
         echo '</span>';

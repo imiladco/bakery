@@ -18,6 +18,11 @@ spl_autoload_register(static function (string $class): void {
     $map = [
         'WHW\\Tests\\' => __DIR__ . '/',
         'WHW\\' => __DIR__ . '/../includes/',
+        'Bakery_Credit\\Tests\\' => __DIR__ . '/Credit/',
+        'Bakery_Credit\\' => __DIR__ . '/../includes/Credit/',
+        'Bakery_Widgets\\Tests\\' => __DIR__ . '/Bakery/',
+        'Bakery_Sheet\\Tests\\' => __DIR__ . '/Sheet/',
+        'Bakery_Sheet\\' => __DIR__ . '/../includes/Sheet/',
     ];
 
     foreach ($map as $prefix => $baseDir) {

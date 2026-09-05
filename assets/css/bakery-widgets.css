@@ -93,6 +93,33 @@
 }
 
 /*
+ * قرارداد «html body …» در این فایل
+ * =================================
+ *
+ * تنظیمات سراسری المنتور (تنظیمات سایت ← استایل قالب ← دکمه‌ها /
+ * فیلدهای فرم / تایپوگرافی) روی خودِ عنصر می‌نویسد، با سلکتوری مثل
+ * `.elementor-kit-12 button` یا `.elementor-kit-12 a`. تخصص آن
+ * (۰-۱-۱) از سلکتور تک‌کلاسی این فایل (۰-۱-۰) بیشتر است، پس هر
+ * دکمه/ورودی/لینک این افزونه پدینگ، قاب، فونت، رنگ و پس‌زمینهٔ
+ * کیت را می‌گرفت و استایل خودش را از دست می‌داد.
+ *
+ * !important جواب نیست: خروجی کنترل‌های خودِ ویجت‌ها (تب استایل)
+ * هم بدون !important و با تخصص `.elementor-element-xxx .cls`
+ * (۰-۲-۰) می‌آید، و important کردنِ این‌جا آن کنترل‌ها را از کار
+ * می‌انداخت.
+ *
+ * پس سلکتورهای پایهٔ عناصر تعاملی با `html body` نوشته می‌شوند:
+ * تخصص ۰-۱-۲ می‌شود — یک پله بالاتر از کیت المنتور و قالب، و هنوز
+ * یک کلاس پایین‌تر از خروجی کنترل‌ها. یعنی ترتیب درست برقرار
+ * می‌ماند: مقدار کنترل کاربر > پایهٔ افزونه > پیش‌فرض المنتور/قالب.
+ *
+ * قاعده: هر قانونِ پایه که روی <button>/<input>/<textarea>/<a>
+ * می‌نشیند و فقط یک کلاس دارد این پیشوند را می‌گیرد. قوانینی که
+ * خودشان دو کلاس دارند (مثل .bkw-atc__step:disabled) از قبل از
+ * کیت جلوترند و دست‌نخورده می‌مانند.
+ */
+
+/*
  * ویجت account-bar: سه پیل مستقل (سبد خرید / کاربر / خروج) کنار هم.
  * جایگاه نهایی هر پیل با CSS order (کنترل «ترتیب نمایش» در تب چیدمان)
  * تعیین می‌شود، نه ترتیب DOM — دقیقاً مثل .bkw-price. کادر پیل‌ها
@@ -105,7 +132,7 @@
 	align-items: center;
 }
 
-.bkw-account-bar__item {
+html body .bkw-account-bar__item {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
@@ -114,7 +141,7 @@
 	text-decoration: none;
 }
 
-a.bkw-account-bar__item {
+html body a.bkw-account-bar__item {
 	cursor: pointer;
 }
 
@@ -218,7 +245,7 @@ a.bkw-account-bar__item {
 	gap: 48px;
 }
 
-.bkw-header__brand {
+html body .bkw-header__brand {
 	display: flex;
 	align-items: center;
 	text-decoration: none;
@@ -245,7 +272,7 @@ a.bkw-account-bar__item {
 	align-items: center;
 }
 
-.bkw-header__nav-link {
+html body .bkw-header__nav-link {
 	text-decoration: none;
 	white-space: nowrap;
 }
@@ -261,9 +288,18 @@ a.bkw-account-bar__item {
 	margin-top: 12px;
 }
 
-.bkw-header__hamburger,
-.bkw-header__close {
+html body .bkw-header__hamburger,
+html body .bkw-header__close {
 	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	border-radius: 0;
+	color: inherit;
+	font: inherit;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
 	background: transparent;
 	border: 0 none;
 	cursor: pointer;
@@ -274,11 +310,11 @@ a.bkw-account-bar__item {
 	line-height: 1;
 }
 
-.bkw-header__hamburger {
+html body .bkw-header__hamburger {
 	padding: 8px;
 }
 
-.bkw-header__close {
+html body .bkw-header__close {
 	padding: 10px;
 }
 
@@ -445,14 +481,15 @@ a.bkw-account-bar__item {
 	flex-shrink: 0;
 }
 
-.bkw-header__logout-button {
+html body .bkw-header__logout-button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	gap: 8px;
 	width: 100%;
 	box-sizing: border-box;
-	padding: 12px;
+	/* طبق طرح فقط بالا و پایین؛ دکمه تمام‌عرض است و محتوایش وسط‌چین. */
+	padding: 12px 0;
 	text-decoration: none;
 	cursor: pointer;
 	background: transparent;
@@ -666,7 +703,7 @@ html.bkw-panel-open {
 	display: block;
 }
 
-.bkw-login__input {
+html body .bkw-login__input {
 	flex: 1 1 0;
 	min-width: 0;
 	width: 100% !important;
@@ -690,7 +727,7 @@ html.bkw-panel-open {
 	box-shadow: none !important;
 }
 
-.bkw-login__submit {
+html body .bkw-login__submit {
 	-webkit-appearance: none;
 	appearance: none;
 	border: 0 none !important;
@@ -716,6 +753,24 @@ html.bkw-panel-open {
 	width: 100%;
 }
 
+/*
+ * پیام «این شماره ثبت نشده» (Widgets\Login::render_step1) — هیچ رفرنس
+ * فیگمایی ندارد چون تا وقتی Mobile_Login وصل نشده بود اصلاً چنین
+ * حالتی وجود نداشت؛ رنگ/تایپوگرافی از یادداشت پایین فرم مجاور خودش
+ * پیروی می‌کند تا با بقیهٔ فرم هم‌خانواده بماند، فقط رنگش هشداردهنده است.
+ */
+.bkw-login__field-error {
+	margin: 0;
+	text-align: center;
+	width: 100%;
+	color: #c0392b;
+	font-size: 13px;
+}
+
+.bkw-login__field-error[hidden] {
+	display: none;
+}
+
 .bkw-login__edit-number-row {
 	display: flex;
 	align-items: baseline;
@@ -724,7 +779,7 @@ html.bkw-panel-open {
 	width: 100%;
 }
 
-.bkw-login__edit-number {
+html body .bkw-login__edit-number {
 	-webkit-appearance: none;
 	appearance: none;
 	background: transparent !important;
@@ -742,14 +797,26 @@ html.bkw-panel-open {
 	white-space: nowrap;
 }
 
+/*
+ * ردیف خانه‌های کد تأیید تنها جای این ویجت است که چپ‌به‌راست می‌ماند.
+ *
+ * بقیهٔ فرم زیر dir="rtl" است و آن‌جا اولین عنصر DOM سمت راست می‌نشیند —
+ * که برای متن فارسی درست است ولی برای یک عدد نه: کد «۱۲۳۴» را کاربر از
+ * چپ می‌خواند، پس رقم اول باید چپ‌ترین خانه باشد. بدون این، رقم اولی که
+ * تایپ می‌شود سمت راست می‌نشیند و کد وارونه وارد می‌شود.
+ *
+ * فقط ترتیب خانه‌ها برمی‌گردد؛ خودِ خانه‌ها text-align: center دارند پس
+ * چیزی از راست‌چین بودن صفحه به هم نمی‌ریزد.
+ */
 .bkw-login__otp-row {
 	display: flex;
+	direction: ltr;
 	align-items: center;
 	justify-content: center;
 	width: 100%;
 }
 
-.bkw-login__otp-input {
+html body .bkw-login__otp-input {
 	box-sizing: border-box !important;
 	text-align: center;
 	border-style: solid !important;
@@ -788,7 +855,7 @@ html.bkw-panel-open {
 	display: block;
 }
 
-.bkw-login__resend {
+html body .bkw-login__resend {
 	-webkit-appearance: none;
 	appearance: none;
 	background: transparent !important;
@@ -989,7 +1056,7 @@ html.bkw-panel-open {
 	flex-shrink: 0;
 }
 
-.bkw-terms-modal__checkbox {
+html body .bkw-terms-modal__checkbox {
 	position: absolute;
 	inset: 0;
 	width: 100%;
@@ -1033,7 +1100,7 @@ html.bkw-panel-open {
 	flex-shrink: 0;
 }
 
-.bkw-terms-modal__accept {
+html body .bkw-terms-modal__accept {
 	-webkit-appearance: none;
 	appearance: none;
 	border: 0 none !important;
@@ -1059,5 +1126,1952 @@ html.bkw-panel-open {
 @media (max-width: 767px) {
 	.bkw-terms-modal__divider--footer {
 		display: block;
+	}
+}
+
+/*
+ * ویجت add-to-cart: در هر لحظه فقط یکی از دو فرزند مستقیم نمایش داده
+ * می‌شود — دکمهٔ افزودن (.bkw-atc__btn--add) یا محفظهٔ تعداد (.bkw-atc__qty)
+ * — و جاوااسکریپت با toggle کردن `data-state` روی ریشه سوییچ می‌کند؛
+ * حالت ناموجود اصلاً این دو را رندر نمی‌کند، فقط دکمهٔ غیرفعال
+ * .bkw-atc__btn--oos را دارد.
+ */
+.bkw-atc {
+	--bkw-atc-icon-size: 14px;
+	--bkw-atc-step-size: 28px;
+	--bkw-atc-loading-bg: rgba(255, 255, 255, 0.45);
+	--bkw-atc-loading-blur: 4px;
+	--bkw-atc-loading-duration: 180ms;
+	display: inline-flex;
+}
+
+.bkw-atc[data-state="add"] .bkw-atc__qty,
+.bkw-atc[data-state="qty"] .bkw-atc__btn--add {
+	display: none;
+}
+
+.bkw-atc__notice {
+	padding: 16px;
+	border: 1px dashed #c00;
+	color: #c00;
+	font-size: 13px;
+}
+
+html body .bkw-atc__btn {
+	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	min-height: 0;
+	min-width: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	cursor: pointer;
+	font: inherit;
+}
+
+html body .bkw-atc__btn--oos {
+	cursor: default;
+}
+
+.bkw-atc__icon {
+	display: inline-flex;
+	flex-shrink: 0;
+	width: var(--bkw-atc-icon-size);
+	height: var(--bkw-atc-icon-size);
+	line-height: 0;
+}
+
+.bkw-atc__icon svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.bkw-atc__qty {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+
+html body .bkw-atc__step {
+	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	padding: 0;
+	background: transparent;
+	color: inherit;
+	box-shadow: none;
+	text-shadow: none;
+	text-transform: none;
+	letter-spacing: normal;
+	min-height: 0;
+	min-width: 0;
+	flex-shrink: 0;
+	width: var(--bkw-atc-step-size);
+	height: var(--bkw-atc-step-size);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	cursor: pointer;
+	font: inherit;
+	line-height: 1;
+	transition: background-color 0.15s ease;
+}
+
+.bkw-atc__step:not(:disabled):hover {
+	background-color: rgba(255, 255, 255, 0.4);
+}
+
+.bkw-atc__step:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.bkw-atc__count {
+	min-width: 1.5em;
+	text-align: center;
+}
+
+/*
+ * لایهٔ «در حال انجام»: هر دو حالت تعاملی (دکمهٔ افزودن و محفظهٔ تعداد)
+ * یک .bkw-atc__overlay مستقل دارند؛ جاوااسکریپت فقط کلاس is-loading را
+ * روی ریشه می‌گذارد و opacity لایهٔ داخل عنصر در حال حاضر قابل مشاهده
+ * (طبق data-state) به ۱ می‌رود — بدون هیچ منطق نمایش/پنهانی اضافه.
+ */
+.bkw-atc__overlay {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: var(--bkw-atc-loading-bg);
+	backdrop-filter: blur(var(--bkw-atc-loading-blur));
+	-webkit-backdrop-filter: blur(var(--bkw-atc-loading-blur));
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--bkw-atc-loading-duration) ease;
+}
+
+html body .bkw-atc__btn--add {
+	position: relative;
+}
+
+.bkw-atc.is-loading .bkw-atc__overlay {
+	opacity: 1;
+}
+
+.bkw-atc.is-loading button {
+	pointer-events: none;
+}
+
+/*
+ * ویجت cart-sidebar: پردهٔ تیرهٔ بلورشده (fixed inset:0) + پنل کشویی
+ * تمام‌ارتفاع. باز/بسته‌شدن با toggle کلاس is-open روی هر دو انجام
+ * می‌شود (assets/js/bakery-cart-sidebar.js) — دقیقاً همان الگوی پنل
+ * کشویی موبایل ویجت Header (.bkw-header__panel-overlay/.bkw-header__panel).
+ * جهت باز شدن (چپ/راست) و رنگ حاشیهٔ لبهٔ تماس با محتوا از کنترل
+ * «جهت باز شدن» (تب استایل → پنل) با هم عوض می‌شوند تا حاشیه همیشه
+ * روی لبهٔ درست بماند.
+ */
+.bkw-cart-sidebar {
+	--bkw-cart-sidebar-blur: 8px;
+}
+
+.bkw-cart-sidebar__overlay {
+	position: fixed;
+	inset: 0;
+	/* هم‌سطح .bkw-terms-modal-overlay: باید بالای هر چیز دیگری در صفحه
+	 * (هدر چسبان، نوار ادمین، مینی‌سبدهای دیگر و ...) بنشیند، نه فقط
+	 * بالای پنل موبایل هدر (که z-index پایین‌تر 1000/1001 دارد). */
+	z-index: 100000;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	background-color: rgba(26, 19, 14, 0.8);
+	backdrop-filter: blur(var(--bkw-cart-sidebar-blur));
+	-webkit-backdrop-filter: blur(var(--bkw-cart-sidebar-blur));
+	transition: opacity 0.25s ease;
+}
+
+.bkw-cart-sidebar__overlay.is-open {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+}
+
+.bkw-cart-sidebar__panel {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	z-index: 100001;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	overflow-y: auto;
+	width: 500px;
+	max-width: 100vw;
+	padding: 24px;
+	background-color: #efe6d5;
+	/* فقط فالبک برای پیش از اعمال شدن CSS المنتور؛ کنترل «جهت باز شدن»
+	 * (تب استایل) این حاشیه را با جهت واقعی هماهنگ می‌کند. پیش‌فرض
+	 * «از چپ» است، پس زیرِ dir="rtl" لبهٔ تماس با محتوا سمت راست است
+	 * (inline-start در rtl = راست). */
+	border-inline-start: 1px solid #eaded6;
+	transform: translateX(var(--bkw-cart-sidebar-closed-x, -100%));
+	transition: transform 0.3s ease;
+}
+
+.bkw-cart-sidebar__panel.is-open {
+	transform: translateX(0);
+}
+
+.bkw-cart-sidebar__top {
+	display: flex;
+	flex-direction: column;
+	gap: 32px;
+}
+
+.bkw-cart-sidebar__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.bkw-cart-sidebar__title {
+	margin: 0;
+	color: #231912;
+	font-size: 22px;
+	font-weight: 900;
+}
+
+html body .bkw-cart-sidebar__close {
+	-webkit-appearance: none;
+	margin: 0;
+	padding: 0;
+	color: inherit;
+	font: inherit;
+	box-shadow: none;
+	min-height: 0;
+	min-width: 0;
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	appearance: none;
+	cursor: pointer;
+	box-sizing: border-box;
+	line-height: 1;
+	width: 40px;
+	height: 40px;
+	border-radius: 20px;
+	background-color: #faf6f0;
+	border: 1px solid #faf6f0;
+}
+
+.bkw-cart-sidebar__close svg {
+	display: block;
+	width: 40px;
+	height: 40px;
+}
+
+.bkw-cart-sidebar__credit {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	color: #7d7065;
+}
+
+.bkw-cart-sidebar__credit-label,
+.bkw-cart-sidebar__credit-value,
+.bkw-cart-sidebar__total-label,
+.bkw-cart-sidebar__total-value,
+.bkw-cart-sidebar__item-name,
+.bkw-cart-sidebar__item-price {
+	margin: 0;
+}
+
+.bkw-cart-sidebar__credit-value,
+.bkw-cart-sidebar__total-value {
+	font-size: 20px;
+	font-weight: 800;
+}
+
+.bkw-cart-sidebar__credit-label,
+.bkw-cart-sidebar__total-label {
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.bkw-cart-sidebar__total-value {
+	color: #231912;
+}
+
+.bkw-cart-sidebar__total-label {
+	color: #7d7065;
+}
+
+.bkw-cart-sidebar__divider {
+	/* رفرنس فیگما این خط را با یک تصویر SVG جدا رندر می‌کند، نه با
+	 * همان رنگ حاشیهٔ پنل (#eaded6) — رنگ واقعی‌اش #C3AB9B با opacity
+	 * ۰.۵ است. */
+	border-top: 1px solid rgba(195, 171, 155, 0.5);
+}
+
+.bkw-cart-sidebar__items {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.bkw-cart-sidebar__empty {
+	margin: 0;
+	color: #7d7065;
+	text-align: center;
+}
+
+.bkw-cart-sidebar__item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-block: 8px;
+}
+
+.bkw-cart-sidebar__item-right {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.bkw-cart-sidebar__item-icon {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	width: 64px;
+	height: 64px;
+	border-radius: 18px;
+	background-color: #ffffff;
+}
+
+.bkw-cart-sidebar__item-icon img {
+	width: 50%;
+	height: 50%;
+	object-fit: contain;
+	display: block;
+}
+
+.bkw-cart-sidebar__item-details {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+	text-align: right;
+}
+
+.bkw-cart-sidebar__item-name {
+	color: #231912;
+	font-size: 16px;
+	font-weight: 700;
+}
+
+.bkw-cart-sidebar__item-price {
+	color: #7d7065;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.bkw-cart-sidebar__qty {
+	position: relative;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 8px 12px;
+	border-radius: 16px;
+	background-color: #ffffff;
+}
+
+/*
+ * لایهٔ «در حال انجام» کنترل تعداد هر ردیف — دقیقاً همان مفهوم بلورِ
+ * سفیدِ کم‌رنگ ویجت افزودن به سبد (.bkw-atc__overlay)؛ جاوااسکریپت
+ * (assets/js/bakery-cart-sidebar.js) فقط کلاس is-loading را روی همین
+ * ردیف [data-bkw-cart-item] می‌گذارد تا کاربر قبل از رسیدن پاسخ AJAX
+ * دوباره کلیک نکند.
+ */
+.bkw-cart-sidebar__qty-overlay {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: var(--bkw-cart-sidebar-loading-bg, rgba(255, 255, 255, 0.45));
+	backdrop-filter: blur(var(--bkw-cart-sidebar-loading-blur, 4px));
+	-webkit-backdrop-filter: blur(var(--bkw-cart-sidebar-loading-blur, 4px));
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--bkw-cart-sidebar-loading-duration, 180ms) ease;
+}
+
+[data-bkw-cart-item].is-loading .bkw-cart-sidebar__qty-overlay {
+	opacity: 1;
+}
+
+[data-bkw-cart-item].is-loading .bkw-cart-sidebar__step {
+	pointer-events: none;
+}
+
+html body .bkw-cart-sidebar__step {
+	-webkit-appearance: none;
+	margin: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	appearance: none;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font: inherit;
+	line-height: 1;
+	padding: 0;
+	color: #231912;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	transition: background-color 0.15s ease;
+}
+
+.bkw-cart-sidebar__step svg {
+	display: block;
+	width: 12px;
+	height: 12px;
+}
+
+.bkw-cart-sidebar__step:not(:disabled):hover {
+	background-color: rgba(35, 25, 18, 0.08);
+}
+
+.bkw-cart-sidebar__step:disabled {
+	cursor: not-allowed;
+	opacity: 0.4;
+}
+
+.bkw-cart-sidebar__qty-value {
+	min-width: 1em;
+	text-align: center;
+	color: #231912;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.bkw-cart-sidebar__footer {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.bkw-cart-sidebar__total {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+html body .bkw-cart-sidebar__checkout {
+	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	padding: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
+	border: none;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font: inherit;
+	box-sizing: border-box;
+	height: 56px;
+	border-radius: 16px;
+	background-color: #366874;
+	color: #ffffff;
+	font-size: 18px;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+/*
+ * حالت «در حال ثبت»: دکمه تا آمدن پاسخ قفل است (دو کلیک پشت‌هم نباید دو
+ * سفارش بسازد) و متنش عوض می‌شود. هر دو متن همیشه در DOM هستند و فقط
+ * یکی دیده می‌شود — همان الگوی دو متن دکمهٔ ویجت ورود.
+ */
+.bkw-cart-sidebar__checkout-pending {
+	display: none;
+}
+
+.bkw-cart-sidebar__checkout.is-pending .bkw-cart-sidebar__checkout-label {
+	display: none;
+}
+
+.bkw-cart-sidebar__checkout.is-pending .bkw-cart-sidebar__checkout-pending {
+	display: inline;
+}
+
+.bkw-cart-sidebar__checkout:disabled {
+	cursor: default;
+	opacity: 0.7;
+}
+
+.bkw-cart-sidebar__error {
+	margin: 0 0 12px;
+	color: #b3261e;
+	font-size: 14px;
+	line-height: 1.7;
+	text-align: center;
+}
+
+.bkw-cart-sidebar__error[hidden],
+.bkw-cart-sidebar__success[hidden] {
+	display: none !important;
+}
+
+/*
+ * تأیید سفارش جای کل محتوای پنل را می‌گیرد، نه اینکه زیرش اضافه شود:
+ * بعد از پرداخت، سبد واقعاً خالی شده و نشان‌دادن «سبد خرید شما خالی
+ * است» درست زیر پیام موفقیت، دقیقاً همان لحظه‌ای‌ست که کاربر باید
+ * مطمئن باشد سفارشش ثبت شده.
+ */
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__top,
+.bkw-cart-sidebar.is-placed .bkw-cart-sidebar__footer {
+	display: none;
+}
+
+.bkw-cart-sidebar__success {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	flex: 1 1 auto;
+	padding: 32px 24px;
+	text-align: center;
+}
+
+.bkw-cart-sidebar__success-title {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 800;
+	color: #231912;
+}
+
+.bkw-cart-sidebar__success-text,
+.bkw-cart-sidebar__success-order {
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.9;
+	color: #7d7065;
+}
+
+.bkw-cart-sidebar__success-actions {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 12px;
+}
+
+/*
+ * هر دو کنش یک شکل و اندازه دارند و فقط پر یا خالی بودنشان فرق می‌کند.
+ * رنگ از یک متغیر می‌آید چون رنگ متن و بوردر دکمهٔ فرعی همان رنگ
+ * پس‌زمینهٔ دکمهٔ اصلی است — با دو مقدار جدا، اولین باری که یکی عوض
+ * شود آن پیوند بی‌صدا می‌شکند.
+ *
+ * دکمهٔ اصلی بوردر شفاف دارد و نه «بدون بوردر»: وگرنه دو پیکسل از
+ * دکمهٔ فرعی کوتاه‌تر می‌شد و کنار هم ناهم‌تراز می‌نشستند.
+ */
+.bkw-cart-sidebar__success {
+	--bkw-success-action: #366874;
+}
+
+html body .bkw-cart-sidebar__success-track,
+html body .bkw-cart-sidebar__success-close {
+	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
+	cursor: pointer;
+	font: inherit;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 12px 32px;
+	border-radius: 16px;
+	border: 1.5px solid transparent;
+	font-size: 16px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+html body .bkw-cart-sidebar__success-track {
+	background-color: var(--bkw-success-action);
+	color: #ffffff;
+}
+
+html body .bkw-cart-sidebar__success-close {
+	background-color: transparent;
+	border-color: var(--bkw-success-action);
+	color: var(--bkw-success-action);
+}
+
+/*
+ * مودال تأیید سفارش — بین کلیک روی «ثبت سفارش» و کسر واقعی اعتبار.
+ *
+ * بالاتر از خودِ سایدبار می‌نشیند (پنل ۱۰۰۰۰۱ است) چون باید روی آن
+ * بیاید، نه داخلش. پرده بلور شیشه‌ای دارد؛ backdrop-filter در مرورگرهای
+ * قدیمی نادیده گرفته می‌شود و فقط رنگ نیمه‌شفاف می‌ماند — که خودش
+ * به‌تنهایی خواناست، پس تنزل بی‌خطر است.
+ */
+.bkw-confirm {
+	position: fixed;
+	inset: 0;
+	z-index: 100002;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	box-sizing: border-box;
+	background-color: rgba(26, 19, 14, 0.45);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+
+.bkw-confirm[hidden] {
+	display: none !important;
+}
+
+.bkw-confirm__card,
+.bkw-confirm__card * {
+	box-sizing: border-box;
+}
+
+.bkw-confirm__card {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	text-align: center;
+	max-width: 100%;
+	max-height: 100%;
+	overflow-y: auto;
+	width: 450px;
+	gap: 32px;
+	padding: 40px;
+	border-radius: 32px;
+	background-color: #fcf9f5;
+	border: 1px solid #eaded6;
+	box-shadow: 0 24px 24px rgba(26, 19, 14, 0.25);
+}
+
+.bkw-confirm__header {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+}
+
+.bkw-confirm__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	line-height: 1;
+}
+
+/*
+ * دایرهٔ پس‌زمینه داخل خودِ فایل SVG است (خروجی فیگما: rect با rx=36 و
+ * بعد مسیرهای آیکون رویش)، نه یک پس‌زمینهٔ CSS. برای همین اینجا فقط
+ * اندازهٔ کل SVG تنظیم می‌شود و رنگ دایره/آیکون از تب استایل مستقیم روی
+ * rect و path می‌نشیند.
+ */
+.bkw-confirm__icon svg,
+.bkw-confirm__icon img {
+	display: block;
+	width: 72px;
+	height: 72px;
+}
+
+.bkw-confirm__title {
+	margin: 0;
+	color: #8c583a;
+	font-size: 24px;
+	font-weight: 900;
+	line-height: 1.4;
+}
+
+.bkw-confirm__text {
+	margin: 0;
+	color: #231912;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.5;
+}
+
+/*
+ * ترتیب DOM «تأیید» بعد «انصراف» است و این ردیف زیر dir="rtl" فرزند اول
+ * را سمت راست می‌گذارد — همان چیدمان دیزاین. (خروجی JSX فیگما ترتیب
+ * برعکس دارد؛ اسکرین‌شات مرجع است، نه ترتیب خام JSX.) هر دو دکمه
+ * هم‌عرض‌اند تا هیچ‌کدام با پهنای متنش برجسته‌تر از دیگری نشود.
+ */
+.bkw-confirm__actions {
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+	gap: 16px;
+	width: 100%;
+}
+
+html body .bkw-confirm__actions button {
+	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	padding: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
+	flex: 1 1 0;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font: inherit;
+	height: 52px;
+	border: none;
+	border-radius: 16px;
+	font-size: 15px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+html body .bkw-confirm__accept {
+	background-color: #8c583a;
+	color: #ffffff;
+}
+
+html body .bkw-confirm__cancel {
+	background-color: #ffffff;
+	color: #7d7065;
+	border: 1.5px solid #eaded6;
+}
+
+.bkw-confirm__actions button:disabled {
+	cursor: default;
+	opacity: 0.7;
+}
+
+.bkw-confirm__accept-pending {
+	display: none;
+}
+
+.bkw-confirm__accept.is-pending .bkw-confirm__accept-label {
+	display: none;
+}
+
+.bkw-confirm__accept.is-pending .bkw-confirm__accept-pending {
+	display: inline;
+}
+
+.bkw-order-history__confirm-error {
+	margin: 0;
+	text-align: center;
+	color: #ba291e;
+	font-size: 13px;
+}
+
+.bkw-order-history__confirm-error[hidden] {
+	display: none !important;
+}
+
+.bkw-confirm .bkw-cart-sidebar__error {
+	margin: 0;
+}
+
+/*
+ * فالبک تضمینی برای موبایل: کنترل «عرض» (تب استایل → پنل) با
+ * max-width:100vw قاعدتاً همین را می‌دهد، اما اگر به هر دلیلی CSS
+ * تولیدشدهٔ المنتور با تأخیر بارگذاری شود (مثلاً کش قدیمی)، این قانون
+ * !important — که فقط زیر بریک‌پوینت موبایل خودِ المنتور فعال است، نه
+ * همیشه — عرض تمام‌صفحه را در هر صورت تضمین می‌کند.
+ */
+@media (max-width: 767px) {
+	.bkw-cart-sidebar__panel {
+		width: 100vw !important;
+	}
+}
+
+/*
+ * ویجت سابقهٔ سفارش‌ها.
+ *
+ * ترتیب DOM هر ردیف عمداً برعکس ترتیب خروجی JSX فیگماست: آن فریم چیدمان
+ * LTR دارد، پس ترتیبش «چپ‌به‌راستِ دیده‌شده» است، در حالی که این‌جا زیر
+ * dir="rtl" فرزندِ اولِ یک ردیف فلکس سمت راست می‌نشیند. پس بلوک شمارهٔ
+ * سفارش اول می‌آید (تا راست بنشیند) و مبلغ آخر (تا چپ بیفتد) — همان
+ * چیزی که در رفرنس دیده می‌شود.
+ *
+ * جای «مراحل سفارش» فعلاً خالی است و فقط با flex فاصلهٔ وسط را نگه
+ * می‌دارد؛ وقتی پر شود، هیچ‌کدام از قواعد این‌جا لازم نیست عوض شود.
+ */
+.bkw-order-history {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	box-sizing: border-box;
+}
+
+.bkw-order-history *,
+.bkw-order-history *::before,
+.bkw-order-history *::after {
+	box-sizing: border-box;
+}
+
+.bkw-order-history__card {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	width: 100%;
+	padding: 24px;
+	border-radius: 24px;
+	background-color: #ffffff;
+	border: 1px solid #eaded6;
+	box-shadow: 0 4px 8px rgba(35, 25, 18, 0.03);
+}
+
+/*
+ * گرید سه‌ستونه و نه فلکس با space-between.
+ *
+ * با فلکس، هر سه ستون به اندازهٔ محتوای خودشان بودند و فضای خالی بینشان
+ * پخش می‌شد — یعنی موقعیت استپر با طول فهرست اقلامِ همان سفارش جابه‌جا
+ * می‌شد و در فهرستی از چند کارت، هیچ دو استپری زیر هم نمی‌افتادند.
+ * گرید ستون‌ها را از محتوا جدا می‌کند: ستون اول فضای باقی‌مانده را
+ * می‌گیرد و دو ستون بعدی عرض ثابت دارند، پس مرحله‌ها و مبلغ در همهٔ
+ * کارت‌ها دقیقاً روی یک خط عمودی می‌نشینند.
+ */
+.bkw-order-history__row {
+	display: grid;
+	/*
+	 * عرض ستون مراحل از یک متغیر می‌آید و نه مستقیم از کنترل المنتور.
+	 *
+	 * دلیلش خاصیت‌بندی است: المنتور کنترل‌ها را با
+	 * «.elementor-element-XXX .کلاس» بیرون می‌دهد که از سلکتور این
+	 * فایل خاص‌تر است — پس اگر کنترل خودش grid-template-columns را
+	 * می‌نوشت، همان سه ستونِ دسکتاپ در هر عرضی برنده می‌شد و مدیا-کوئری
+	 * موبایل پایین هرگز اجرا نمی‌شد (ستون اول به صفر می‌رفت و کل کارت
+	 * به‌هم می‌ریخت). با متغیر، کنترل فقط مقدار را عوض می‌کند و
+	 * تصمیمِ «چند ستون» این‌جا می‌ماند.
+	 */
+	grid-template-columns: minmax(0, 1fr) var(--bkw-stepper-col, 420px) 120px;
+	align-items: center;
+	gap: 16px;
+	width: 100%;
+}
+
+.bkw-order-history__meta {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 32px;
+	min-width: 0;
+}
+
+.bkw-order-history__order,
+.bkw-order-history__items-block {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+	/* زیر dir="rtl"، flex-start یعنی راست — همان تراز رفرنس */
+	align-items: flex-start;
+	text-align: right;
+}
+
+.bkw-order-history__caption {
+	margin: 0;
+	color: #a8968d;
+	font-size: 13px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.bkw-order-history__number {
+	margin: 0;
+	color: #231912;
+	font-size: 18px;
+	font-weight: 900;
+	white-space: nowrap;
+}
+
+.bkw-order-history__number-value {
+	color: #8c583a;
+}
+
+.bkw-order-history__date {
+	margin: 0;
+	color: #a8968d;
+	font-size: 13px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+/*
+ * فهرست اقلام کامل نشان داده می‌شود و به خط بعد می‌رود.
+ *
+ * قبلاً nowrap + ellipsis بود، مثل رفرنس. ولی رفرنس یک نمونهٔ کوتاه
+ * داشت؛ روی سفارش واقعیِ چندقلمی نتیجه‌اش «نان بربری، نان سنگک، …»
+ * بود و کاربر نمی‌دید چه خریده — دقیقاً چیزی که این ستون قرار بود
+ * نشان دهد.
+ */
+.bkw-order-history__items {
+	margin: 0;
+	color: #615249;
+	font-size: 15px;
+	font-weight: 700;
+	max-width: 400px;
+	overflow-wrap: anywhere;
+}
+
+/*
+ * مراحل سفارش — فیگما، نودهای 289:7463 (زنجیره) و 289:7495 (لغو).
+ *
+ * ترتیب DOM کرونولوژیک است و زیر dir="rtl" فرزند اول سمت راست
+ * می‌نشیند، پس «سفارش ثبت شد» راست و «تحویل داده شد» چپ می‌افتد —
+ * همان چیزی که رفرنس نشان می‌دهد.
+ */
+/*
+ * عرض ثابت روی خودِ ستون گرید نشسته و نه روی این عنصر.
+ *
+ * تفاوتش مهم است: اگر عرض ثابت را به این عنصر می‌دادیم و مرحله‌ها
+ * (که کوچک نمی‌شوند) از آن پهن‌تر می‌شدند، از جعبه‌شان می‌زدند بیرون و
+ * روی ستون مبلغ می‌افتادند. با عرض روی ستون، خودِ ستون همان‌قدر جا
+ * می‌گیرد و این عنصر فقط پُرش می‌کند.
+ *
+ * چیدن از ابتدا (زیر dir="rtl" یعنی لبهٔ راست) کاری می‌کند که اولین
+ * دایره در همهٔ کارت‌ها روی یک خط عمودی بنشیند — چه سفارش چهار مرحله
+ * داشته باشد چه لغو شده باشد و دو تا.
+ */
+.bkw-order-history__stepper {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	justify-content: flex-start;
+	width: 100%;
+}
+
+/*
+ * min-width و نه width ثابت: طولانی‌ترین برچسب («درحال آماده سازی») از
+ * ۷۲ پیکسل رفرنس پهن‌تر است. در فیگما آن متن از جعبه‌اش بیرون می‌زند،
+ * که آن‌جا بی‌اشکال است ولی در مرورگر یعنی برخورد با مرحلهٔ بغلی. پس
+ * هر مرحله دست‌کم ۷۲ پیکسل است و اگر برچسبش پهن‌تر بود، همان‌قدر
+ * می‌شود — بدون شکستن خط، تا همهٔ برچسب‌ها روی یک خط بمانند.
+ */
+.bkw-order-history__step {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+	min-width: 72px;
+}
+
+.bkw-order-history__step-circle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 12px;
+	flex-shrink: 0;
+	box-sizing: border-box;
+	/* حالت پیش‌فرض «هنوز نرسیده» است: دایرهٔ کرم، آیکون قهوه‌ای. */
+	background-color: #f0e1c5;
+	color: #8c583a;
+}
+
+.bkw-order-history__step.is-reached .bkw-order-history__step-circle {
+	background-color: #8c583a;
+	color: #ffffff;
+}
+
+.bkw-order-history__step.is-cancelled .bkw-order-history__step-circle {
+	background-color: #c30f0f;
+	color: #ffffff;
+}
+
+/*
+ * مرحلهٔ پایانی وقتی واقعاً طی شده سبز است و نه قهوه‌ای — رفرنس
+ * 291:7525. تا وقتی سفارش تحویل نشده همان کرمِ «طی‌نشده» می‌ماند، پس
+ * این قاعده فقط با is-reached معنا دارد.
+ */
+.bkw-order-history__step.is-delivered.is-reached .bkw-order-history__step-circle {
+	background-color: #398032;
+	color: #ffffff;
+}
+
+/* آیکون‌ها stroke="currentColor" دارند، پس رنگشان از همین دایره می‌آید. */
+.bkw-order-history__step-circle svg {
+	display: block;
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+}
+
+.bkw-order-history__step-label {
+	color: #615249;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 18px;
+	text-align: center;
+	white-space: nowrap;
+}
+
+/*
+ * رابط بین دو مرحله. margin-top آن را با مرکز دایره‌ها هم‌تراز می‌کند
+ * (۲۴ ÷ ۲ − ۲ ÷ ۲ = ۱۱)، چون خودِ ردیف align-items: flex-start است تا
+ * برچسب‌های دوخطی ارتفاع بقیه را جابه‌جا نکنند.
+ */
+/*
+ * عرض از width می‌آید (که کنترل استایل می‌نویسدش) و flex فقط می‌گوید
+ * چطور کوچک/بزرگ شود. flex-basis عمداً auto است تا همان width پایه
+ * قرار بگیرد؛ اگر عدد ثابتی در flex می‌گذاشتیم، کنترل بی‌اثر می‌شد.
+ *
+ * shrink باز است و مرحله‌ها بسته: اگر فونت سایت برچسب‌ها را پهن‌تر
+ * کند، فشار روی رابط‌ها می‌افتد نه اینکه کل استپر از ستونش بزند بیرون.
+ */
+.bkw-order-history__step-connector {
+	flex: 0 1 auto;
+	min-width: 10px;
+	width: 32px;
+	height: 2px;
+	margin-top: 11px;
+	border-radius: 1px;
+	background-color: #f0e1c5;
+}
+
+.bkw-order-history__step-connector.is-reached {
+	background-color: #8c583a;
+}
+
+.bkw-order-history__step-connector.is-cancelled {
+	background-color: #c30f0f;
+}
+
+.bkw-order-history__price {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 120px;
+	flex-shrink: 0;
+	/* زیر dir="rtl"، flex-end یعنی چپ */
+	align-items: flex-end;
+	text-align: left;
+}
+
+.bkw-order-history__price-row {
+	margin: 0;
+	display: flex;
+	flex-direction: row;
+	align-items: baseline;
+	gap: 4px;
+	white-space: nowrap;
+}
+
+.bkw-order-history__amount {
+	color: #231912;
+	font-size: 18px;
+	font-weight: 900;
+}
+
+.bkw-order-history__currency {
+	color: #c59b62;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.bkw-order-history__divider {
+	width: 100%;
+	height: 1px;
+	flex-shrink: 0;
+	background-color: #eaded6;
+}
+
+.bkw-order-history__cancel-section {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+}
+
+html body .bkw-order-history__cancel {
+	appearance: none;
+	-webkit-appearance: none;
+	margin: 0;
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 0;
+	min-width: 0;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font: inherit;
+	border: none;
+	padding: 10px 16px;
+	border-radius: 100px;
+	background-color: #ba291e;
+	color: #ffffff;
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.bkw-order-history__cancel:disabled {
+	cursor: default;
+	opacity: 0.7;
+}
+
+.bkw-order-history__cancel-note {
+	margin: 0;
+	width: 100%;
+	text-align: center;
+	color: #ba291e;
+	font-size: 10px;
+	font-weight: 500;
+	line-height: 1.8;
+}
+
+.bkw-order-history__empty {
+	margin: 0;
+	padding: 32px 24px;
+	text-align: center;
+	color: #615249;
+	font-size: 15px;
+	font-weight: 700;
+	border-radius: 24px;
+	background-color: #ffffff;
+	border: 1px solid #eaded6;
+}
+
+/* --- صفحه‌بندی ------------------------------------------------------- */
+
+.bkw-order-history__pagination {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	width: 100%;
+	margin-top: 12px;
+}
+
+html body .bkw-order-history__page {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 44px;
+	height: 44px;
+	padding: 0 14px;
+	border-radius: 100px;
+	background-color: #ffffff;
+	border: 1px solid #eaded6;
+	color: #615249;
+	font-size: 14px;
+	font-weight: 700;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.bkw-order-history__page.is-current {
+	background-color: #ba291e;
+	border-color: #ba291e;
+	color: #ffffff;
+	cursor: default;
+}
+
+.bkw-order-history__page.is-disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+/*
+ * زیر بریک‌پوینت موبایل، ردیف افقی کارت جا نمی‌شود: شمارهٔ سفارش،
+ * اقلام و مبلغ زیر هم می‌روند و مبلغ به لبهٔ راست برمی‌گردد تا با بقیه
+ * هم‌تراز بماند.
+ */
+@media (max-width: 767px) {
+	/*
+	 * چیدمان موبایل — فیگما، نود 298:7555.
+	 *
+	 * ترتیب دیده‌شده با ترتیب DOM فرق دارد: شمارهٔ سفارش بالا، بعد
+	 * مراحل، بعد اقلام، بعد مبلغ. به‌جای دو مارک‌آپ جدا (که یعنی هر
+	 * اصلاح آینده دو بار)، همان DOM با display: contents تخت می‌شود و
+	 * با order مرتب — پس بلوک متا از میان برمی‌دارد و چهار فرزندش
+	 * مستقیم فرزند گرید می‌شوند.
+	 */
+	.bkw-order-history__card {
+		padding: 16px;
+		border-radius: 20px;
+		gap: 16px;
+	}
+
+	/*
+	 * gap صفر است و هر عنصر margin خودش را دارد.
+	 *
+	 * فاصله‌های عمودی رفرنس یکسان نیستند — ۱۶ بین بلوک‌ها ولی ۱۰ بین
+	 * اقلام و مبلغ (که در رفرنس هر دو داخل یک بلوک‌اند). با gap
+	 * یکنواخت یکی‌شان همیشه غلط می‌ماند.
+	 */
+	.bkw-order-history__row {
+		grid-template-columns: minmax(0, 1fr);
+		justify-items: start;
+		gap: 0;
+	}
+
+	.bkw-order-history__meta {
+		display: contents;
+	}
+
+	.bkw-order-history__order {
+		order: 1;
+	}
+
+	.bkw-order-history__stepper {
+		order: 2;
+	}
+
+	.bkw-order-history__items-block {
+		order: 3;
+	}
+
+	.bkw-order-history__price {
+		order: 4;
+	}
+
+	/* شمارهٔ سفارش راست، تاریخ چپ — یک سطر، نه دو. */
+	.bkw-order-history__order {
+		flex-direction: row;
+		align-items: baseline;
+		justify-content: space-between;
+		width: 100%;
+		gap: 8px;
+	}
+
+	.bkw-order-history__number {
+		font-size: 15px;
+	}
+
+	.bkw-order-history__date,
+	.bkw-order-history__caption {
+		font-size: 12px;
+	}
+
+	/*
+	 * دو خط جداکنندهٔ بالا و پایین مراحل، با border و نه دو عنصر
+	 * اضافه در DOM — چیزی که فقط در یک بریک‌پوینت دیده می‌شود نباید
+	 * در مارک‌آپ باشد.
+	 *
+	 * پدینگ ۲۰ است و نه ۱۶: در رفرنس، خط ۱۶ پیکسل با بلوک بالایی
+	 * فاصله دارد و خودِ ظرف مراحل ۴ پیکسل پدینگ عمودی — یعنی از خط تا
+	 * دایره‌ها ۲۰ می‌شود.
+	 */
+	.bkw-order-history__stepper {
+		width: 100%;
+		margin-top: 16px;
+		padding: 20px 0;
+		border-top: 1px solid #eaded6;
+		border-bottom: 1px solid #eaded6;
+	}
+
+	.bkw-order-history__items-block,
+	.bkw-order-history__price {
+		width: 100%;
+	}
+
+	.bkw-order-history__items-block {
+		margin-top: 16px;
+	}
+
+	/* اقلام تا مبلغ ۱۰ است و نه ۱۶ — هر دو داخل یک بلوک‌اند در رفرنس. */
+	.bkw-order-history__price {
+		margin-top: 10px;
+	}
+
+	/*
+	 * رفرنس موبایل پیش از دکمهٔ لغو خط جداکننده ندارد؛ فقط دو خط
+	 * بالا و پایین مراحل. آن خط مالِ چیدمان دسکتاپ است.
+	 */
+	.bkw-order-history__card > .bkw-order-history__divider {
+		display: none;
+	}
+
+	.bkw-order-history__items {
+		max-width: none;
+		font-size: 14px;
+	}
+
+	/* «مبلغ کل» راست، عدد و واحد چپ — یک سطر. */
+	.bkw-order-history__price {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		text-align: right;
+	}
+
+	/*
+	 * مرحله‌ها عرض ثابت دارند و رابط‌ها فضای باقی‌مانده را پر می‌کنند —
+	 * همان چیزی که خودِ رفرنس می‌کند (flex: 1 0 0 روی رابط).
+	 *
+	 * قبلاً این کار نمی‌کرد چون کارت لغوشده تعداد مرحلهٔ کمتری داشت و
+	 * رابطش تا ته عرض کش می‌آمد. حالا هر دو حالت پنج موقعیت دارند، پس
+	 * کشسان بودن رابط‌ها بین کارت‌ها تفاوتی نمی‌سازد و مرحله‌ها همیشه
+	 * زیر هم می‌افتند.
+	 */
+	/*
+	 * اندازه‌های موبایلِ مراحل (عرض، فاصله، آیکون، تایپوگرافی برچسب)
+	 * این‌جا نیستند و از mobile_default همان کنترل‌های تب استایل
+	 * می‌آیند — رجوع کن به register_stepper_style_controls().
+	 *
+	 * چرا: سلکتور المنتور از سلکتور این فایل خاص‌تر است، پس هر مقداری
+	 * که این‌جا بنویسیم را مقدار دسکتاپِ کنترل می‌پوشاند. تنها راهِ
+	 * درست، دادن مقدار موبایل به خودِ کنترل است تا المنتور آن را داخل
+	 * مدیا-کوئری خودش بیرون بدهد.
+	 *
+	 * فقط چیزهایی این‌جا می‌مانند که کنترلی ندارند.
+	 */
+	.bkw-order-history__step-label {
+		white-space: nowrap;
+	}
+
+	/*
+	 * رابط‌ها روی موبایل کشسان می‌شوند (رفرنس: flex 1 0 0). پایه‌شان
+	 * همان width است که کنترل می‌نویسد، پس grow این‌جا کافی است.
+	 */
+	.bkw-order-history__step-connector {
+		flex: 1 1 auto;
+		min-width: 1px;
+	}
+}
+
+/*
+ * توست سراسری صفحه (assets/js/bakery-toast.js) — دو نوع:
+ *   --error   قرمز، «موجودی کافی نیست» (اعتبار ماهانه کم آورده)
+ *   --warning نارنجی، «این محصول برای امروز پر شده است» (ظرفیت محصول
+ *             تمام شده، ربطی به اعتبار کاربر ندارد)
+ *
+ * به هیچ ویجتی تعلق ندارد — مستقیم زیر body ساخته می‌شود، نه داخل
+ * رپر یک ویجت خاص — پس بر خلاف بقیهٔ این فایل رنگ و تایپوگرافی‌اش هم
+ * این‌جا ثابت است، نه از کنترل‌های تب استایل. فقط فاصله از لبهٔ صفحه
+ * (bkw-toast-gap) و عرض کارت متغیر CSS دارند تا بعداً بدون دست‌زدن به
+ * جاوااسکریپت قابل تغییر باشند.
+ *
+ * موقعیت با مقادیر فیزیکی (right/left/bottom/top) نوشته شده، نه
+ * inset-inline-*: خواستهٔ دقیق «پایین راستِ نمایشگر» است، صرف‌نظر از
+ * جهت متن سند میزبان.
+ *
+ * row-reverse (نه direction:rtl + row): آیکون همیشه اولین فرزند DOM
+ * است (بی‌ربط به این‌که کدام نوع نشان داده می‌شود)، و row-reverse آن
+ * را در جهتِ سندِ rtl سایت به سمتِ راست می‌فرستد — دقیقاً چیدمانی که
+ * رفرنس هر دو نوع می‌خواهد: آیکون راست، متن (که خودش هم راست‌چین است)
+ * می‌ماند و فضای باقی‌مانده را پر می‌کند.
+ */
+.bkw-toast {
+	--bkw-toast-gap: 24px;
+	--bkw-toast-width: 380px;
+
+	position: fixed;
+	z-index: 100000;
+	right: var(--bkw-toast-gap);
+	bottom: var(--bkw-toast-gap);
+	width: var(--bkw-toast-width);
+	max-width: calc(100vw - (var(--bkw-toast-gap) * 2));
+	box-sizing: border-box;
+	direction: rtl;
+	display: flex;
+	flex-direction: row-reverse;
+	align-items: flex-start;
+	justify-content: flex-start;
+	background: #fcf9f5;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	opacity: 0;
+	transform: translateY(16px);
+	transition: opacity 240ms ease, transform 240ms ease;
+	pointer-events: none;
+}
+
+.bkw-toast.is-visible {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.bkw-toast--error {
+	gap: 12px;
+	padding: 16px;
+	border-radius: 16px;
+	box-shadow: 0 16px 32px rgba(35, 25, 18, 0.15);
+}
+
+.bkw-toast--warning {
+	gap: 16px;
+	padding: 16px 20px;
+	border-radius: 20px;
+	box-shadow: 0 12px 24px rgba(35, 25, 18, 0.12);
+}
+
+.bkw-toast__text {
+	flex: 1 1 0%;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.bkw-toast__title,
+.bkw-toast__desc {
+	text-align: right;
+	font-family: 'Vazirmatn', sans-serif;
+	word-wrap: break-word;
+}
+
+.bkw-toast__title {
+	font-weight: 900;
+}
+
+.bkw-toast__desc {
+	color: #231912;
+	font-weight: 500;
+}
+
+.bkw-toast--error .bkw-toast__title {
+	color: #ba291e;
+	font-size: 14px;
+}
+
+.bkw-toast--error .bkw-toast__desc {
+	font-size: 12px;
+	line-height: 16.8px;
+}
+
+.bkw-toast--warning .bkw-toast__title {
+	color: #f97316;
+	font-size: 15px;
+	line-height: 21px;
+}
+
+.bkw-toast--warning .bkw-toast__desc {
+	font-size: 13px;
+	line-height: 19.5px;
+}
+
+.bkw-toast__icon {
+	flex: none;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.bkw-toast--error .bkw-toast__icon {
+	width: 40px;
+	height: 40px;
+	background: #fdf2f0;
+}
+
+.bkw-toast--warning .bkw-toast__icon {
+	width: 48px;
+	height: 48px;
+	background: #ffedd5;
+}
+
+.bkw-toast__icon svg {
+	width: 24px;
+	height: 24px;
+}
+
+/*
+ * موبایل: تمام‌عرض، با ۱۶ پیکسل فاصله از راست/چپ/پایین — همان لبه‌ای
+ * که دسکتاپ هم چسبیده (پایین)، نه بالا.
+ */
+@media (max-width: 767px) {
+	.bkw-toast {
+		right: 16px;
+		left: 16px;
+		bottom: 16px;
+		width: auto;
+		max-width: none;
+	}
+}
+
+/*
+ * مودال «ثبت امتیاز و نظر» (assets/js/bakery-reviews.js) — مثل توست،
+ * به هیچ ویجتی تعلق ندارد و مستقیم زیر body ساخته می‌شود، پس رنگ و
+ * تایپوگرافی‌اش هم این‌جا ثابت است.
+ *
+ * نسخهٔ دسکتاپِ رفرنس شمارندهٔ «فلان از فلان» را نشان نمی‌داد (کاربر
+ * صریحاً گفت مطمئن نیست کجا باید باشد) — این‌جا به‌عنوان یک خطِ کوچکِ
+ * کم‌رنگ بین سربرگ و کارتِ محصول اضافه شده، و وقتی سفارش فقط یک محصول
+ * دارد اصلاً رندر نمی‌شود؛ یعنی در حالتِ رایج، ظاهرِ مودال دقیقاً همان
+ * چیزی می‌ماند که رفرنس نشان داده.
+ *
+ * ۱:۱ روی مقادیر رفرنس؛ عرضِ کارت و پدینگِ پرده (نه اندازه‌های خودِ
+ * کارت) چیزی هستند که رفرنس مشخص نکرده و این‌جا با قضاوت انتخاب شده‌اند.
+ */
+.bkw-review-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100001;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	box-sizing: border-box;
+	background: rgba(26, 19, 14, 0.45);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	opacity: 0;
+	transition: opacity 240ms ease;
+	direction: rtl;
+}
+
+.bkw-review-modal.is-visible {
+	opacity: 1;
+}
+
+.bkw-review-modal__card {
+	width: 100%;
+	max-width: 480px;
+	max-height: 100%;
+	overflow-y: auto;
+	box-sizing: border-box;
+	padding: 32px;
+	background: #fcf9f5;
+	box-shadow: 0 16px 32px rgba(35, 25, 18, 0.15);
+	border-radius: 32px;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 24px;
+	transform: translateY(16px) scale(0.98);
+	transition: transform 240ms ease;
+}
+
+.bkw-review-modal.is-visible .bkw-review-modal__card {
+	transform: translateY(0) scale(1);
+}
+
+.bkw-review-modal__header {
+	align-self: stretch;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+html body .bkw-review-modal__close {
+	padding: 8px;
+	background: #fff;
+	border: none;
+	border-radius: 100px;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+
+.bkw-review-modal__close svg {
+	width: 16px;
+	height: 16px;
+}
+
+.bkw-review-modal__title {
+	color: #231912;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 22px;
+	font-weight: 900;
+	word-wrap: break-word;
+}
+
+/* رجوع کن به یادداشتِ بالای بلوک — تنها بخشی که رفرنس جایش را نگفته. */
+.bkw-review-modal__counter {
+	align-self: stretch;
+	margin-top: -12px;
+	text-align: center;
+	color: #a8968d;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.bkw-review-modal__product {
+	align-self: stretch;
+	box-sizing: border-box;
+	padding: 12px;
+	background: #fff;
+	border-radius: 18px;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.bkw-review-modal__product-meta {
+	flex: 1 1 0%;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.bkw-review-modal__product-name {
+	align-self: stretch;
+	text-align: right;
+	color: #231912;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 18px;
+	font-weight: 900;
+	word-wrap: break-word;
+}
+
+.bkw-review-modal__product-desc {
+	align-self: stretch;
+	text-align: right;
+	color: #a8968d;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 12px;
+	font-weight: 400;
+	word-wrap: break-word;
+}
+
+.bkw-review-modal__stars-section {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+}
+
+.bkw-review-modal__stars-label {
+	color: #615249;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 14px;
+	font-weight: 700;
+	word-wrap: break-word;
+}
+
+.bkw-review-modal__star-row {
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+html body .bkw-review-modal__star {
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	background: none;
+	border: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+
+.bkw-review-modal__star svg {
+	width: 36px;
+	height: 36px;
+	stroke: #e5e7eb;
+	stroke-width: 2;
+	fill: none;
+	transition: fill 120ms ease, stroke 120ms ease;
+}
+
+.bkw-review-modal__star.is-filled svg {
+	stroke: #dfb370;
+	fill: #dfb370;
+}
+
+.bkw-review-modal__star-labels {
+	width: 260px;
+	padding: 0 8px;
+	box-sizing: border-box;
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+}
+
+.bkw-review-modal__star-labels span {
+	color: #a8968d;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 12px;
+	font-weight: 600;
+	word-wrap: break-word;
+}
+
+.bkw-review-modal__comment-section {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.bkw-review-modal__comment-label {
+	align-self: stretch;
+	text-align: right;
+	color: #615249;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 13px;
+	font-weight: 700;
+	word-wrap: break-word;
+}
+
+html body .bkw-review-modal__comment {
+	align-self: stretch;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 100px;
+	padding: 14px;
+	background: #fff;
+	border: none;
+	border-radius: 14px;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	resize: vertical;
+	text-align: right;
+	color: #231912;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 13px;
+	font-weight: 400;
+}
+
+html body .bkw-review-modal__comment::placeholder {
+	color: #a8968d;
+}
+
+.bkw-review-modal__actions {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.bkw-review-modal__error {
+	align-self: stretch;
+	text-align: right;
+	color: #ba291e;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+html body .bkw-review-modal__submit {
+	align-self: stretch;
+	padding: 14px 0;
+	background: #8c583a;
+	border: none;
+	border-radius: 16px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-family: 'Vazirmatn', sans-serif;
+	font-size: 15px;
+	font-weight: 700;
+	word-wrap: break-word;
+	cursor: pointer;
+}
+
+.bkw-review-modal__submit:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/*
+ * سخت‌سازی مودال امتیازدهی در برابر استایل عمومی قالب.
+ *
+ * همان مسئله‌ای که ویجت ورود دارد و همان راه‌حل — رجوع کن به یادداشت
+ * بالای بلوک .bkw-login. تفاوتش این است که آن‌جا ویجت است و این‌جا یک
+ * مودال سراسری که روی *هر* صفحه‌ای باز می‌شود، پس با هر قالبی که
+ * کاربر نصب کرده روبه‌رو می‌شود و نه فقط قالب صفحه‌های ساخته‌شده با
+ * المنتور.
+ *
+ * چه چیزی خراب شده بود: قالب یک استایل عمومی برای button و textarea
+ * تعریف کرده (پس‌زمینه، بردر، رادیوس با رنگ اکسنتِ خودش). سلکتور آن‌ها
+ * از سلکتور تک‌کلاسیِ این‌جا تخصص بیشتری داشت، پس دکمهٔ «ثبت امتیاز»
+ * به‌جای قهوه‌ای #8c583a با متن سفید، دکمهٔ کم‌رنگِ قالب با متن صورتی
+ * می‌شد و خانه‌های ستاره بردر و پس‌زمینهٔ صورتی می‌گرفتند — رنگ‌هایی
+ * که هیچ‌کجای این فایل نیستند.
+ *
+ * فقط ویژگی‌هایی قفل می‌شوند که قالب‌ها عملاً روی button/textarea
+ * می‌نویسند؛ باقی استایل همان بلوک‌های بالا می‌ماند.
+ */
+.bkw-review-modal,
+.bkw-review-modal *,
+.bkw-review-modal *::before,
+.bkw-review-modal *::after {
+	box-sizing: border-box;
+}
+
+html body .bkw-review-modal__close,
+html body .bkw-review-modal__star,
+html body .bkw-review-modal__submit,
+html body .bkw-review-modal__comment {
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	margin: 0 !important;
+	box-shadow: none !important;
+	text-transform: none !important;
+	letter-spacing: normal !important;
+	line-height: normal !important;
+	min-height: 0 !important;
+	min-width: 0 !important;
+	font-family: 'Vazirmatn', sans-serif !important;
+	transition: none;
+}
+
+/*
+ * حالت‌های تعاملی هم قفل می‌شوند و نه فقط حالت عادی: قالب‌ها معمولاً
+ * :hover و :focus را جدا رنگ می‌کنند، و بدون این، دکمه فقط تا اولین
+ * لمس درست می‌ماند.
+ */
+html body .bkw-review-modal__close,
+.bkw-review-modal__close:hover,
+.bkw-review-modal__close:focus,
+html body .bkw-review-modal__star,
+.bkw-review-modal__star:hover,
+.bkw-review-modal__star:focus,
+.bkw-review-modal__star:active {
+	background: none !important;
+	background-color: transparent !important;
+	border: 0 none !important;
+	padding: 0 !important;
+	color: inherit !important;
+}
+
+/* دکمهٔ بستن تنها موردی‌ست که پس‌زمینه و قاب دارد. */
+html body .bkw-review-modal__close,
+html body .bkw-review-modal__close:hover,
+html body .bkw-review-modal__close:focus {
+	background-color: #fff !important;
+	padding: 8px !important;
+	border-radius: 100px !important;
+}
+
+html body .bkw-review-modal__submit,
+.bkw-review-modal__submit:hover,
+.bkw-review-modal__submit:focus,
+.bkw-review-modal__submit:active {
+	background: #8c583a !important;
+	background-color: #8c583a !important;
+	border: 0 none !important;
+	border-radius: 16px !important;
+	color: #fff !important;
+	padding: 14px 0 !important;
+	width: 100% !important;
+	font-size: 15px !important;
+	font-weight: 700 !important;
+}
+
+html body .bkw-review-modal__comment,
+.bkw-review-modal__comment:focus {
+	background: #fff !important;
+	background-color: #fff !important;
+	border: 0 none !important;
+	border-radius: 14px !important;
+	padding: 14px !important;
+	width: 100% !important;
+	color: #231912 !important;
+	font-size: 13px !important;
+	font-weight: 400 !important;
+	line-height: 1.6 !important;
+	outline: 1px solid #eaded6;
+	outline-offset: -1px;
+	/*
+	 * ارتفاع ۱۰۰ رفرنس این‌جا دوباره نوشته می‌شود چون خودِ سخت‌سازیِ
+	 * بالا با min-height: 0 آن را برداشته بود؛ بدون این، ارتفاع را
+	 * rows="3" تعیین می‌کرد و کادر کوتاه‌تر می‌شد.
+	 */
+	min-height: 100px !important;
+}
+
+/* رنگ ستاره از خودِ SVG می‌آید و قالب به آن کاری ندارد؛ فقط اندازه قفل می‌شود. */
+.bkw-review-modal__star svg {
+	width: 36px !important;
+	height: 36px !important;
+}
+
+/*
+ * نسخهٔ موبایل — رفرنس جداگانه‌ای در فیگما دارد و نه فقط همان کارت با
+ * عرض کمتر: پدینگ و فاصله‌ها جمع‌تر، عنوان و نام محصول یک پله کوچک‌تر،
+ * و ستاره‌ها ۳۶ در ۳۶ با وکتور ۲۸ (به‌جای ۴۴ و ۳۶).
+ *
+ * عمداً آخرین بلوک این فایل است: چند مقدار (اندازهٔ ستاره) در بلوک
+ * سخت‌سازی بالا با !important نوشته شده‌اند، و مدیا کوئری تخصص اضافه
+ * نمی‌آورد — پس تنها راهِ برنده شدنِ مقدار موبایل، آمدن بعد از آن است.
+ */
+@media (max-width: 767px) {
+	.bkw-review-modal {
+		padding: 16px;
+	}
+
+	.bkw-review-modal__card {
+		padding: 20px;
+		gap: 20px;
+	}
+
+	.bkw-review-modal__title {
+		font-size: 18px;
+	}
+
+	.bkw-review-modal__product-name {
+		font-size: 16px;
+	}
+
+	html body .bkw-review-modal__star {
+		width: 36px;
+		height: 36px;
+	}
+
+	.bkw-review-modal__star svg {
+		width: 28px !important;
+		height: 28px !important;
+	}
+
+	/*
+	 * در دسکتاپ عرضِ ثابت ۲۶۰ دارد تا زیر ردیف ستاره‌ها جمع بماند؛ در
+	 * موبایل رفرنس تمام‌عرض است، پس دو برچسب به دو لبهٔ کارت می‌چسبند.
+	 */
+	.bkw-review-modal__star-labels {
+		align-self: stretch;
+		width: auto;
 	}
 }

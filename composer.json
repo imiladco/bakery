@@ -9,7 +9,12 @@
     "autoload-dev": {
         "psr-4": {
             "WHW\\": "includes/",
-            "WHW\\Tests\\": "tests/"
+            "WHW\\Tests\\": "tests/",
+            "Bakery_Credit\\": "includes/Credit/",
+            "Bakery_Credit\\Tests\\": "tests/Credit/",
+            "Bakery_Sheet\\": "includes/Sheet/",
+            "Bakery_Sheet\\Tests\\": "tests/Sheet/",
+            "Bakery_Widgets\\Tests\\": "tests/Bakery/"
         }
     },
     "config": {

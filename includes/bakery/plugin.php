@@ -26,7 +26,22 @@ final class Plugin
     private function __construct()
     {
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/svg.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/purchase-limit.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/account-balance.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/site-gate.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/mobile-login.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-policy.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-schema.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-store.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/otp-settings.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/kavenegar.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/users-sheet.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/users-sheet-page.php';
+
+        // همان الگوی Bakery_Credit\Plugin: نصب/ارتقای جدول روی init و نه
+        // روی قلاب فعال‌سازی، چون افزونه ممکن است با آپلود فایل
+        // به‌روزرسانی شود و آن قلاب اصلاً اجرا نشود.
+        add_action('init', [Otp_Schema::class, 'maybe_install'], 5);
 
         add_action('init', [$this, 'maybe_flush_after_update'], 20);
 
@@ -38,6 +53,46 @@ final class Plugin
         add_action('elementor/editor/after_enqueue_scripts', [$this, 'enqueue_editor_scripts']);
 
         (new Site_Gate())->register();
+        (new Mobile_Login())->register();
+        (new Otp_Settings())->register();
+
+        // ستون‌های هویت گزارش اعتبار ماهانه. جهتش عمداً برعکس
+        // bkw_user_sheet_columns است: آن‌جا ماژول اعتبار ستونش را به
+        // فایل کاربران اضافه می‌کند و این‌جا ماژول ویجت‌ها ستون‌های
+        // هویت را به گزارش آن. هیچ‌کدام نام کلاس آن‌یکی را نمی‌برد.
+        add_filter('bkw_credit_report_identity', [Users_Sheet::class, 'identity_columns']);
+
+        // ورودی/خروجی اکسل کاربران — فقط در پیشخوان معنا دارد و همهٔ
+        // قلاب‌هایش (منوی کاربران و admin-post) هم همان‌جا هستند.
+        if (is_admin()) {
+            (new Users_Sheet_Page())->register();
+        }
+
+        // فقط وقتی ووکامرس فعال است لازم است — ویجت‌های افزودن به سبد و
+        // سایدبار سبد بدون آن اصلاً رندر نمی‌شوند.
+        if (class_exists('\WooCommerce')) {
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-ajax.php';
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/cart-fragments.php';
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/order-cancellation.php';
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/order-statuses.php';
+            require_once BAKERY_WIDGETS_PATH . 'includes/bakery/product-reviews.php';
+
+            new Cart_Ajax();
+            (new Order_Cancellation())->register();
+            (new Order_Statuses())->register();
+            (new Product_Reviews())->register();
+
+            // اتصال محتوای زندهٔ سایدبار سبد به همان فیلتر فرگمنت استاندارد
+            // ووکامرس — Cart_Ajax و Widgets\Cart_Sidebar هیچ‌کدام از وجود
+            // یکدیگر خبر ندارند، سیم‌کشی‌شان فقط همین‌جاست.
+            add_filter('woocommerce_add_to_cart_fragments', [Cart_Fragments::class, 'add']);
+
+            // مودال امتیازدهی به هیچ ویجتی تعلق ندارد (مثل توست سراسری)
+            // پس منتظر get_script_depends هیچ ویجتی نمی‌ماند — همه‌جای
+            // سایت، برای هر کاربر واردشده، مستقیم روی wp_enqueue_scripts
+            // بارگذاری می‌شود.
+            add_action('wp_enqueue_scripts', [$this, 'enqueue_review_prompt']);
+        }
     }
 
     /**
@@ -80,6 +135,7 @@ final class Plugin
     {
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/traits/account-actions-controls.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/traits/terms-modal-controls.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/traits/confirm-modal-controls.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/icon-box.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/price.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/account-bar.php';
@@ -87,6 +143,9 @@ final class Plugin
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/header.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/login.php';
         require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/terms-modal.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/add-to-cart.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/cart-sidebar.php';
+        require_once BAKERY_WIDGETS_PATH . 'includes/bakery/widgets/order-history.php';
 
         $widgets_manager->register(new Widgets\Icon_Box());
         $widgets_manager->register(new Widgets\Price());
@@ -95,6 +154,9 @@ final class Plugin
         $widgets_manager->register(new Widgets\Header());
         $widgets_manager->register(new Widgets\Login());
         $widgets_manager->register(new Widgets\Terms_Modal());
+        $widgets_manager->register(new Widgets\Add_To_Cart());
+        $widgets_manager->register(new Widgets\Cart_Sidebar());
+        $widgets_manager->register(new Widgets\Order_History());
     }
 
     /**
@@ -140,6 +202,13 @@ final class Plugin
             true,
         );
 
+        // برای Mobile_Login::ajax_check/ajax_complete — تشخیص «این شماره
+        // متعلق به کدام کاربر واقعی است» و لاگین واقعی همان لحظه.
+        wp_localize_script('bakery-login', 'bkwLogin', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce(Mobile_Login::nonce_action()),
+        ]);
+
         wp_register_script(
             'bakery-terms-modal',
             BAKERY_WIDGETS_URL . 'assets/js/bakery-terms-modal.js',
@@ -147,6 +216,124 @@ final class Plugin
             BAKERY_WIDGETS_VERSION,
             true,
         );
+
+        // توست سراسری «موجودی کافی نیست» — هم افزودن به سبد و هم ثبت
+        // سفارش می‌توانند به آن نیاز پیدا کنند، پس به‌جای تکرار در هر
+        // دو، وابستگیِ هر دو است (رجوع کن به bakery-toast.js).
+        wp_register_script(
+            'bakery-toast',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-toast.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+
+        wp_localize_script('bakery-toast', 'bkwToastStrings', [
+            'insufficientCreditTitle' => __('موجودی کافی نیست', 'bakery-widgets'),
+            'insufficientCreditText' => __('موجودی کیف پول شما برای ثبت این سفارش کافی نمی‌باشد.', 'bakery-widgets'),
+            'soldOutTodayTitle' => __('این محصول برای امروز پر شده است', 'bakery-widgets'),
+            'soldOutTodayText' => __('متأسفانه ظرفیت این محصول برای امروز تکمیل شده است.', 'bakery-widgets'),
+        ]);
+
+        wp_register_script(
+            'bakery-add-to-cart',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-add-to-cart.js',
+            ['bakery-toast'],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+
+        wp_register_script(
+            'bakery-cart-sidebar',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-cart-sidebar.js',
+            ['bakery-toast'],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+
+        // رشتهٔ اکشن نانس مستقیم است (نه ارجاع به Cart_Ajax::NONCE_ACTION) چون این
+        // متد صرف‌نظر از فعال بودن ووکامرس اجرا می‌شود، در حالی که آن کلاس فقط
+        // وقتی ووکامرس فعال باشد بارگذاری می‌شود. هر دو اسکریپت (افزودن به
+        // سبد و سایدبار) روی همان دو اکشن admin-ajax سوار می‌شوند، پس با
+        // همان اکشن نانس مستقل از هم لوکالایز می‌شوند.
+        wp_localize_script('bakery-add-to-cart', 'bkwAtc', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('bkw_atc'),
+        ]);
+
+        // نانس پرداخت عمداً از نانس تغییر تعداد جداست: آن یکی سبد را
+        // دستکاری می‌کند، این یکی پول خرج می‌کند
+        // (Bakery_Credit\Integration\DirectCheckout::NONCE_ACTION — رشتهٔ
+        // مستقیم، به همان دلیل بالا: آن کلاس فقط با ووکامرس بارگذاری می‌شود).
+        wp_localize_script('bakery-cart-sidebar', 'bkwCartSidebar', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('bkw_atc'),
+            'placeOrderNonce' => wp_create_nonce('bkw_place_order'),
+            'genericError' => __('ثبت سفارش ممکن نشد. دوباره تلاش کنید.', 'bakery-widgets'),
+        ]);
+
+        wp_register_script(
+            'bakery-order-history',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-order-history.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+
+        // رشتهٔ اکشن نانس مستقیم است (نه Order_Cancellation::NONCE_ACTION) به
+        // همان دلیل بالا: آن کلاس فقط وقتی ووکامرس فعال باشد بارگذاری می‌شود.
+        wp_localize_script('bakery-order-history', 'bkwOrderHistory', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('bkw_cancel_order'),
+            'genericError' => __('لغو سفارش ممکن نشد. دوباره تلاش کنید.', 'bakery-widgets'),
+        ]);
+
+        wp_register_script(
+            'bakery-reviews',
+            BAKERY_WIDGETS_URL . 'assets/js/bakery-reviews.js',
+            [],
+            BAKERY_WIDGETS_VERSION,
+            true,
+        );
+    }
+
+    /**
+     * بارگذاریِ خودِ مودال امتیازدهی — فقط برای کاربر واردشده و فقط وقتی
+     * ووکامرس فعال است (رجوع کن به قلاب‌گذاری در __construct).
+     *
+     * چرا اسکریپت مستقل و نه get_script_depends یک ویجت: این مودال به
+     * هیچ ویجتی وابسته نیست و باید همه‌جای سایت ظاهر شود، دقیقاً مثل
+     * توستِ سراسری — پس روی همان قلابِ عمومی enqueue می‌شود، نه قلاب
+     * مخصوص المنتور که این دو تابعِ بالا رویش‌اند.
+     */
+    public function enqueue_review_prompt(): void
+    {
+        if (!is_user_logged_in()) {
+            return;
+        }
+
+        $this->register_scripts();
+        $this->register_styles();
+        wp_enqueue_script('bakery-reviews');
+        wp_enqueue_style('bakery-widgets');
+
+        wp_localize_script('bakery-reviews', 'bkwReviews', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce(Product_Reviews::NONCE_ACTION),
+            'strict' => Product_Reviews::is_strict(),
+            'title' => __('ثبت امتیاز و نظر', 'bakery-widgets'),
+            'ratingLabel' => __('امتیاز شما به این محصول', 'bakery-widgets'),
+            'bestLabel' => __('عالی', 'bakery-widgets'),
+            'worstLabel' => __('خیلی بد', 'bakery-widgets'),
+            'commentLabel' => __('نظر شما (اختیاری)', 'bakery-widgets'),
+            /* translators: %s: product name */
+            'commentPlaceholder' => __('تجربه خود از طعم و پخت %s را بنویسید...', 'bakery-widgets'),
+            'submitLabel' => __('ثبت امتیاز', 'bakery-widgets'),
+            /* translators: 1: current item number, 2: total items in this order */
+            'counter' => __('محصول %1$s از %2$s', 'bakery-widgets'),
+            'ratingRequired' => __('لطفاً یک امتیاز انتخاب کنید.', 'bakery-widgets'),
+            'genericError' => __('ثبت نظر ممکن نشد. دوباره تلاش کنید.', 'bakery-widgets'),
+        ]);
     }
 
     /**
@@ -159,5 +346,8 @@ final class Plugin
         wp_enqueue_script('bakery-header');
         wp_enqueue_script('bakery-login');
         wp_enqueue_script('bakery-terms-modal');
+        wp_enqueue_script('bakery-add-to-cart');
+        wp_enqueue_script('bakery-cart-sidebar');
+        wp_enqueue_script('bakery-order-history');
     }
 }

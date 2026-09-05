@@ -184,12 +184,12 @@ final class Header extends Widget_Base
             'fields' => $repeater->get_controls(),
             'default' => [
                 [
-                    'label' => __('خانه', 'bakery-widgets'),
+                    'label' => __('صفحه اصلی', 'bakery-widgets'),
                     'url' => ['url' => home_url('/')],
                     'icon' => ['url' => BAKERY_WIDGETS_URL . 'assets/icons/home.svg'],
                 ],
                 [
-                    'label' => __('سفارشات قبلی', 'bakery-widgets'),
+                    'label' => __('سفارشات من', 'bakery-widgets'),
                     'url' => ['url' => ''],
                     'icon' => ['url' => BAKERY_WIDGETS_URL . 'assets/icons/calendar.svg'],
                 ],
@@ -494,7 +494,7 @@ final class Header extends Widget_Base
             'separator' => 'before',
         ]);
 
-        $this->register_icon_button_style_controls('panel_close', '.bkw-header__close', 16, 10);
+        $this->register_icon_button_style_controls('panel_close', '.bkw-header__close', 16, 12);
 
         $this->add_control('heading_panel_user_card', [
             'label' => __('کارت کاربر', 'bakery-widgets'),
@@ -506,7 +506,7 @@ final class Header extends Widget_Base
             'name' => 'panel_user_card_background',
             'types' => ['classic'],
             'selector' => '{{WRAPPER}} .bkw-header__user-card',
-            'fields_options' => ['color' => ['default' => '#ffffff']],
+            'fields_options' => ['background' => ['default' => 'classic'], 'color' => ['default' => '#ffffff']],
         ]);
 
         $this->add_group_control(Group_Control_Border::get_type(), [
@@ -530,12 +530,36 @@ final class Header extends Widget_Base
             ],
         ]);
 
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'panel_user_name_typography',
+            'label' => __('تایپوگرافی نام', 'bakery-widgets'),
+            'selector' => '{{WRAPPER}} .bkw-header__user-card-name',
+            'fields_options' => [
+                'typography' => ['default' => 'custom'],
+
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 14]],
+                'font_weight' => ['default' => '800'],
+            ],
+        ]);
+
         $this->add_control('panel_user_name_color', [
             'label' => __('رنگ نام', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
             'default' => '#2a1e17',
             'selectors' => [
                 '{{WRAPPER}} .bkw-header__user-card-name' => 'color: {{VALUE}};',
+            ],
+        ]);
+
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'panel_user_balance_typography',
+            'label' => __('تایپوگرافی موجودی', 'bakery-widgets'),
+            'selector' => '{{WRAPPER}} .bkw-header__user-card-balance',
+            'fields_options' => [
+                'typography' => ['default' => 'custom'],
+
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 11]],
+                'font_weight' => ['default' => '600'],
             ],
         ]);
 
@@ -578,7 +602,7 @@ final class Header extends Widget_Base
             'name' => $prefix . '_background',
             'types' => ['classic'],
             'selector' => $selector,
-            'fields_options' => ['color' => ['default' => '#ffffff']],
+            'fields_options' => ['background' => ['default' => 'classic'], 'color' => ['default' => '#ffffff']],
         ]);
 
         $this->add_group_control(Group_Control_Border::get_type(), [
@@ -643,6 +667,26 @@ final class Header extends Widget_Base
             ],
         ]);
 
+        /*
+         * ضخامت قلم عمداً از این گروه بیرون است.
+         *
+         * ردیف فعال و غیرفعال دو ضخامت متفاوت دارند (۸۰۰ و ۶۰۰) و آن
+         * را کنترل‌های هر حالت می‌نویسند. اگر این‌جا هم ضخامت داشت،
+         * چون کنترل‌های حالت بعد از این ثبت می‌شوند و هم‌وزن‌اند،
+         * مقداری که ادمین این‌جا می‌گذاشت بی‌اثر می‌ماند — کنترلی که
+         * کار نمی‌کند از نبودنش بدتر است.
+         */
+        $this->add_group_control(Group_Control_Typography::get_type(), [
+            'name' => 'nav_item_typography',
+            'label' => __('تایپوگرافی برچسب', 'bakery-widgets'),
+            'selector' => '{{WRAPPER}} .bkw-header__nav-label',
+            'exclude' => ['font_weight'],
+            'fields_options' => [
+                'typography' => ['default' => 'custom'],
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 15]],
+            ],
+        ]);
+
         $this->add_control('nav_item_chevron_color', [
             'label' => __('رنگ فلش', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
@@ -680,7 +724,10 @@ final class Header extends Widget_Base
             'name' => $prefix . '_background',
             'types' => ['classic'],
             'selector' => $row_selector,
-            'fields_options' => ['color' => ['default' => '' === $suffix ? 'transparent' : '#f3ece3']],
+            'fields_options' => [
+                'background' => ['default' => 'classic'],
+                'color' => ['default' => '' === $suffix ? 'transparent' : '#f3ece3'],
+            ],
         ]);
 
         $this->add_group_control(Group_Control_Border::get_type(), [
@@ -703,7 +750,7 @@ final class Header extends Widget_Base
         ]);
 
         $this->add_control($prefix . '_label_color', [
-            'label' => __('رنگ برچسب', 'bakery-widgets'),
+            'label' => __('رنگ و ضخامت برچسب', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
             'default' => $label_color,
             'selectors' => ["{$row_selector} .bkw-header__nav-label" => 'color: {{VALUE}}; font-weight: ' . $label_weight . ';'],
@@ -741,14 +788,29 @@ final class Header extends Widget_Base
         $this->add_group_control(Group_Control_Typography::get_type(), [
             'name' => 'panel_logout_typography',
             'selector' => $selector,
+            'fields_options' => [
+                'typography' => ['default' => 'custom'],
+
+                'font_size' => ['default' => ['unit' => 'px', 'size' => 14]],
+                'font_weight' => ['default' => '800'],
+            ],
         ]);
 
         $this->add_control('panel_logout_color', [
-            'label' => __('رنگ متن و حاشیه', 'bakery-widgets'),
+            'label' => __('رنگ متن، حاشیه و آیکون', 'bakery-widgets'),
             'type' => Controls_Manager::COLOR,
             'default' => '#a8261a',
             'selectors' => [
                 $selector => 'color: {{VALUE}}; border-color: {{VALUE}};',
+                /*
+                 * آیکون هم از همین یک رنگ می‌آید و کنترل جدا ندارد.
+                 *
+                 * فایل SVG رنگ خودش را دارد (#2a1e17) و بدون این خط،
+                 * آیکون تیره می‌ماند کنار متن و حاشیهٔ قرمز — همان چیزی
+                 * که در خروجی دیده شد. طرح هم برای هر سه یک رنگ می‌دهد،
+                 * پس یک کنترل برای یک مفهوم بصری کافی‌ست.
+                 */
+                "{$selector} svg [stroke]:not([stroke=\"none\"])" => 'stroke: {{VALUE}};',
             ],
         ]);
 
@@ -989,14 +1051,26 @@ final class Header extends Widget_Base
         printf('<p class="bkw-header__user-card-name">%s</p>', esc_html($name));
 
         if ('yes' === ($settings['show_balance'] ?? 'yes')) {
-            $amount = $this->format_balance($settings, $user);
-            $balance_text = trim(sprintf(
-                '%s %s %s',
-                (string) $settings['balance_label'],
-                $amount,
-                (string) $settings['balance_currency'],
-            ));
-            printf('<p class="bkw-header__user-card-balance">%s</p>', esc_html($balance_text));
+            /*
+             * سه تکه جدا و نه یک رشتهٔ ساخته‌شده.
+             *
+             * format_balance() مارک‌آپ برمی‌گرداند، نه متن: عدد داخل
+             * <span data-bkw-account-balance> می‌نشیند تا فرگمنتِ بعد
+             * از ثبت سفارش هدفش بگیرد. قبلاً هر سه با هم به esc_html
+             * داده می‌شدند و نتیجه‌اش این بود که خودِ تگ به‌صورت متن روی
+             * صفحه چاپ می‌شد — و مهم‌تر، چون دیگر عنصری با آن
+             * data-attribute وجود نداشت، موجودیِ این کارت بعد از خرید
+             * هیچ‌وقت به‌روز نمی‌شد.
+             *
+             * برچسب و واحد از کنترل‌های المنتور می‌آیند و ورودی‌اند، پس
+             * همچنان escape می‌شوند؛ فقط خودِ عدد از آن رد می‌شود.
+             */
+            printf(
+                '<p class="bkw-header__user-card-balance">%s %s %s</p>',
+                esc_html(trim((string) $settings['balance_label'])),
+                $this->format_balance($settings, $user), // phpcs:ignore WordPress.Security.EscapeOutput -- Account_Balance::fragment_html خودش escape می‌کند
+                esc_html(trim((string) $settings['balance_currency']))
+            );
         }
 
         echo '</div>';

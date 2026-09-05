@@ -13,26 +13,62 @@
  * شروع می‌شود — assets/js/bakery-login.js آن را نمایان می‌کند — و بعد
  * از تأیید به همان آدرس ریدایرکت می‌کند.
  *
- * فقط در همین حالت دوم، تأیید همچنین کوکی دسترسی سایت
- * (Bakery_Widgets\Site_Gate::COOKIE_NAME) را ست می‌کند — همان کوکی‌ای
- * که دروازهٔ سمت PHP (includes/bakery/site-gate.php) روی هر صفحهٔ دیگر
- * سایت چک می‌کند.
+ * در حالت دوم، تأیید دو اکشن پشت سر هم می‌زند:
+ *
+ *   ۱) bkw_login_terms — لحظهٔ پذیرش را روی خودِ کاربر ثبت می‌کند
+ *      (تاریخ و ساعت، یک بار برای همیشه). بدون این، ورود در گام بعدی
+ *      رد می‌شود؛ یعنی پذیرفتن قوانین یک واقعیتِ ثبت‌شده در دیتابیس
+ *      است و نه فقط مخفی‌شدن یک مودال در مرورگر.
+ *   ۲) bkw_login_complete — همان لحظه‌ای که نشست واقعی وردپرس ساخته
+ *      می‌شود.
+ *
+ * چیزی که به هر دو فرستاده می‌شود «بلیت» است، نه شمارهٔ موبایل: کد
+ * تأیید پیش از باز شدن این مودال سنجیده و مصرف شده و سرور به‌جایش یک
+ * بلیت یک‌بارمصرف ده‌دقیقه‌ای داده است. assets/js/bakery-login.js آن را
+ * روی data-bkw-login-ticket ریشهٔ ویجت گذاشته و همین‌جا خوانده می‌شود.
+ * یعنی این مودال هیچ‌وقت خودش تصمیم نمی‌گیرد چه کسی وارد شود — فقط
+ * بلیتی را خرج می‌کند که سرور قبلاً صادر کرده.
+ *
+ * localStorage دیگر تصمیم نمی‌گیرد این مودال باز شود یا نه؛ آن را
+ * سرور در پاسخ bkw_login_verify می‌گوید. برای مصرف مستقل (بدون
+ * data-redirect-url) که کاربرِ شناخته‌شده‌ای در کار نیست، همچنان
+ * localStorage تنها حافظهٔ موجود است.
  */
 (function () {
     'use strict';
 
-    var SITE_ACCESS_COOKIE = 'bkw_site_access';
-    var SITE_ACCESS_MAX_AGE = 60 * 60 * 24 * 365; // یک سال
-
-    function grantSiteAccess() {
-        try {
-            var secure = 'https:' === window.location.protocol ? '; Secure' : '';
-            document.cookie = SITE_ACCESS_COOKIE + '=1; path=/; max-age=' + SITE_ACCESS_MAX_AGE + '; SameSite=Lax' + secure;
-        } catch (e) {
-            // اگر کوکی به هر دلیلی قابل نوشتن نباشد، ریدایرکت همچنان انجام
-            // می‌شود؛ فقط دفعهٔ بعد دوباره به صفحهٔ ورود هدایت می‌شود —
-            // مسدودکننده نیست.
+    /**
+     * window.bkwLogin روی اسکریپت bakery-login لوکالایز شده (رجوع کن به
+     * Plugin::register_scripts())؛ چون این مودال فقط زمانی
+     * data-redirect-url دارد که تعبیه‌شدهٔ همان ویجت Login باشد، آن
+     * اسکریپت همیشه هم‌زمان در صفحه لود شده و window.bkwLogin موجود است.
+     */
+    function callLoginAjax(action, ticket, onDone) {
+        if (!window.bkwLogin || !window.bkwLogin.ajaxUrl) {
+            onDone(false);
+            return;
         }
+
+        var body = new URLSearchParams();
+        body.set('action', action);
+        body.set('nonce', window.bkwLogin.nonce);
+        body.set('ticket', ticket);
+
+        fetch(window.bkwLogin.ajaxUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString(),
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (json) {
+                onDone(Boolean(json && json.success));
+            })
+            .catch(function () {
+                onDone(false);
+            });
     }
 
     function setupModal(overlay) {
@@ -70,27 +106,72 @@
                 return;
             }
 
-            try {
-                window.localStorage.setItem(storageKey, 'accepted');
-            } catch (e) {
-                // localStorage ممکن است در حالت خصوصی/مرورگر محدودشده در
-                // دسترس نباشد؛ در این صورت فقط حافظهٔ «قبلاً پذیرفته» کار
-                // نمی‌کند و کاربر دفعهٔ بعد دوباره می‌بیند — مسدودکننده نیست.
-            }
-
             // فقط زمانی تنظیم می‌شود که این مودال در ویجت Login تعبیه شده
             // باشد (رجوع کن به Terms_Modal_Controls::render_terms_modal)؛
             // مصرف مستقل چنین ویژگی‌ای ندارد و به‌جایش فقط پرده را می‌بندد.
             var redirectUrl = overlay.getAttribute('data-redirect-url');
             if (redirectUrl) {
-                grantSiteAccess();
-                window.location.href = redirectUrl;
+                var loginRoot = overlay.closest('.bkw-login');
+                var ticket = loginRoot ? loginRoot.getAttribute('data-bkw-login-ticket') || '' : '';
+
+                acceptBtn.disabled = true;
+
+                // ثبت پذیرش، بعد ورود. ترتیبشان مهم است: اکشن دوم بدون
+                // پذیرشِ ثبت‌شده رد می‌کند.
+                callLoginAjax('bkw_login_terms', ticket, function (recorded) {
+                    if (!recorded) {
+                        failed();
+                        return;
+                    }
+
+                    callLoginAjax('bkw_login_complete', ticket, function (ok) {
+                        if (ok) {
+                            window.location.href = redirectUrl;
+                            return;
+                        }
+
+                        failed();
+                    });
+                });
+
                 return;
+            }
+
+            // مصرف مستقل: کاربر شناخته‌شده‌ای در کار نیست که پذیرشش را
+            // روی حسابش ثبت کنیم، پس localStorage تنها حافظهٔ موجود
+            // است. در مسیر ورود بالا، این کار را سرور کرده و رسیدن به
+            // اینجا اصلاً ممکن نیست.
+            try {
+                window.localStorage.setItem(storageKey, 'accepted');
+            } catch (e) {
+                // در حالت خصوصی/مرورگر محدودشده در دسترس نیست؛ فقط
+                // حافظهٔ «قبلاً پذیرفته» کار نمی‌کند و کاربر دفعهٔ بعد
+                // دوباره می‌بیند — مسدودکننده نیست.
             }
 
             overlay.style.display = 'none';
             document.documentElement.classList.remove('bkw-panel-open');
         });
+
+        /**
+         * یا بلیت منقضی شده (کاربر مودال را خیلی طولانی باز گذاشته) یا
+         * حساب بین سنجش کد و همین لحظه پاک شده. مودال بسته می‌شود و
+         * کاربر در همان صفحهٔ ورود با پیام خطا می‌ماند تا از ابتدا تلاش
+         * کند — به‌جای ریدایرکتی که دوباره قفلش می‌کند.
+         */
+        function failed() {
+            var loginRoot = overlay.closest('.bkw-login');
+
+            acceptBtn.disabled = false;
+            overlay.hidden = true;
+            overlay.style.display = 'none';
+            document.documentElement.classList.remove('bkw-panel-open');
+
+            var fieldError = loginRoot ? loginRoot.querySelector('[data-bkw-login-error]') : null;
+            if (fieldError) {
+                fieldError.hidden = false;
+            }
+        }
     }
 
     function init() {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakery_Widgets\Widgets\Traits;
 
+use Bakery_Widgets\Account_Balance;
 use Bakery_Widgets\Svg;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Background;
@@ -356,6 +357,30 @@ trait Account_Actions_Controls
         $this->start_controls_section('section_style_box', [
             'label' => __('کادر پیل‌ها', 'bakery-widgets'),
             'tab' => Controls_Manager::TAB_STYLE,
+        ]);
+
+        /*
+         * ارتفاع ثابت و مشترک هر سه پیل.
+         *
+         * بدون این، ارتفاع هر پیل را محتوای خودش تعیین می‌کرد: پیل سبد
+         * خرید یک آیکون ۲۴ پیکسلی دارد و پیل کاربر یک سطر متن، پس با
+         * پدینگ یکسان هم دو ارتفاع متفاوت درمی‌آمدند و ردیف ناهموار
+         * می‌شد. با یک عدد این‌جا، هر سه دقیقاً هم‌اندازه می‌شوند و
+         * پدینگ عمودی دیگر ارتفاع را تعیین نمی‌کند (کادر border-box
+         * است) بلکه فقط فضای دور محتوا را نگه می‌دارد.
+         *
+         * خالی گذاشتنش یعنی برگشت به رفتار قبلی: ارتفاعِ خودکارِ هر پیل.
+         */
+        $this->add_responsive_control('item_height', [
+            'label' => __('ارتفاع پیل‌ها', 'bakery-widgets'),
+            'type' => Controls_Manager::SLIDER,
+            'size_units' => ['px', 'em'],
+            'range' => ['px' => ['min' => 0, 'max' => 120]],
+            'default' => ['size' => 44, 'unit' => 'px'],
+            'mobile_default' => ['size' => 40, 'unit' => 'px'],
+            'selectors' => [
+                '{{WRAPPER}} .bkw-account-bar__item' => 'height: {{SIZE}}{{UNIT}};',
+            ],
         ]);
 
         $this->add_responsive_control('item_padding', [
@@ -829,7 +854,8 @@ trait Account_Actions_Controls
     }
 
     /**
-     * موجودی هنوز به منبع واقعی وصل نیست؛ `$fallback` (از تب محتوا) از
+     * `$fallback` (از تب محتوا) فقط وقتی استفاده می‌شود که ماژول اعتبار
+     * ماهانه فعال نباشد؛ در غیر این صورت فیلتر عدد واقعی را برمی‌گرداند. از
      * این فیلتر عبور می‌کند تا وقتی منبع واقعی مشخص شد، بدون تغییر این
      * ویجت فقط با یک `add_filter()` جایگزین شود.
      */
@@ -900,8 +926,9 @@ trait Account_Actions_Controls
         }
 
         $show_badge = 'yes' === ($settings['show_cart_badge'] ?? 'yes');
+        $show_zero = 'yes' === ($settings['cart_badge_show_zero'] ?? 'no');
         $count = $this->cart_count();
-        $render_badge = $show_badge && ($count > 0 || 'yes' === $settings['cart_badge_show_zero']);
+        $hidden = 0 === $count && !$show_zero;
 
         printf('<%1$s %2$s>', esc_html($tag), $this->get_render_attribute_string('cart')); // phpcs:ignore WordPress.Security.EscapeOutput -- render attributes are Elementor-escaped
 
@@ -912,8 +939,21 @@ trait Account_Actions_Controls
         $this->render_icon_field($settings['cart_icon'] ?? []);
         echo '</span>';
 
-        if ($render_badge) {
-            printf('<span class="bkw-account-bar__badge">%s</span>', esc_html($this->to_persian_digits((string) $count)));
+        /*
+         * حتی وقتی تعداد صفر است و باید مخفی بماند، بج هنوز در DOM هست
+         * (فقط با display:none) — نه غایب کامل — چون bakery-add-to-cart.js
+         * و bakery-cart-sidebar.js بعد از هر افزودن/کاهش AJAX همین
+         * data-bkw-cart-badge را پیدا و به‌روز می‌کنند؛ اگر عنصر اصلاً
+         * وجود نداشت، اولین افزودن به سبد بدون رفرش صفحه نمی‌توانست
+         * جایی برای نمایش شمارنده بسازد.
+         */
+        if ($show_badge) {
+            printf(
+                '<span class="bkw-account-bar__badge" data-bkw-cart-badge data-show-zero="%s"%s>%s</span>',
+                $show_zero ? '1' : '0',
+                $hidden ? ' style="display:none;"' : '',
+                esc_html($this->to_persian_digits((string) $count))
+            );
         }
 
         printf('</%s>', esc_html($tag));
@@ -944,7 +984,7 @@ trait Account_Actions_Controls
 
             echo '<span class="bkw-account-bar__balance">';
             printf('<span class="bkw-account-bar__balance-label">%s</span>', esc_html((string) $settings['balance_label']));
-            printf('<span class="bkw-account-bar__balance-amount">%s</span>', esc_html($amount));
+            printf('<span class="bkw-account-bar__balance-amount">%s</span>', $amount); // phpcs:ignore WordPress.Security.EscapeOutput -- Account_Balance::fragment_html خودش escape می‌کند
             printf('<span class="bkw-account-bar__balance-currency">%s</span>', esc_html((string) $settings['balance_currency']));
             echo '</span>';
         }
@@ -961,27 +1001,36 @@ trait Account_Actions_Controls
      */
     private function render_user_item_compact(array $settings, WP_User $user, string $name): void
     {
-        $amount = $this->format_balance($settings, $user);
-        $balance_text = trim(sprintf(
-            '%s %s %s',
-            (string) $settings['balance_label'],
-            $amount,
-            (string) $settings['balance_currency'],
-        ));
-
         $greeting = trim($name . ' ' . (string) $settings['greeting_suffix']);
 
         echo '<div class="bkw-account-bar__item bkw-account-bar__user bkw-account-bar__user--compact">';
         printf('<span class="bkw-account-bar__greeting">%s</span>', esc_html($greeting));
-        printf('<span class="bkw-account-bar__balance-compact">%s</span>', esc_html($balance_text));
+
+        // برخلاف حالت کامل، این‌جا کل رشته یک متن است؛ ولی عدد باید
+        // عنصر جدای خودش بماند وگرنه فرگمنتِ بعد از خرید نمی‌تواند
+        // فقط همان را عوض کند و ناچار است کل رشته (شامل برچسب و واحد
+        // پول که از تنظیمات ویجت می‌آیند) را بازسازی کند.
+        printf(
+            '<span class="bkw-account-bar__balance-compact">%s %s %s</span>',
+            esc_html((string) $settings['balance_label']),
+            $this->format_balance($settings, $user), // phpcs:ignore WordPress.Security.EscapeOutput -- Account_Balance::fragment_html خودش escape می‌کند
+            esc_html((string) $settings['balance_currency'])
+        );
+
         echo '</div>';
     }
 
+    /**
+     * عدد موجودی، داخل عنصری که فرگمنتِ بعد از ثبت سفارش هدفش می‌گیرد.
+     *
+     * قالب‌بندی عمداً این‌جا انجام نمی‌شود بلکه از Account_Balance
+     * می‌آید — همان جایی که Cart_Fragments هم از آن می‌خواند. دو
+     * قالب‌بندی جدا یعنی عددی که بعد از خرید جای عدد قبلی می‌نشیند
+     * می‌تواند شکل دیگری داشته باشد.
+     */
     private function format_balance(array $settings, WP_User $user): string
     {
-        $balance = $this->resolve_balance((float) $settings['balance_fallback'], $user->ID);
-
-        return $this->to_persian_digits(number_format($balance, 0, '.', ','));
+        return Account_Balance::fragment_html((int) $user->ID, (float) $settings['balance_fallback']);
     }
 
     private function render_logout_item(array $settings): void
