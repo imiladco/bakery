@@ -188,8 +188,8 @@
                     if (response && response.success && response.data) {
                         applyFragments(response.data);
 
-                        if (response.data.insufficient_credit && window.bkwToast) {
-                            window.bkwToast.insufficientCredit();
+                        if (response.data.blocked_reason && window.bkwToast) {
+                            window.bkwToast.forReason(response.data.blocked_reason);
                         }
                     }
                 })
@@ -337,8 +337,19 @@
                     showError(errorBox, response && response.data && response.data.message);
 
                     var code = response && response.data && response.data.code;
+
                     if ('insufficient_credit' === code && window.bkwToast) {
                         window.bkwToast.insufficientCredit();
+                    } else if ('insufficient_stock' === code) {
+                        // ووکامرس ممکن است همین‌جا خودش ردیفِ سبد را به
+                        // مقدارِ واقعیِ موجود اصلاح/حذف کرده باشد (رجوع
+                        // کن به DirectCheckout::handle) — سایدبار باید
+                        // همان لحظه آن را ببیند، نه مقدارِ قدیمی را.
+                        applyFragments(response.data);
+
+                        if (window.bkwToast) {
+                            window.bkwToast.soldOutToday();
+                        }
                     }
 
                     return;

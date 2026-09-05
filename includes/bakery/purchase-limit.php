@@ -31,8 +31,19 @@ final class Purchase_Limit
 {
     public static function for_product(WC_Product $product): int
     {
-        $max = (int) $product->get_max_purchase_quantity();
+        return (int) apply_filters('bkw_max_purchase_quantity', self::stock_only($product), $product);
+    }
 
-        return (int) apply_filters('bkw_max_purchase_quantity', $max, $product);
+    /**
+     * سقفِ خامِ ووکامرس، پیش از هر فیلتری (یعنی «امروز چقدر ظرفیت
+     * داریم» — موجودی انبار/بک‌آردر) — بدون کسر اعتبار روی آن.
+     *
+     * Cart_Ajax از این استفاده می‌کند تا وقتی سبد را برش می‌دهد بفهمد
+     * علتش خودِ ظرفیت بوده، نه سقف دیگری که فیلترها اضافه کرده‌اند
+     * (مثل اعتبار) — و پیام درست («امروز پر شده») را نشان دهد.
+     */
+    public static function stock_only(WC_Product $product): int
+    {
+        return (int) $product->get_max_purchase_quantity();
     }
 }

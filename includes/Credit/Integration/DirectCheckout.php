@@ -73,9 +73,21 @@ final class DirectCheckout
         // اعتبارسنجی خودِ ووکامرس روی اقلام سبد (موجودی انبار، محصول
         // حذف‌شده یا غیرقابل‌خرید). بدون این، سفارشی ساخته می‌شد که
         // ووکامرس خودش هرگز اجازهٔ ثبتش را نمی‌داد.
+        //
+        // چرا این‌جا مهم‌تر از افزودن به سبد است: تا وقتی کاربر چیزی را
+        // «به سبد اضافه» می‌کند چیزی قطعی نشده — ووکامرس با افزودن به
+        // سبد موجودی را کم نمی‌کند، فقط موقع ثبت سفارش. یعنی دو کاربر
+        // می‌توانند هم‌زمان آخرین نان باقی‌مانده را در سبدشان داشته
+        // باشند؛ هر کدام زودتر همین‌جا برسد آن را می‌گیرد، و آن یکی که
+        // دیرتر رسید دقیقاً همین بلوک را می‌بیند: سفارشش ثبت نمی‌شود،
+        // ردیفِ سبدش به مقدار واقعی موجود اصلاح/حذف می‌شود (رفتار
+        // پیش‌فرض خودِ check_cart_item_stock)، و فرگمنت‌های تازه برایش
+        // فرستاده می‌شود تا سایدبار او هم بلافاصله همان اصلاح را نشان
+        // دهد — نه اینکه با یک سبدِ حالا-غیرواقعی بماند و دوباره امتحان
+        // کند تا بفهمد.
         $stock = WC()->cart->check_cart_item_stock();
         if (is_wp_error($stock)) {
-            $this->fail((string) $stock->get_error_message());
+            $this->fail((string) $stock->get_error_message(), 'insufficient_stock', true);
         }
 
         $order = $this->create_order();
@@ -188,18 +200,30 @@ final class DirectCheckout
     }
 
     /**
-     * @param string $code شناسهٔ ماشین‌خوانِ اختیاریِ علتِ خطا — فقط
-     *        'insufficient_credit' معنا دارد؛ جاوااسکریپت با دیدنش،
-     *        علاوه بر پیامِ داخل مودال، توست «موجودی کافی نیست» را هم
+     * @param string $code شناسهٔ ماشین‌خوانِ اختیاریِ علتِ خطا —
+     *        'insufficient_credit' یا 'insufficient_stock؛ جاوااسکریپت
+     *        با دیدنش، علاوه بر پیامِ داخل مودال، توستِ متناظر را هم
      *        نشان می‌دهد (رجوع کن به bakery-toast.js).
+     * @param bool $withCartState فقط برای 'insufficient_stock' لازم
+     *        است: check_cart_item_stock() ممکن است خودِ ووکامرس مقدارِ
+     *        ردیف سبد را از قبل اصلاح/حذف کرده باشد، پس فرگمنت‌های تازه
+     *        هم می‌فرستیم تا سایدبارِ باز، به‌جای ماندن با عددِ قدیمی،
+     *        همان لحظه اصلاح را ببیند.
      *
      * @return never
      */
-    private function fail(string $message, string $code = ''): void
+    private function fail(string $message, string $code = '', bool $withCartState = false): void
     {
         $data = ['message' => $message];
         if ('' !== $code) {
             $data['code'] = $code;
+        }
+
+        if ($withCartState && function_exists('WC') && WC()->cart) {
+            WC()->cart->calculate_totals();
+            $data['fragments'] = apply_filters('woocommerce_add_to_cart_fragments', []);
+            $data['cart_count'] = WC()->cart->get_cart_contents_count();
+            $data['cart_hash'] = WC()->cart->get_cart_hash();
         }
 
         wp_send_json_error($data);

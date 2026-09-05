@@ -63,23 +63,45 @@ final class Cart_Ajax
         $max = Purchase_Limit::for_product($product); // -1 یعنی نامحدود
         $current = $this->cart_quantity($product_id);
         $requested = $quantity;
-        $insufficient_credit = false;
+        $blocked_reason = '';
 
         if (-1 !== $max && ($current + $quantity) > $max) {
             $quantity = max(0, $max - $current);
-
-            // چرا از اول این‌جا برش نمی‌خورد: علتِ برش می‌تواند موجودی
-            // انبار باشد، نه اعتبار — و پیام «موجودی کافی نیست» فقط
-            // برای دومی درست است. رجوع کن به یادداشت PurchaseLimit.
-            $creditCap = (int) apply_filters('bkw_credit_affordable_units', -1, $product);
-            $insufficient_credit = -1 !== $creditCap && ($current + $requested) > $creditCap;
+            $blocked_reason = $this->truncation_reason($product, $current, $requested);
         }
 
         if ($quantity > 0 && !WC()->cart->add_to_cart($product_id, $quantity)) {
             wp_send_json_error(['message' => __('افزودن به سبد ممکن نشد.', 'bakery-widgets')], 400);
         }
 
-        $this->send_state($product_id, $insufficient_credit);
+        $this->send_state($product_id, $blocked_reason);
+    }
+
+    /**
+     * چرا سرور تعداد درخواستی را کامل اضافه نکرد — برشِ سقفِ ترکیبیِ
+     * Purchase_Limit می‌تواند از دو جای کاملاً متفاوت آمده باشد و پیامِ
+     * درست برای کاربر به همین بستگی دارد:
+     *   - «stock»: ظرفیتِ خودِ محصول (امروز) ته کشیده — حتی با اعتبار
+     *     نامحدود هم نمی‌شد بیشتر گرفت.
+     *   - «credit»: ظرفیت هست، ولی اعتبار ماهیانهٔ کاربر کفاف نمی‌دهد.
+     * اگر هر دو هم‌زمان صادق باشند (نادر)، ظرفیت اولویت دارد: محدودیتِ
+     * فیزیکی‌تر است و صرف‌نظر از اعتبار همچنان صادق می‌ماند.
+     *
+     * @return 'stock'|'credit'|''
+     */
+    private function truncation_reason(WC_Product $product, int $current, int $requested): string
+    {
+        $stockMax = Purchase_Limit::stock_only($product);
+        if (-1 !== $stockMax && ($current + $requested) > $stockMax) {
+            return 'stock';
+        }
+
+        $creditCap = (int) apply_filters('bkw_credit_affordable_units', -1, $product);
+        if (-1 !== $creditCap && ($current + $requested) > $creditCap) {
+            return 'credit';
+        }
+
+        return '';
     }
 
     /** تنظیم مقدار مطلق (برای دکمهٔ کاهش) — صفر یعنی حذف کامل از سبد */
@@ -150,7 +172,7 @@ final class Cart_Ajax
     }
 
     /** پاسخ یکسان برای هر دو اکشن: تعداد نهایی، حداکثر مجاز و فرگمنت‌های ووکامرس */
-    private function send_state(int $product_id, bool $insufficient_credit = false): void
+    private function send_state(int $product_id, string $blocked_reason = ''): void
     {
         WC()->cart->calculate_totals();
 
@@ -160,10 +182,10 @@ final class Cart_Ajax
         wp_send_json_success([
             'qty' => $this->cart_quantity($product_id),
             'max' => $max,
-            // فقط وقتی true است که برشِ تعداد درخواستی به‌خاطر اعتبار
-            // بوده — جاوااسکریپت با دیدنش توست «موجودی کافی نیست» را
-            // نشان می‌دهد (رجوع کن به bakery-toast.js).
-            'insufficient_credit' => $insufficient_credit,
+            // خالی یعنی برشی رخ نداده؛ در غیر این صورت 'stock' یا
+            // 'credit' — جاوااسکریپت با دیدنش توستِ متناظر را نشان
+            // می‌دهد (رجوع کن به bakery-toast.js).
+            'blocked_reason' => $blocked_reason,
             // شمارندهٔ بج سبد در هدر/نوار حساب کاربری (Traits\Account_Actions_Controls)
             // از همین مقدار زنده می‌ماند؛ بدون آن، آن بج فقط با رفرش صفحه به‌روز می‌شد.
             'cart_count' => WC()->cart->get_cart_contents_count(),

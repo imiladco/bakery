@@ -223,6 +223,8 @@ final class Plugin
         wp_localize_script('bakery-toast', 'bkwToastStrings', [
             'insufficientCreditTitle' => __('موجودی کافی نیست', 'bakery-widgets'),
             'insufficientCreditText' => __('موجودی کیف پول شما برای ثبت این سفارش کافی نمی‌باشد.', 'bakery-widgets'),
+            'soldOutTodayTitle' => __('این محصول برای امروز پر شده است', 'bakery-widgets'),
+            'soldOutTodayText' => __('متأسفانه ظرفیت این محصول برای امروز تکمیل شده است.', 'bakery-widgets'),
         ]);
 
         wp_register_script(

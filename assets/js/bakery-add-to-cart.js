@@ -149,8 +149,8 @@
         callAjax(root, 'bkw_add_to_cart', { product_id: productId, quantity: 1 }, function (payload) {
             renderQty(root, payload.qty, payload.max);
 
-            if (payload.insufficient_credit && window.bkwToast) {
-                window.bkwToast.insufficientCredit();
+            if (payload.blocked_reason && window.bkwToast) {
+                window.bkwToast.forReason(payload.blocked_reason);
             }
 
             // یک CustomEvent بومی — نه jQuery.trigger — پس یک شنوندهٔ jQuery

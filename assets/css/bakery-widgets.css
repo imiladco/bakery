@@ -2384,7 +2384,10 @@ html.bkw-panel-open {
 }
 
 /*
- * توست سراسری «موجودی کافی نیست» (assets/js/bakery-toast.js).
+ * توست سراسری صفحه (assets/js/bakery-toast.js) — دو نوع:
+ *   --error   قرمز، «موجودی کافی نیست» (اعتبار ماهانه کم آورده)
+ *   --warning نارنجی، «این محصول برای امروز پر شده است» (ظرفیت محصول
+ *             تمام شده، ربطی به اعتبار کاربر ندارد)
  *
  * به هیچ ویجتی تعلق ندارد — مستقیم زیر body ساخته می‌شود، نه داخل
  * رپر یک ویجت خاص — پس بر خلاف بقیهٔ این فایل رنگ و تایپوگرافی‌اش هم
@@ -2395,6 +2398,12 @@ html.bkw-panel-open {
  * موقعیت با مقادیر فیزیکی (right/left/bottom/top) نوشته شده، نه
  * inset-inline-*: خواستهٔ دقیق «پایین راستِ نمایشگر» است، صرف‌نظر از
  * جهت متن سند میزبان.
+ *
+ * row-reverse (نه direction:rtl + row): آیکون همیشه اولین فرزند DOM
+ * است (بی‌ربط به این‌که کدام نوع نشان داده می‌شود)، و row-reverse آن
+ * را در جهتِ سندِ rtl سایت به سمتِ راست می‌فرستد — دقیقاً چیدمانی که
+ * رفرنس هر دو نوع می‌خواهد: آیکون راست، متن (که خودش هم راست‌چین است)
+ * می‌ماند و فضای باقی‌مانده را پر می‌کند.
  */
 .bkw-toast {
 	--bkw-toast-gap: 24px;
@@ -2409,15 +2418,12 @@ html.bkw-panel-open {
 	box-sizing: border-box;
 	direction: rtl;
 	display: flex;
-	align-items: center;
+	flex-direction: row-reverse;
+	align-items: flex-start;
 	justify-content: flex-start;
-	gap: 12px;
-	padding: 16px;
 	background: #fcf9f5;
-	border-radius: 16px;
 	outline: 1px solid #eaded6;
 	outline-offset: -1px;
-	box-shadow: 0 16px 32px rgba(35, 25, 18, 0.15);
 	opacity: 0;
 	transform: translateY(16px);
 	transition: opacity 240ms ease, transform 240ms ease;
@@ -2430,41 +2436,83 @@ html.bkw-panel-open {
 	pointer-events: auto;
 }
 
+.bkw-toast--error {
+	gap: 12px;
+	padding: 16px;
+	border-radius: 16px;
+	box-shadow: 0 16px 32px rgba(35, 25, 18, 0.15);
+}
+
+.bkw-toast--warning {
+	gap: 16px;
+	padding: 16px 20px;
+	border-radius: 20px;
+	box-shadow: 0 12px 24px rgba(35, 25, 18, 0.12);
+}
+
 .bkw-toast__text {
 	flex: 1 1 0%;
 	min-width: 0;
 	display: flex;
 	flex-direction: column;
-	align-items: flex-end;
 	gap: 4px;
 }
 
-.bkw-toast__title {
-	color: #ba291e;
+.bkw-toast__title,
+.bkw-toast__desc {
+	text-align: right;
 	font-family: 'Vazirmatn', sans-serif;
-	font-size: 14px;
-	font-weight: 900;
 	word-wrap: break-word;
+}
+
+.bkw-toast__title {
+	font-weight: 900;
 }
 
 .bkw-toast__desc {
 	color: #231912;
-	font-family: 'Vazirmatn', sans-serif;
-	font-size: 12px;
 	font-weight: 500;
+}
+
+.bkw-toast--error .bkw-toast__title {
+	color: #ba291e;
+	font-size: 14px;
+}
+
+.bkw-toast--error .bkw-toast__desc {
+	font-size: 12px;
 	line-height: 16.8px;
-	word-wrap: break-word;
+}
+
+.bkw-toast--warning .bkw-toast__title {
+	color: #f97316;
+	font-size: 15px;
+	line-height: 21px;
+}
+
+.bkw-toast--warning .bkw-toast__desc {
+	font-size: 13px;
+	line-height: 19.5px;
 }
 
 .bkw-toast__icon {
 	flex: none;
-	width: 40px;
-	height: 40px;
 	border-radius: 50%;
-	background: #fdf2f0;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+}
+
+.bkw-toast--error .bkw-toast__icon {
+	width: 40px;
+	height: 40px;
+	background: #fdf2f0;
+}
+
+.bkw-toast--warning .bkw-toast__icon {
+	width: 48px;
+	height: 48px;
+	background: #ffedd5;
 }
 
 .bkw-toast__icon svg {
@@ -2473,17 +2521,15 @@ html.bkw-panel-open {
 }
 
 /*
- * موبایل: تمام‌عرض و چسبیده به بالا، نه پایین — رفرنس صریحاً همین را
- * می‌خواهد (نه صرفاً همان نسخهٔ دسکتاپ در اندازهٔ کوچک‌تر).
+ * موبایل: تمام‌عرض، با ۱۶ پیکسل فاصله از راست/چپ/پایین — همان لبه‌ای
+ * که دسکتاپ هم چسبیده (پایین)، نه بالا.
  */
 @media (max-width: 767px) {
 	.bkw-toast {
 		right: 16px;
 		left: 16px;
-		top: 16px;
-		bottom: auto;
+		bottom: 16px;
 		width: auto;
 		max-width: none;
-		transform: translateY(-16px);
 	}
 }
