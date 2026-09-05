@@ -45,17 +45,29 @@ final class MatrixWorkbookTest extends TestCase
     }
 
     /**
-     * ماه‌ها به ترتیب تاریخی و با سال.
+     * تازه‌ترین ماه اول می‌آید.
      *
-     * سال لازم است چون این جدول از مرز سال رد می‌شود و دو «شهریور»
-     * کنار هم بی‌معنا می‌شد.
+     * برگه راست‌به‌چپ باز می‌شود، پس ستون اول سمت راست می‌نشیند —
+     * یعنی جدیدترین ماه دقیقاً کنار ستون‌های هویت، همان‌جا که چشم اول
+     * نگاه می‌کند.
      */
-    public function test_one_column_per_month_in_chronological_order(): void
+    public function test_the_newest_month_comes_first(): void
     {
-        $columns = $this->workbook($this->source())->columns([self::SHAHRIVAR, self::MEHR, self::ABAN]);
+        $matrix = (new PeriodReport($this->source(), $this->source()))->matrix();
+
+        self::assertSame([self::ABAN, self::MEHR, self::SHAHRIVAR], $matrix['periods']);
+    }
+
+    /**
+     * سال در عنوان می‌آید، چون این جدول از مرز سال رد می‌شود و دو
+     * «شهریور» کنار هم بی‌معنا می‌شد.
+     */
+    public function test_each_month_column_is_named_with_its_year(): void
+    {
+        $columns = $this->workbook($this->source())->columns([self::ABAN, self::MEHR, self::SHAHRIVAR]);
 
         self::assertSame(
-            ['نام', 'شهریور ۱۴۰۵', 'مهر ۱۴۰۵', 'آبان ۱۴۰۵'],
+            ['نام', 'آبان ۱۴۰۵', 'مهر ۱۴۰۵', 'شهریور ۱۴۰۵'],
             array_map(static fn ($column): string => $column->label, $columns)
         );
     }
@@ -66,8 +78,9 @@ final class MatrixWorkbookTest extends TestCase
         $matrix = (new PeriodReport($this->source(), $this->source()))->matrix();
         $rows = $this->workbook($this->source(), [7 => ['علی'], 9 => ['مریم'], 5 => ['رضا']])->rows($matrix);
 
-        self::assertSame(['علی', '2000000', '1500000', '0'], $rows[0]);
-        self::assertSame(['مریم', '300000', '0', '900000'], $rows[1]);
+        // آبان، مهر، شهریور — تازه‌ترین اول.
+        self::assertSame(['علی', '0', '1500000', '2000000'], $rows[0]);
+        self::assertSame(['مریم', '900000', '0', '300000'], $rows[1]);
     }
 
     /**
@@ -81,7 +94,8 @@ final class MatrixWorkbookTest extends TestCase
         $matrix = (new PeriodReport($this->source(), $this->source()))->matrix();
         $rows = $this->workbook($this->source(), [7 => ['علی']])->rows($matrix);
 
-        self::assertSame('0', $rows[0][3]);
+        // علی در آبان — ستون اولِ ماه‌ها — سطری نداشته.
+        self::assertSame('0', $rows[0][1]);
     }
 
     /** کاربری که هیچ‌وقت خرج نکرده هم سطر دارد، همه‌اش صفر. */
@@ -105,7 +119,7 @@ final class MatrixWorkbookTest extends TestCase
     /** جز ماه‌ها ستون دیگری نیست: نه سقف، نه جمع. */
     public function test_the_overview_carries_nothing_but_the_months(): void
     {
-        $columns = $this->workbook($this->source())->columns([self::SHAHRIVAR, self::MEHR]);
+        $columns = $this->workbook($this->source())->columns([self::ABAN, self::MEHR]);
 
         self::assertCount(3, $columns);
         self::assertSame('bakery-credit-by-month.xlsx', $this->workbook($this->source())->filename('xlsx'));
@@ -118,6 +132,6 @@ final class MatrixWorkbookTest extends TestCase
         $rows = $this->workbook($this->source(), [9 => ['مریم'], 5 => ['رضا']])->rows($matrix);
 
         self::assertStringContainsString('حذف', $rows[0][0]);
-        self::assertSame('2000000', $rows[0][1]);
+        self::assertSame('2000000', $rows[0][3]);
     }
 }
