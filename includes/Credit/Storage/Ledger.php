@@ -194,6 +194,39 @@ final class Ledger implements LedgerSource, PeriodSource
     }
 
     /**
+     * مصرف همهٔ کاربران در همهٔ دوره‌ها — باز هم یک کوئری.
+     *
+     * نمای کلی ذاتاً یک جدول متقاطع است و وسوسه‌اش این است که به‌ازای
+     * هر ماه یک‌بار summaries() صدا زده شود. روی دو سال داده یعنی
+     * بیست‌وچند کوئری برای چیزی که یک GROUP BY دوستونی جوابش را
+     * می‌دهد.
+     *
+     * @return array<int, array<string, float>> شناسهٔ کاربر => کلید دوره => مصرف
+     */
+    #[\Override]
+    public function matrix(): array
+    {
+        global $wpdb;
+
+        $table = Schema::table();
+
+        $rows = $wpdb->get_results(
+            "SELECT user_id, period_key, COALESCE(SUM(amount), 0) AS consumed
+             FROM {$table}
+             GROUP BY user_id, period_key",
+            ARRAY_A
+        ) ?: [];
+
+        $matrix = [];
+
+        foreach ($rows as $row) {
+            $matrix[(int) $row['user_id']][(string) $row['period_key']] = round((float) $row['consumed'], 4);
+        }
+
+        return $matrix;
+    }
+
+    /**
      * دوره‌هایی که اصلاً سطری دارند، تازه‌ترین اول.
      *
      * کلید دوره طول ثابت و قالب «۱۴۰۵-۰۶» دارد، پس مرتب‌سازی رشته‌ای

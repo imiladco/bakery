@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Bakery_Credit\Tests\Report;
 
-use Bakery_Credit\Report\Workbook;
+use Bakery_Credit\Report\MonthWorkbook;
+use Bakery_Credit\Report\Sheet;
 use Bakery_Credit\Service\PeriodReport;
 use Bakery_Credit\Tests\Service\Fakes\InMemoryPeriods;
 use PHPUnit\Framework\TestCase;
@@ -13,7 +14,7 @@ use PHPUnit\Framework\TestCase;
 // وردپرس ساخته می‌شود. پس کمترین وردپرسِ ساختگی لازم است.
 require_once __DIR__ . '/../../Bakery/Fakes/functions.php';
 
-final class WorkbookTest extends TestCase
+final class MonthWorkbookTest extends TestCase
 {
     private const SHAHRIVAR = '1405-06';
 
@@ -32,9 +33,9 @@ final class WorkbookTest extends TestCase
         return $columns;
     }
 
-    private function workbook(InMemoryPeriods $source, array $people): Workbook
+    private function workbook(InMemoryPeriods $source, array $people): MonthWorkbook
     {
-        return new Workbook(new PeriodReport($source, $source), $this->identity($people));
+        return new MonthWorkbook(new PeriodReport($source, $source), new Sheet($this->identity($people)));
     }
 
     /**
@@ -93,6 +94,6 @@ final class WorkbookTest extends TestCase
         $workbook = $this->workbook(new InMemoryPeriods(), []);
 
         self::assertSame('bakery-credit-1405-06.xlsx', $workbook->filename(self::SHAHRIVAR, 'xlsx'));
-        self::assertSame('شهریور ۱۴۰۵', Workbook::periodLabel(self::SHAHRIVAR));
+        self::assertSame('شهریور ۱۴۰۵', Sheet::periodLabel(self::SHAHRIVAR));
     }
 }

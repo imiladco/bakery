@@ -102,6 +102,63 @@ final class PeriodReport
     }
 
     /**
+     * نمای کلی: یک سطر به‌ازای هر کاربر، یک ستون به‌ازای هر ماه.
+     *
+     * ماه‌ها به ترتیب تاریخی‌اند و نه تازه‌ترین‌اول. برگه راست‌به‌چپ باز
+     * می‌شود، پس ستون اول سمت راست می‌نشیند و چشم از قدیمی به جدید
+     * حرکت می‌کند — همان جهتی که یک روند در آن خوانده می‌شود.
+     *
+     * total فقط برای مرتب‌سازی است و ستونی نمی‌شود؛ نمای کلی عمداً جز
+     * ماه‌ها چیزی نشان نمی‌دهد.
+     *
+     * @return array{periods: array<int, string>, rows: array<int, array{userId: int, byPeriod: array<string, float>, total: float}>}
+     */
+    public function matrix(): array
+    {
+        $matrix = $this->ledger->matrix();
+
+        $periods = $this->ledger->periodKeys();
+        sort($periods);
+
+        $userIds = array_values(array_unique(array_merge(
+            array_keys($matrix),
+            $this->allowances->userIdsWithAllowance()
+        )));
+
+        $rows = [];
+
+        foreach ($userIds as $userId) {
+            $byPeriod = $matrix[$userId] ?? [];
+
+            $rows[] = [
+                'userId' => $userId,
+                'byPeriod' => $byPeriod,
+                'total' => round(array_sum($byPeriod), 4),
+            ];
+        }
+
+        // همان قرارداد گزارش ماهانه: پرمصرف‌ترین بالا، و تساوی با شناسه
+        // شکسته می‌شود تا دو خروجی از یک لحظه سطربه‌سطر قابل مقایسه بماند.
+        usort($rows, static fn (array $a, array $b): int
+            => [$b['total'], $a['userId']] <=> [$a['total'], $b['userId']]);
+
+        return ['periods' => $periods, 'rows' => $rows];
+    }
+
+    /**
+     * شناسه‌های همان مجموعه‌ای که matrix() برمی‌گرداند.
+     *
+     * @return array<int, int>
+     */
+    public function allUserIds(): array
+    {
+        return array_map(
+            static fn (array $row): int => $row['userId'],
+            $this->matrix()['rows']
+        );
+    }
+
+    /**
      * شناسه‌های همان مجموعه‌ای که summaries() برمی‌گرداند.
      *
      * جدا هست تا فراخوان بتواند کش متای وردپرس را یک‌جا گرم کند پیش از

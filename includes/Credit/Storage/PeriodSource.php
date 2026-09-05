@@ -20,6 +20,13 @@ interface PeriodSource
      */
     public function summaries(string $periodKey): array;
 
+    /**
+     * مصرف همهٔ کاربران در همهٔ دوره‌ها، برای نمای کلی.
+     *
+     * @return array<int, array<string, float>> شناسهٔ کاربر => کلید دوره => مصرف
+     */
+    public function matrix(): array;
+
     /** @return array<int, string> دوره‌هایی که سطری دارند، تازه‌ترین اول */
     public function periodKeys(): array;
 }

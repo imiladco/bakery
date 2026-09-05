@@ -29,6 +29,20 @@ final class InMemoryPeriods implements PeriodSource, AllowanceReportSource
     }
 
     #[\Override]
+    public function matrix(): array
+    {
+        $matrix = [];
+
+        foreach ($this->byPeriod as $period => $byUser) {
+            foreach ($byUser as $userId => $consumed) {
+                $matrix[$userId][$period] = $consumed;
+            }
+        }
+
+        return $matrix;
+    }
+
+    #[\Override]
     public function periodKeys(): array
     {
         $keys = array_keys($this->byPeriod);
