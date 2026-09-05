@@ -13,15 +13,12 @@ use Bakery_Credit\Storage\PeriodSource;
 final class InMemoryPeriods implements PeriodSource, AllowanceReportSource
 {
     /**
-     * @param array<string, array<int, array{spent: float, returned: float, adjusted: float, orders: int}>> $byPeriod
+     * @param array<string, array<int, array{consumed: float, orders: int}>> $byPeriod
      * @param array<int, float> $allowances
-     * @param array<int, array<int, array{at: string, from: float, to: float, by: int}>> $logs
      */
     public function __construct(
         private readonly array $byPeriod = [],
         private readonly array $allowances = [],
-        private readonly array $logs = [],
-        private readonly bool $logsAreFull = false,
     ) {
     }
 
@@ -44,18 +41,6 @@ final class InMemoryPeriods implements PeriodSource, AllowanceReportSource
     public function forUser(int $userId): float
     {
         return $this->allowances[$userId] ?? 0.0;
-    }
-
-    #[\Override]
-    public function changeLog(int $userId): array
-    {
-        return $this->logs[$userId] ?? [];
-    }
-
-    #[\Override]
-    public function logIsFull(array $log): bool
-    {
-        return $this->logsAreFull;
     }
 
     #[\Override]

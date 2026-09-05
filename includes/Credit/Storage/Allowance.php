@@ -58,18 +58,11 @@ final class Allowance implements AllowanceReportSource
     }
 
     /** @return array<int, array{at: string, from: float, to: float, by: int}> تازه‌ترین اول */
-    #[\Override]
     public function changeLog(int $userId): array
     {
         $log = get_user_meta($userId, self::LOG_META, true);
 
         return is_array($log) ? $log : [];
-    }
-
-    #[\Override]
-    public function logIsFull(array $log): bool
-    {
-        return count($log) >= self::LOG_LIMIT;
     }
 
     /**

@@ -156,15 +156,18 @@ final class Ledger implements LedgerSource, PeriodSource
     /**
      * کارنامهٔ همهٔ کاربران در یک دوره — یک کوئری برای کل گزارش.
      *
-     * تفکیک انواع داخل خودِ SQL انجام می‌شود و نه با خواندن سطرها و
-     * جمع‌زدنشان در PHP: گزارش یک ماهِ شلوغ می‌تواند هزاران سطر باشد و
-     * آوردن همه‌شان در حافظه برای اینکه فقط جمعشان را بخواهیم، هزینهٔ
-     * بی‌دلیل است. یک کوئری، یک پیمایش، مستقل از تعداد سفارش‌ها.
+     * جمع داخل خودِ SQL انجام می‌شود و نه با خواندن سطرها و جمع‌زدنشان
+     * در PHP: گزارش یک ماهِ شلوغ می‌تواند هزاران سطر باشد و آوردن
+     * همه‌شان در حافظه برای اینکه فقط جمعشان را بخواهیم، هزینهٔ بی‌دلیل
+     * است. یک کوئری، مستقل از تعداد سفارش‌ها.
      *
-     * سطرهای برگشت در دفتر منفی ثبت شده‌اند، پس علامتشان این‌جا برمی‌گردد
-     * تا «برگشتی» یک عدد مثبتِ خوانا باشد.
+     * مصرف SUM(amount) است و بس — دقیقاً همان چیزی که consumed() برای
+     * یک کاربر می‌دهد و موجودی از آن درمی‌آید. سطرهای برگشت در دفتر
+     * منفی ثبت شده‌اند، پس خودبه‌خود کم می‌شوند و هیچ تفکیک نوعی لازم
+     * نیست. جمع روی ستون DECIMAL انجام می‌شود، پس گِردکردن ممیز شناور
+     * وارد محاسبه نمی‌شود.
      *
-     * @return array<int, array{spent: float, returned: float, adjusted: float, orders: int}> کلید = شناسهٔ کاربر
+     * @return array<int, array{consumed: float, orders: int}> کلید = شناسهٔ کاربر
      */
     #[\Override]
     public function summaries(string $periodKey): array
@@ -175,17 +178,11 @@ final class Ledger implements LedgerSource, PeriodSource
 
         $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT user_id,
-                    COALESCE(SUM(CASE WHEN type = %s THEN amount ELSE 0 END), 0) AS spent,
-                    COALESCE(SUM(CASE WHEN type IN (%s, %s) THEN -amount ELSE 0 END), 0) AS returned,
-                    COALESCE(SUM(CASE WHEN type = %s THEN amount ELSE 0 END), 0) AS adjusted,
+                    COALESCE(SUM(amount), 0) AS consumed,
                     COALESCE(SUM(CASE WHEN type = %s THEN 1 ELSE 0 END), 0) AS orders
              FROM {$table}
              WHERE period_key = %s
              GROUP BY user_id",
-            EntryType::Debit->value,
-            EntryType::Cancel->value,
-            EntryType::Refund->value,
-            EntryType::Adjust->value,
             EntryType::Debit->value,
             $periodKey
         ), ARRAY_A) ?: [];
@@ -194,9 +191,7 @@ final class Ledger implements LedgerSource, PeriodSource
 
         foreach ($rows as $row) {
             $summaries[(int) $row['user_id']] = [
-                'spent' => round((float) $row['spent'], 4),
-                'returned' => round((float) $row['returned'], 4),
-                'adjusted' => round((float) $row['adjusted'], 4),
+                'consumed' => round((float) $row['consumed'], 4),
                 'orders' => (int) $row['orders'],
             ];
         }

@@ -5,51 +5,24 @@ declare(strict_types=1);
 namespace Bakery_Credit\Domain;
 
 /**
- * کارنامهٔ یک کاربر در یک ماه: سقف، خرید، برگشتی، تعدیل، و باقی‌مانده.
+ * مصرف یک کاربر در یک ماه — همان چیزی که بخش مالی می‌خواهد و نه بیشتر.
  *
- * چرا اجزا و نه فقط یک عدد «مصرف»: مصرف خالص، خرید و برگشت را با هم
- * جمع می‌کند و پشتشان پنهان می‌شود. کاربری که ۹۰۰ خرید کرده و ۴۰۰
- * برگشت گرفته، با کاربری که ۵۰۰ خرید کرده در یک عدد یکسان می‌نشیند
- * در حالی که این دو اصلاً یک وضعیت نیستند. سطرهایش در دفتر هست و
- * جداکردنشان هزینه‌ای ندارد.
+ * قبلاً خرید و برگشتی و تعدیل جدا بودند. حذف شدند چون هدف این گزارش
+ * «چقدر مصرف شد» است و نه «از چه راهی»: کسی که ۹۰۰ خریده و ۴۰۰ برگشت
+ * گرفته، از نظر مالی همان ۵۰۰ را مصرف کرده، درست مثل کسی که ۵۰۰ خریده.
  *
- * «مصرف» این‌جا از همان اجزا حساب می‌شود و نه به‌عنوان یک ستون مستقل،
- * تا هیچ‌وقت جمع اجزا با عدد نهایی نخواند. نتیجه‌اش با
- * Storage\Ledger::consumed یکی‌ست، چون سطرهای برگشت در دفتر منفی ثبت
- * می‌شوند.
+ * مصرف مستقیم از SUM(amount) دفتر می‌آید و نه از جمع و تفریق اجزا.
+ * تفاوتش در آینده مهم می‌شود: اگر روزی نوع سطر تازه‌ای به دفتر اضافه
+ * شود، جمعِ اجزا از قلم می‌اندازدش و بی‌صدا کم گزارش می‌دهد، ولی
+ * SUM(amount) همیشه همان عددی‌ست که موجودی کاربر هم از آن درمی‌آید.
  */
 final class PeriodSummary
 {
     public function __construct(
         public readonly int $userId,
         public readonly float $allowance,
-        public readonly bool $allowanceCertain,
-        public readonly float $spent,
-        public readonly float $returned,
-        public readonly float $adjusted,
+        public readonly float $consumed,
         public readonly int $orders,
     ) {
-    }
-
-    /** مصرف خالص — همان عددی که باقی‌مانده از آن درمی‌آید. */
-    public function consumed(): float
-    {
-        return round($this->spent - $this->returned + $this->adjusted, 4);
-    }
-
-    /**
-     * باقی‌مانده، هرگز منفی — همان قاعدهٔ Domain\Balance.
-     *
-     * منفی‌شدن حالت واقعی‌ست (مدیر می‌تواند وسط ماه سقف را بیاورد زیر
-     * چیزی که خرج شده) ولی معنایش «بدهی» نیست، «چیزی نمانده» است.
-     */
-    public function remaining(): float
-    {
-        return max(0.0, round($this->allowance - $this->consumed(), 4));
-    }
-
-    public function isIdle(): bool
-    {
-        return 0 === $this->orders && 0.0 === $this->consumed();
     }
 }

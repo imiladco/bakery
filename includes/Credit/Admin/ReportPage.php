@@ -68,13 +68,10 @@ final class ReportPage
         }
 
         $periods = $this->report->periods(Clock::now());
-        $period = $this->chosen_period($periods);
-        $summaries = $this->report->summaries($period);
 
         echo '<div class="wrap"><h1>' . esc_html__('گزارش اعتبار ماهانه', 'bakery-widgets') . '</h1>';
 
-        $this->render_picker($periods, $period);
-        $this->render_totals($summaries, $period);
+        $this->render_picker($periods, $this->chosen_period($periods));
 
         echo '</div>';
     }
@@ -86,7 +83,7 @@ final class ReportPage
         <div class="card" style="max-width:820px">
             <h2><?php esc_html_e('انتخاب ماه', 'bakery-widgets'); ?></h2>
             <p>
-                <?php esc_html_e('گزارش بر اساس ماهی که هر سفارش در آن ثبت شده ساخته می‌شود، نه بر اساس تاریخ گرفتن گزارش. پس اول مهر هم می‌توانید مصرف شهریور را دقیق بگیرید.', 'bakery-widgets'); ?>
+                <?php esc_html_e('گزارش بر اساس ماهی که هر سفارش در آن ثبت شده ساخته می‌شود، نه تاریخ گرفتن گزارش. پس گزارش شهریور را هر وقت بگیرید فقط شهریور است — خریدهای مهر در آن نمی‌آیند، حتی اگر گزارش را بعد از آن‌ها بگیرید.', 'bakery-widgets'); ?>
             </p>
             <form method="get">
                 <input type="hidden" name="page" value="<?php echo esc_attr(self::SLUG); ?>">
@@ -102,68 +99,6 @@ final class ReportPage
                     <?php esc_html_e('دریافت فایل اکسل', 'bakery-widgets'); ?>
                 </a>
             </form>
-        </div>
-        <?php
-    }
-
-    /** @param array<int, PeriodSummary> $summaries */
-    private function render_totals(array $summaries, string $period): void
-    {
-        $spent = 0.0;
-        $returned = 0.0;
-        $allowance = 0.0;
-        $orders = 0;
-        $idle = 0;
-        $uncertain = 0;
-
-        foreach ($summaries as $summary) {
-            $spent += $summary->spent;
-            $returned += $summary->returned;
-            $allowance += $summary->allowance;
-            $orders += $summary->orders;
-            $idle += $summary->isIdle() ? 1 : 0;
-            $uncertain += $summary->allowanceCertain ? 0 : 1;
-        }
-
-        $consumed = array_sum(array_map(static fn (PeriodSummary $s): float => $s->consumed(), $summaries));
-
-        ?>
-        <div class="card" style="max-width:820px">
-            <h2><?php echo esc_html(sprintf(
-                /* translators: %s: Jalali month and year */
-                __('خلاصهٔ %s', 'bakery-widgets'),
-                self::period_label($period)
-            )); ?></h2>
-            <table class="widefat striped">
-                <tbody>
-                    <?php
-                    $rows = [
-                        __('کاربران گزارش', 'bakery-widgets') => PersianCalendarFormat::digits((string) count($summaries)),
-                        __('مجموع سقف اعتبار', 'bakery-widgets') => self::money($allowance),
-                        __('مجموع خرید', 'bakery-widgets') => self::money($spent),
-                        __('مجموع برگشتی', 'bakery-widgets') => self::money($returned),
-                        __('مصرف خالص', 'bakery-widgets') => self::money($consumed),
-                        __('تعداد سفارش', 'bakery-widgets') => PersianCalendarFormat::digits((string) $orders),
-                        __('کاربرانی که هیچ خریدی نکردند', 'bakery-widgets') => PersianCalendarFormat::digits((string) $idle),
-                    ];
-
-                    foreach ($rows as $label => $value) {
-                        printf('<tr><th style="width:16rem">%s</th><td>%s</td></tr>', esc_html($label), esc_html($value));
-                    }
-                    ?>
-                </tbody>
-            </table>
-            <?php if ($uncertain > 0) : ?>
-                <p class="description" style="color:#b32d2e">
-                    <?php
-                    printf(
-                        /* translators: %d: number of users */
-                        esc_html__('برای %d کاربر، سقفِ همان ماه از روی تاریخچه قابل بازسازی نبود (تغییرات سقفشان از حد نگه‌داری تاریخچه بیشتر شده). سقف آن سطرها تخمینی‌ست و در فایل اکسل علامت خورده؛ بقیهٔ اعداد دقیق‌اند.', 'bakery-widgets'),
-                        (int) $uncertain
-                    );
-                    ?>
-                </p>
-            <?php endif; ?>
         </div>
         <?php
     }
@@ -191,7 +126,7 @@ final class ReportPage
             cache_users($userIds);
         }
 
-        $definitions = $this->definitions();
+        $definitions = $this->definitions($period);
         $columns = array_map(static fn (array $definition): Column => $definition['spec'], $definitions);
         $rows = $this->rows($this->report->summaries($period), $definitions);
         $name = 'bakery-credit-' . $period;
@@ -225,9 +160,10 @@ final class ReportPage
      * وگرنه ساختِ سطرها باید موقع اجرا حدس می‌زد کدام خواننده چه
      * می‌خواهد، که یعنی یک شرط شکننده در داغ‌ترین حلقهٔ گزارش.
      *
+     * @param string $period دورهٔ گزارش؛ نامش در سرستون ستون مصرف می‌نشیند
      * @return array<int, array{spec: Column, read: callable(PeriodSummary): string}>
      */
-    private function definitions(): array
+    private function definitions(string $period): array
     {
         $definitions = [];
 
@@ -250,25 +186,26 @@ final class ReportPage
         // اعداد همه numeric‌اند تا جداکنندهٔ سه‌رقمی بگیرند و در اکسل
         // قابل جمع‌بستن و مرتب‌سازی باشند.
         $numbers = [
-            [__('سقف اعتبار', 'bakery-widgets'), static fn (PeriodSummary $s): string => Number::format($s->allowance)],
-            [__('خرید', 'bakery-widgets'), static fn (PeriodSummary $s): string => Number::format($s->spent)],
-            [__('برگشتی', 'bakery-widgets'), static fn (PeriodSummary $s): string => Number::format($s->returned)],
-            [__('تعدیل دستی', 'bakery-widgets'), static fn (PeriodSummary $s): string => Number::format($s->adjusted)],
-            [__('مصرف خالص', 'bakery-widgets'), static fn (PeriodSummary $s): string => Number::format($s->consumed())],
-            [__('باقی‌مانده', 'bakery-widgets'), static fn (PeriodSummary $s): string => Number::format($s->remaining())],
-            [__('تعداد سفارش', 'bakery-widgets'), static fn (PeriodSummary $s): string => (string) $s->orders],
+            [__('سقف اعتبار ماهانه', 'bakery-widgets'), 18, static fn (PeriodSummary $s): string => Number::format($s->allowance)],
+            // نام ماه داخل خودِ سرستون می‌آید. فایلی که به بخش مالی
+            // می‌رسد باید بدون هیچ توضیح همراهی بگوید مال کدام ماه است؛
+            // «اعتبار مصرفی» تنها، روی میز کسی که سه فایل جلویش دارد
+            // هیچ چیزی نمی‌گوید.
+            [
+                sprintf(
+                    /* translators: %s: Jalali month name */
+                    __('اعتبار مصرفی %s ماه', 'bakery-widgets'),
+                    self::month_name($period)
+                ),
+                24,
+                static fn (PeriodSummary $s): string => Number::format($s->consumed),
+            ],
+            [__('تعداد سفارش', 'bakery-widgets'), 14, static fn (PeriodSummary $s): string => (string) $s->orders],
         ];
 
-        foreach ($numbers as [$label, $read]) {
-            $definitions[] = ['spec' => new Column($label, numeric: true, width: 15), 'read' => $read];
+        foreach ($numbers as [$label, $width, $read]) {
+            $definitions[] = ['spec' => new Column($label, numeric: true, width: $width), 'read' => $read];
         }
-
-        $definitions[] = [
-            'spec' => new Column(__('توضیح', 'bakery-widgets'), width: 26),
-            'read' => static fn (PeriodSummary $s): string => $s->allowanceCertain
-                ? ''
-                : __('سقفِ این ماه تخمینی‌ست', 'bakery-widgets'),
-        ];
 
         return $definitions;
     }
@@ -332,16 +269,19 @@ final class ReportPage
         );
     }
 
+    /** «۱۴۰۵-۰۶» → «شهریور» */
+    private static function month_name(string $periodKey): string
+    {
+        [, $month] = array_map('intval', explode('-', $periodKey) + [0, 0]);
+
+        return PersianCalendarFormat::monthName($month);
+    }
+
     /** «۱۴۰۵-۰۶» → «شهریور ۱۴۰۵» */
     private static function period_label(string $periodKey): string
     {
         [$year, $month] = array_map('intval', explode('-', $periodKey) + [0, 0]);
 
         return trim(PersianCalendarFormat::monthName($month) . ' ' . PersianCalendarFormat::digits((string) $year));
-    }
-
-    private static function money(float $value): string
-    {
-        return PersianCalendarFormat::digits(number_format($value));
     }
 }

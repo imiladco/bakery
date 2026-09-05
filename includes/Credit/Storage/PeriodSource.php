@@ -16,7 +16,7 @@ interface PeriodSource
     /**
      * کارنامهٔ همهٔ کاربران در یک دوره.
      *
-     * @return array<int, array{spent: float, returned: float, adjusted: float, orders: int}> کلید = شناسهٔ کاربر
+     * @return array<int, array{consumed: float, orders: int}> کلید = شناسهٔ کاربر
      */
     public function summaries(string $periodKey): array;
 
